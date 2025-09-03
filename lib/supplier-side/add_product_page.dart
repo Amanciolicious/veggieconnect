@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
 
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -66,7 +66,14 @@ class _AddProductPageState extends State<AddProductPage> {
       _quantity = widget.product!['quantity'] ?? 0;
       _quantityController.text = _quantity.toString(); // Initialize quantity controller
       _unit = widget.product!['unit'] ?? 'kg';
-      _category = widget.product!['category'] ?? 'Vegetable';
+      // Ensure the initial category exists in the predefined list to avoid DropdownButton assertion errors
+      final incomingCategory = widget.product!['category']?.toString();
+      if (incomingCategory != null && _categories.contains(incomingCategory)) {
+        _category = incomingCategory;
+      } else {
+        // Fallback to first valid option
+        _category = _categories.first;
+      }
       _isActive = widget.product!['isActive'] ?? true;
       _imageUrl = widget.product!['imageUrl'];
       _rejectionReason = widget.product!['rejectionReason'];
@@ -830,7 +837,7 @@ class _AddProductPageState extends State<AddProductPage> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue: _category,
+                            initialValue: _categories.contains(_category) ? _category : null,
                             decoration: InputDecoration(
                               labelText: 'Category',
                               border: OutlineInputBorder(
@@ -858,7 +865,7 @@ class _AddProductPageState extends State<AddProductPage> {
                         SizedBox(width: 16),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue: _unit,
+                            initialValue: _units.contains(_unit) ? _unit : null,
                             decoration: InputDecoration(
                               labelText: 'Unit',
                               border: OutlineInputBorder(

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/location_map_widget.dart';

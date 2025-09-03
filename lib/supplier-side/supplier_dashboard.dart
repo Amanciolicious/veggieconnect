@@ -640,17 +640,17 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               ),
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Text(
             'Stock Management',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color(0xFF222222),
               fontFamily: 'Poppins',
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildStockOverview(),
         ],
       ),
@@ -772,22 +772,45 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               ),
             ],
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 12),
+          // Status toggle chips
+          _buildStatusToggle(),
+          SizedBox(height: 12),
           _buildProductList(),
         ],
       ),
     );
   }
 
+  String _productStatusFilter = 'All';
+
+  Widget _buildStatusToggle() {
+    final statuses = ['All', 'approved', 'pending', 'rejected'];
+    return Wrap(
+      spacing: 8,
+      children: statuses.map((s) {
+        final bool selected = _productStatusFilter == s;
+        return ChoiceChip(
+          label: Text(s.toUpperCase()),
+          selected: selected,
+          onSelected: (_) => setState(() => _productStatusFilter = s),
+          selectedColor: const Color(0xFF6CA04A),
+          labelStyle: TextStyle(color: selected ? Colors.white : const Color(0xFF222222)),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildProductList() {
     final user = FirebaseAuth.instance.currentUser;
     
+    Query baseQuery = FirebaseFirestore.instance
+        .collection('products')
+        .where('sellerId', isEqualTo: user?.uid)
+        .orderBy('createdAt', descending: true);
+
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('products')
-          .where('sellerId', isEqualTo: user?.uid)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
+      stream: baseQuery.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(strokeWidth: 2));
@@ -801,7 +824,11 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           );
         }
         
-        final products = snapshot.data!.docs;
+        var products = snapshot.data!.docs;
+        // Local filter by status
+        if (_productStatusFilter != 'All') {
+          products = products.where((d) => ((d.data() as Map<String, dynamic>)['status'] ?? 'pending') == _productStatusFilter).toList();
+        }
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -958,18 +985,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Stock Management',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF222222),
-              fontFamily: 'Poppins',
-            ),
-          ),
-          SizedBox(height: 20),
-          _buildStockOverview(),
-          SizedBox(height: 20),
+          // Keep stock list only; the overview is shown on the Overview tab
           _buildStockList(),
         ],
       ),

@@ -407,11 +407,31 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
               child: Text('Close'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/admin/farm-requests');
+              onPressed: () async {
+                // Manual approve inline
+                try {
+                  await _requestService.approveRequest(requestId: request.id, reviewNotes: 'Manually approved from map');
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request approved')));
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to approve: $e')));
+                } finally {
+                  Navigator.of(context).pop();
+                }
               },
-              child: Text('Review Request', style: TextStyle(color: Colors.blue)),
+              child: const Text('Manually Approve', style: TextStyle(color: Colors.green)),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  await _requestService.rejectRequest(requestId: request.id, reviewNotes: 'Rejected from map');
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request rejected')));
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to reject: $e')));
+                } finally {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Reject', style: TextStyle(color: Colors.red)),
             ),
           ],
         );

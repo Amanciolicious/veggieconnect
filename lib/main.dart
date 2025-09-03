@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'authentication/login_page.dart';
 import 'services/notification_service.dart';
 import 'services/performance_service.dart';
+import 'services/migration_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,9 @@ void main() async {
   // Initialize services
   await NotificationService().initialize();
   await PerformanceService().initialize();
+
+  // Run one-time migrations
+  await MigrationService.migrateDeliveredToPickedUp();
 
   runApp(const MyApp());
 }

@@ -77,7 +77,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             Tab(text: 'All Orders'),
             Tab(text: 'Pending'),
             Tab(text: 'Processing'),
-            Tab(text: 'Completed'),
+            Tab(text: 'Picked Up'),
           ],
         ),
       ),
@@ -255,7 +255,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           final processingOrders = orders.where((doc) => 
             (doc.data() as Map<String, dynamic>)['status'] == 'processing').length;
           final completedOrders = orders.where((doc) => 
-            (doc.data() as Map<String, dynamic>)['status'] == 'delivered').length;
+            (doc.data() as Map<String, dynamic>)['status'] == 'picked_up').length;
 
           return Row(
             children: [
@@ -288,7 +288,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
               SizedBox(width: screenWidth * 0.02),
               Expanded(
                 child: _buildStatCard(
-                  'Completed',
+                  'Picked Up',
                   completedOrders.toString(),
                   Icons.check_circle,
                   Colors.green,
@@ -372,7 +372,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           if (statusFilter != 'all' && statusFilter != 'completed') {
             if (order['status'] != statusFilter) return false;
           } else if (statusFilter == 'completed') {
-            if (order['status'] != 'delivered') return false;
+            if (order['status'] != 'picked_up') return false;
           }
 
           // Search filter
@@ -615,9 +615,9 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         color = Colors.purple;
         text = 'SHIPPED';
         break;
-      case 'delivered':
+      case 'picked_up':
         color = Colors.green;
-        text = 'DELIVERED';
+        text = 'PICKED UP';
         break;
       case 'cancelled':
         color = Colors.red;
@@ -699,12 +699,12 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     } else if (status == 'shipped') {
       actions.addAll([
         const PopupMenuItem(
-          value: 'deliver',
+          value: 'pickup',
           child: Row(
             children: [
               Icon(Icons.check_circle, size: 16),
               SizedBox(width: 8),
-              Text('Mark as Delivered'),
+              Text('Mark as Picked Up'),
             ],
           ),
         ),
@@ -806,8 +806,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       case 'ship':
         _updateOrderStatus(orderId, 'shipped');
         break;
-      case 'deliver':
-        _updateOrderStatus(orderId, 'delivered');
+      case 'pickup':
+        _updateOrderStatus(orderId, 'picked_up');
         break;
       case 'cancel':
         _showCancelOrderDialog(orderId);

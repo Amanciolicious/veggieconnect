@@ -14,7 +14,7 @@ class BuyerOrderHistoryPage extends StatefulWidget {
 
 class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<String> _tabs = ['All', 'Pending', 'Processing', 'Delivered'];
+  final List<String> _tabs = ['All', 'Pending', 'Processing', 'Picked Up'];
 
   @override
   void initState() {
@@ -88,7 +88,8 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                 final orders = snapshot.data!.docs.where((doc) {
                   if (tab == 'All') return true;
                   final status = (doc['status'] ?? '').toString().toLowerCase();
-                  return status == tab.toLowerCase();
+                  final normalized = status == 'delivered' ? 'picked up' : status;
+                  return normalized == tab.toLowerCase();
                 }).toList();
                 if (orders.isEmpty) {
                   return Center(
@@ -110,7 +111,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                     final status = order['status'] ?? 'pending';
                     Color statusColor;
                     switch (status) {
-                      case 'delivered':
+                      case 'picked_up':
                         statusColor = Color(0xFF6CA04A);
                         break;
                       case 'processing':
@@ -226,7 +227,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                 ),
                               ),
                           ],
-                          if (status == 'delivered') ...[
+                          if (status == 'picked_up') ...[
                             SizedBox(height: screenWidth * 0.03),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(

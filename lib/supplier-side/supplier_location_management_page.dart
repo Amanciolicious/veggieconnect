@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
@@ -335,10 +335,8 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
           ),
         );
         // Ensure pin is visible after submit
-        if (chosenLocation != null) {
-          _mapController.move(chosenLocation, 15.0);
-        }
-      }
+        _mapController.move(chosenLocation, 15.0);
+            }
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to submit farm request: $e';

@@ -553,10 +553,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: MediaQuery.of(context).size.width < 380 ? 2 : 2,
+            crossAxisCount: MediaQuery.of(context).size.width < 420 ? 2 : 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: MediaQuery.of(context).size.width < 380 ? 1.0 : 1.2,
+            childAspectRatio: MediaQuery.of(context).size.width < 420 ? 0.95 : 1.15,
             children: [
               // Total Users (suppliers and buyers only, exclude admins)
               StreamBuilder<QuerySnapshot>(

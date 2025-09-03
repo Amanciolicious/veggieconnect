@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import '../services/supplier_report_service.dart';
+import '../models/supplier_report_model.dart';
 import '../services/ban_service.dart';
 
 class AdminManageAccountsPage extends StatefulWidget {
@@ -1101,14 +1102,17 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 ),
               ),
               SizedBox(height: screenWidth * 0.03),
-              Flexible(
-                child: StreamBuilder<List<dynamic>>(
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: StreamBuilder<List<SupplierReport>>(
                   stream: SupplierReportService.getSupplierReports(userId),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final reports = snapshot.data!;
+                    final reports = List<SupplierReport>.from(snapshot.data!);
+                    // Ensure newest first just in case index order shifts
+                    reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
                     if (reports.isEmpty) {
                       return const Center(child: Text('No reports found'));
                     }
@@ -1117,12 +1121,9 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       itemCount: reports.length,
                       itemBuilder: (context, index) {
                         final r = reports[index];
-                        final reason = r.reason ?? r['reason'] ?? '';
-                        final productName = r.productName ?? r['productName'] ?? '';
-                        final createdAt = r.createdAt ?? r['createdAt'];
-                        final createdText = createdAt is Timestamp
-                            ? createdAt.toDate().toString().split(' ').first
-                            : '';
+                        final reason = r.reason;
+                        final productName = r.productName ?? '';
+                        final createdText = r.createdAt.toString().split(' ').first;
                         return ListTile(
                           leading: const Icon(Icons.report, color: Colors.redAccent),
                           title: Text(reason),

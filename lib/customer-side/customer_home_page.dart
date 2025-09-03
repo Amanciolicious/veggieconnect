@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:veggieconnect/authentication/login_page.dart';
 import 'package:veggieconnect/customer-side/buyer_products_page.dart';
+import 'package:veggieconnect/customer-side/product_details_page.dart';
 import 'package:veggieconnect/customer-side/customer_messages_page.dart';
 import 'package:veggieconnect/customer-side/cart_page.dart';
 import 'package:veggieconnect/customer-side/favorite_page.dart';
@@ -637,7 +638,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 .collection('products')
                 .where('status', isEqualTo: 'approved')
                 .where('isVerified', isEqualTo: true)
-                .orderBy('createdAt', descending: true)
+                .orderBy('popularity', descending: true)
                 .limit(6)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -695,14 +696,132 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 itemBuilder: (context, index) {
                   final doc = snapshot.data!.docs[index];
                   final data = doc.data() as Map<String, dynamic>;
+                  final productId = doc.id;
                   
-                  return _buildProductCard(
-                    data['name'] ?? 'Unknown Product',
-                    data['price']?.toString() ?? '0',
-                    data['imageUrl'] ?? '',
-                    data['unit'] ?? 'kg',
-                    () => _navigateToProductDetails(doc.id, data),
-                    isSmallScreen,
+                  
+                  return GestureDetector(
+                    onTap: () => _navigateToProductDetails(doc.id, data),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 5,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(isSmallScreen ? 12 : 16),
+                                  topRight: Radius.circular(isSmallScreen ? 12 : 16),
+                                ),
+                              ),
+                              child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(isSmallScreen ? 12 : 16),
+                                        topRight: Radius.circular(isSmallScreen ? 12 : 16),
+                                      ),
+                                      child: Image.network(
+                                        data['imageUrl'],
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey[400],
+                                      size: isSmallScreen ? 35.0 : 40.0,
+                                    ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Padding(
+                              padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.025 : 12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    data['name'] ?? 'Unknown Product',
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? screenWidth * 0.032 : 14.0,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '₱${(data['price'] ?? 0).toStringAsFixed(2)}/${data['unit'] ?? 'kg'}',
+                                          style: TextStyle(
+                                            fontSize: isSmallScreen ? screenWidth * 0.03 : 13.0,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF4CAF50),
+                                            fontFamily: 'Poppins',
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      // Favorites percentage badge
+                                      StreamBuilder<QuerySnapshot>(
+                                        stream: FirebaseFirestore.instance.collection('users').snapshots(),
+                                        builder: (context, usersSnap) {
+                                          if (!usersSnap.hasData) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          final users = usersSnap.data!.docs;
+                                          int totalUsers = users.length;
+                                          int favCount = 0;
+                                          for (final u in users) {
+                                            final favs = (u['favorites'] as List?)?.cast<String>() ?? const <String>[];
+                                            if (favs.contains(productId)) favCount++;
+                                          }
+                                          final pct = totalUsers > 0 ? (favCount * 100.0 / totalUsers) : 0.0;
+                                          return Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.pink.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '${pct.toStringAsFixed(0)}% fav',
+                                              style: TextStyle(
+                                                color: Colors.pink,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: isSmallScreen ? screenWidth * 0.03 : 12,
+                                                fontFamily: 'Poppins',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               );
@@ -897,7 +1016,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BuyerProductsPage(),
+        builder: (_) => ProductDetailsPage(product: productData, productId: productId),
       ),
     );
   }

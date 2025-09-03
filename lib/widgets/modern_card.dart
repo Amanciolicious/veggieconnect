@@ -252,8 +252,8 @@ class StatCard extends StatelessWidget {
         final double iconSize = w * 0.18; // ~22 on 120px card
         final double trendSize = w * 0.15; // ~18 on 120px card
         final double titleSize = w * 0.11; // ~13 on 120px card
-        final double valueSize = w * 0.2;  // ~24 on 120px card
-        final double gapLarge = w * 0.1;   // ~12 on 120px card
+        final double valueSize = w * 0.18;  // smaller to avoid bottom overflow
+        final double gapLarge = w * 0.08;   // slightly tighter spacing
         final double gapSmall = w * 0.03;  // ~4 on 120px card
 
         return ModernCard(
@@ -287,7 +287,7 @@ class StatCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  fontSize: titleSize.clamp(11, 14),
+                  fontSize: titleSize.clamp(10, 13),
                   color: const Color(0xFF757575),
                   fontWeight: FontWeight.w500,
                 ),
@@ -299,7 +299,7 @@ class StatCard extends StatelessWidget {
                 child: Text(
                   value,
                   style: GoogleFonts.inter(
-                    fontSize: valueSize.clamp(16, 24),
+                    fontSize: valueSize.clamp(14, 20),
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1A1A1A),
                   ),

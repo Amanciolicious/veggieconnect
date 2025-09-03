@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:firebase_auth/firebase_auth.dart';
 import '../customer-side/contact_info_page.dart';
 import 'package:flutter/material.dart';

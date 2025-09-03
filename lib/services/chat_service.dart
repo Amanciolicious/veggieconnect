@@ -172,7 +172,7 @@ class ChatService {
       if (existing != null) {
         queue = jsonDecode(existing) as List<dynamic>;
       }
-      queue.add(message);
+      queue.add(_toEncodableMessage(message));
       await prefs.setString(queueKey, jsonEncode(queue));
       developer.log('Message queued for offline sending');
     } catch (e) {
@@ -192,7 +192,13 @@ class ChatService {
       
       final convRef = _firestore.collection('conversations').doc(conversationId);
       for (final message in queue) {
-        await convRef.collection('messages').add(message);
+        // Convert ISO timestamp back to Timestamp for Firestore
+        final Map<String, dynamic> fsMessage = Map<String, dynamic>.from(message as Map);
+        final ts = fsMessage['timestamp'];
+        if (ts is String) {
+          fsMessage['timestamp'] = Timestamp.fromDate(DateTime.parse(ts));
+        }
+        await convRef.collection('messages').add(fsMessage);
       }
       
       // Clear the queue after successful sync
@@ -216,7 +222,7 @@ class ChatService {
         messages = jsonDecode(existing) as List<dynamic>;
       } catch (_) {}
     }
-    messages.add(message);
+    messages.add(_toEncodableMessage(message));
     await prefs.setString(key, jsonEncode(messages));
   }
 
@@ -240,7 +246,26 @@ class ChatService {
     required List<Map<String, dynamic>> messages,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localKey(conversationId), jsonEncode(messages));
+    final safe = messages.map(_toEncodableMessage).toList();
+    await prefs.setString(_localKey(conversationId), jsonEncode(safe));
+  }
+
+  // Ensure messages are JSON-encodable for local storage
+  Map<String, dynamic> _toEncodableMessage(Map<String, dynamic> message) {
+    final enc = <String, dynamic>{};
+    message.forEach((key, value) {
+      if (value is Timestamp) {
+        enc[key] = value.toDate().toIso8601String();
+      } else if (value is DateTime) {
+        enc[key] = value.toIso8601String();
+      } else if (value is FieldValue) {
+        // FieldValue is not encodable; represent as current time ISO for local cache
+        enc[key] = DateTime.now().toIso8601String();
+      } else {
+        enc[key] = value;
+      }
+    });
+    return enc;
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> streamSupplierConversations(String supplierId) {

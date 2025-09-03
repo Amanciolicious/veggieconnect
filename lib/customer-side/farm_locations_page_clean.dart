@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:veggieconnect/models/farm_location.dart';
 import '../models/supplier_location.dart';
 import '../services/supplier_location_service.dart';
 import '../services/map_service.dart';

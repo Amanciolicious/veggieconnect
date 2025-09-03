@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:veggieconnect/models/farm_location.dart';
 import '../models/supplier_location.dart';
 import '../services/supplier_location_service.dart';
 import '../services/map_service.dart';
@@ -260,7 +259,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
             children: [
               Icon(Icons.store, color: Colors.green),
               SizedBox(width: 8),
-              Expanded(child: Text(supplier.locationName ?? 'Unknown Location')),
+              Expanded(child: Text(supplier.locationName)),
             ],
           ),
           content: SingleChildScrollView(
@@ -280,7 +279,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Supplier: ${supplier.supplierName ?? 'Unknown Supplier'}',
+                        'Supplier: ${supplier.supplierName}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -337,14 +336,14 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                       
                       // Description
                       Text(
-                        'Description: ${supplier.description ?? 'No description available'}',
+                        'Description: ${supplier.description}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       SizedBox(height: 4),
                       
                       // Address
                       Text(
-                        'Address: ${supplier.address ?? 'Address not available'}',
+                        'Address: ${supplier.address}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       SizedBox(height: 4),
@@ -1141,8 +1140,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     
     // Responsive sizing for Infinix Smart 8 (720x1612)
     final isSmallScreen = screenWidth <= 720;

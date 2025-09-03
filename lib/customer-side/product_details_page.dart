@@ -178,13 +178,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 ),
                               ),
                               SizedBox(width: screenWidth * 0.02),
-                              FutureBuilder<QuerySnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('ratings')
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('order_ratings')
                                     .where('supplierId', isEqualTo: product['sellerId'])
-                                    .get(),
+                                    .snapshots(),
                                 builder: (context, snapshot) {
-                                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                  if (!snapshot.hasData) {
                                     return Row(
                                       children: [
                                         StarRatingDisplay(rating: 0, size: screenWidth * 0.035),
@@ -200,17 +200,31 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                       ],
                                     );
                                   }
-                                  
-                                  final ratings = snapshot.data!.docs;
-                                  final totalRating = ratings.fold<double>(0, (sum, doc) => sum + (doc['rating'] ?? 0).toDouble());
-                                  final averageRating = totalRating / ratings.length;
-                                  
+                                  final docs = snapshot.data!.docs;
+                                  if (docs.isEmpty) {
+                                    return Row(
+                                      children: [
+                                        StarRatingDisplay(rating: 0, size: screenWidth * 0.035),
+                                        SizedBox(width: screenWidth * 0.01),
+                                        Text(
+                                          '(0)',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.032,
+                                            color: Color(0xFF757575),
+                                            fontFamily: 'Poppins',
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                  final totalRating = docs.fold<double>(0, (sum, d) => sum + ((d['rating'] ?? 0) as num).toDouble());
+                                  final average = totalRating / docs.length;
                                   return Row(
                                     children: [
-                                      StarRatingDisplay(rating: averageRating, size: screenWidth * 0.035),
+                                      StarRatingDisplay(rating: average, size: screenWidth * 0.035),
                                       SizedBox(width: screenWidth * 0.01),
                                       Text(
-                                        '(${ratings.length})',
+                                        '(${docs.length})',
                                         style: TextStyle(
                                           fontSize: screenWidth * 0.032,
                                           color: Color(0xFF757575),
@@ -228,6 +242,68 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   onPressed: () => _showReportDialog(context),
                                 ),
                             ],
+                          ),
+                          
+                          SizedBox(height: screenWidth * 0.02),
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('order_ratings')
+                                .where('supplierId', isEqualTo: product['sellerId'])
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              final docs = snapshot.data!.docs;
+                              final counts = List<int>.filled(6, 0);
+                              for (final d in docs) {
+                                final r = (d['rating'] ?? 0) as int;
+                                if (r >= 1 && r <= 5) counts[r]++;
+                              }
+                              final total = docs.length;
+                              Widget buildBar(int stars) {
+                                final count = counts[stars];
+                                final pct = total > 0 ? (count * 100.0 / total) : 0.0;
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(vertical: screenWidth * 0.005),
+                                  child: Row(
+                                    children: [
+                                      Text('$stars★', style: TextStyle(fontSize: screenWidth * 0.032, fontFamily: 'Poppins', color: Color(0xFF757575))),
+                                      SizedBox(width: screenWidth * 0.02),
+                                      Expanded(
+                                        child: Stack(
+                                          children: [
+                                            Container(
+                                              height: 6,
+                                              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                                            ),
+                                            FractionallySizedBox(
+                                              widthFactor: (pct / 100).clamp(0.0, 1.0),
+                                              child: Container(
+                                                height: 6,
+                                                decoration: BoxDecoration(color: Color(0xFF6CA04A), borderRadius: BorderRadius.circular(4)),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(width: screenWidth * 0.02),
+                                      Text('${pct.toStringAsFixed(0)}% ($count)', style: TextStyle(fontSize: screenWidth * 0.03, fontFamily: 'Poppins', color: Color(0xFF757575))),
+                                    ],
+                                  ),
+                                );
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  buildBar(5),
+                                  buildBar(4),
+                                  buildBar(3),
+                                  buildBar(2),
+                                  buildBar(1),
+                                ],
+                              );
+                            },
                           ),
                         
                           SizedBox(height: screenWidth * 0.02),
