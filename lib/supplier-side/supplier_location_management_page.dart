@@ -27,6 +27,8 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
   final MapService _mapService = MapService();
   final TextEditingController _locationNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _latController = TextEditingController();
+  final TextEditingController _lngController = TextEditingController();
   
   SupplierLocation? _currentLocation;
   LatLng? _selectedLocation;
@@ -38,6 +40,7 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
   bool _isGettingCurrentLocation = false;
   bool _isRequestingFarm = false;
   String? _errorMessage;
+  String _locationInputMode = 'map'; // 'map' or 'manual'
 
   @override
   void initState() {
@@ -61,6 +64,8 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
   void dispose() {
     _locationNameController.dispose();
     _descriptionController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     _countdownTimer?.cancel();
     _countdownService.dispose();
     super.dispose();
@@ -141,7 +146,14 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
             _selectedLocation = location;
             _currentAddress = address;
             _isGettingCurrentLocation = false;
+            // If manual mode is active, fill the fields too
+            if (_locationInputMode == 'manual') {
+              _latController.text = location.latitude.toStringAsFixed(6);
+              _lngController.text = location.longitude.toStringAsFixed(6);
+            }
           });
+          // Center map and show pin
+          _mapController.move(location, 16.0);
         } else {
           setState(() {
             _errorMessage = 'Failed to get location details';
@@ -220,6 +232,12 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
   }
 
   void _onMapTapped(LatLng point) {
+    if (_locationInputMode != 'map') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Switch to "Pin on Map" to select by tapping the map.')),
+      );
+      return;
+    }
     setState(() {
       _selectedLocation = point;
     });
@@ -240,11 +258,45 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
   }
 
   Future<void> _requestFarmLocation() async {
-    if (_selectedLocation == null) {
+    LatLng? chosenLocation;
+    String address = _currentAddress;
+    if (_locationInputMode == 'map') {
+      if (_selectedLocation == null) {
+        setState(() {
+          _errorMessage = 'Please tap on the map to choose a location';
+        });
+        return;
+      }
+      chosenLocation = _selectedLocation;
+    } else {
+      // Manual coordinates mode
+      final latText = _latController.text.trim();
+      final lngText = _lngController.text.trim();
+      if (latText.isEmpty || lngText.isEmpty) {
+        setState(() {
+          _errorMessage = 'Please enter both latitude and longitude';
+        });
+        return;
+      }
+      final double? lat = double.tryParse(latText);
+      final double? lng = double.tryParse(lngText);
+      if (lat == null || lng == null || lat.abs() > 90 || lng.abs() > 180) {
+        setState(() {
+          _errorMessage = 'Please enter valid coordinates';
+        });
+        return;
+      }
+      chosenLocation = LatLng(lat, lng);
+      // Reverse geocode for display
+      try {
+        address = await _mapService.getAddressFromCoordinates(chosenLocation);
+      } catch (_) {}
       setState(() {
-        _errorMessage = 'Please select a location first';
+        _selectedLocation = chosenLocation;
+        _currentAddress = address;
       });
-      return;
+      // Center map to chosen point so a pin is visible
+      _mapController.move(chosenLocation, 15.0);
     }
 
     // Show dialog to get farm details
@@ -264,8 +316,8 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
       final requestId = await _farmLocationRequestService.submitFarmLocationRequest(
         farmName: result['farmName']!,
         farmDescription: result['farmDescription']!,
-        location: _selectedLocation!,
-        address: _currentAddress,
+        location: chosenLocation!,
+        address: address,
       );
 
       // Start countdown for this request
@@ -282,6 +334,10 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
             duration: Duration(seconds: 4),
           ),
         );
+        // Ensure pin is visible after submit
+        if (chosenLocation != null) {
+          _mapController.move(chosenLocation, 15.0);
+        }
       }
     } catch (e) {
       setState(() {
@@ -421,6 +477,80 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Input mode toggle
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        value: 'map',
+                        groupValue: _locationInputMode,
+                        onChanged: (v) {
+                          if (v == null) return;
+                          setState(() {
+                            _locationInputMode = v;
+                          });
+                        },
+                        title: Text('Pin on Map'),
+                        dense: true,
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        value: 'manual',
+                        groupValue: _locationInputMode,
+                        onChanged: (v) {
+                          if (v == null) return;
+                          setState(() {
+                            _locationInputMode = v;
+                          });
+                        },
+                        title: Text('Manual Coordinates'),
+                        dense: true,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_locationInputMode == 'manual') ...[
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _latController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          decoration: InputDecoration(
+                            labelText: 'Latitude',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Color(0xFF6CA04A)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _lngController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          decoration: InputDecoration(
+                            labelText: 'Longitude',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Color(0xFF6CA04A)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                SizedBox(height: 8),
                 // Pending Requests Section
                 if (_pendingRequests.isNotEmpty) ...[
                   Container(

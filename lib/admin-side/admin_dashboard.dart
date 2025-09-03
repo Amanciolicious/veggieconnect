@@ -16,11 +16,8 @@ import 'package:veggieconnect/admin-side/admin_farm_map_page.dart';
 import 'package:veggieconnect/services/tax_service.dart';
 import '../authentication/login_page.dart';
 import '../services/cloudinary_service.dart';
-import '../services/farm_auto_approval_service.dart';
 import 'admin_verify_listings_page.dart';
-import 'admin_reports_page.dart';
 import 'admin_manage_accounts_page.dart';
-import 'farm_location_requests_page.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../widgets/modern_app_bar.dart';
@@ -43,6 +40,23 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   bool _isOnline = true;
   StreamSubscription? _connectivitySubscription;
   String? _localProfileImagePath;
+
+  Widget _expandableCard({required String title, required Widget child, bool initiallyExpanded = false}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -277,35 +291,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       appBar: ModernAppBar(
-        title: 'Admin Dashboard',
+        title: Text(
+          'Admin Dashboard',
+          style: GoogleFonts.inter(
+            fontSize: MediaQuery.of(context).size.width < 380 ? 20 : 24,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1A1A1A),
+          ),
+        ),
         showSearch: false,
         onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-        actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.logout,
-                color: Color(0xFF4CAF50),
-                size: 20,
-              ),
-            ),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!mounted) return;
-              
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       drawer: _buildModernDrawer(),
       body: IndexedStack(
@@ -558,10 +553,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.2,
+            crossAxisCount: MediaQuery.of(context).size.width < 380 ? 2 : 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: MediaQuery.of(context).size.width < 380 ? 1.0 : 1.2,
             children: [
               // Total Users (suppliers and buyers only, exclude admins)
               StreamBuilder<QuerySnapshot>(
@@ -744,95 +739,40 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               }
               double percentMonth = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
               double percentYear = lastYear > 0 ? ((thisYear - lastYear) / lastYear) * 100 : 0;
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Revenue Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildAnalyticsItem('This Month', '₱${thisMonth.toStringAsFixed(0)}', '${percentMonth >= 0 ? '+' : ''}${percentMonth.toStringAsFixed(0)}%'),
-                          ),
-                          Expanded(
-                            child: _buildAnalyticsItem('Last Month', '₱${lastMonth.toStringAsFixed(0)}', ''),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildAnalyticsItem('This Year', '₱${thisYear.toStringAsFixed(0)}', '${percentYear >= 0 ? '+' : ''}${percentYear.toStringAsFixed(0)}%'),
-                          ),
-                          Expanded(
-                            child: _buildAnalyticsItem('Last Year', '₱${lastYear.toStringAsFixed(0)}', ''),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              return _expandableCard(
+                title: 'Revenue Overview',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildAnalyticsItem('This Month', '₱${thisMonth.toStringAsFixed(0)}', '${percentMonth >= 0 ? '+' : ''}${percentMonth.toStringAsFixed(0)}%'),
+                        ),
+                        Expanded(
+                          child: _buildAnalyticsItem('Last Month', '₱${lastMonth.toStringAsFixed(0)}', ''),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildAnalyticsItem('This Year', '₱${thisYear.toStringAsFixed(0)}', '${percentYear >= 0 ? '+' : ''}${percentYear.toStringAsFixed(0)}%'),
+                        ),
+                        Expanded(
+                          child: _buildAnalyticsItem('Last Year', '₱${lastYear.toStringAsFixed(0)}', ''),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+                initiallyExpanded: true,
               );
             },
           ),
           const SizedBox(height: 20),
-          // User Growth (real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').snapshots(),
-            builder: (context, userSnap) {
-              if (userSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                );
-              }
-              final now = DateTime.now();
-              final firstDayThisMonth = DateTime(now.year, now.month, 1);
-              int newUsers = 0, activeUsers = 0;
-              if (userSnap.hasData) {
-                for (var doc in userSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-                  final lastActive = (data['lastLogin'] as Timestamp?)?.toDate();
-                  if (createdAt != null && createdAt.isAfter(firstDayThisMonth)) newUsers++;
-                  if (lastActive != null && lastActive.isAfter(firstDayThisMonth)) activeUsers++;
-                }
-              }
-              // For demo, percent changes are not calculated (can be added if needed)
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('User Growth', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildAnalyticsItem('New Users', newUsers.toString(), ''),
-                          ),
-                          Expanded(
-                            child: _buildAnalyticsItem('Active Users', activeUsers.toString(), ''),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          // Removed User Growth (not applicable)
           // Order Counts (real-time)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('orders').snapshots(),
@@ -868,32 +808,26 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               }
               double avgOrderValue = totalOrders > 0 ? totalOrderValue / totalOrders : 0;
               double avgProductsPerOrder = totalOrders > 0 ? totalOrderProducts / totalOrders : 0;
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Order Metrics', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(child: _buildAnalyticsItem('Total Orders', totalOrders.toString(), '')),
-                          Expanded(child: _buildAnalyticsItem('This Month', thisMonthOrders.toString(), '')),
-                          Expanded(child: _buildAnalyticsItem('Last Month', lastMonthOrders.toString(), '')),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(child: _buildAnalyticsItem('Avg Order Value', '₱${avgOrderValue.toStringAsFixed(0)}', '')),
-                          Expanded(child: _buildAnalyticsItem('Avg Products/Order', avgProductsPerOrder.toStringAsFixed(2), '')),
-                        ],
-                      ),
-                    ],
-                  ),
+              return _expandableCard(
+                title: 'Order Metrics',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _buildAnalyticsItem('Total Orders', totalOrders.toString(), '')),
+                        Expanded(child: _buildAnalyticsItem('This Month', thisMonthOrders.toString(), '')),
+                        Expanded(child: _buildAnalyticsItem('Last Month', lastMonthOrders.toString(), '')),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(child: _buildAnalyticsItem('Avg Order Value', '₱${avgOrderValue.toStringAsFixed(0)}', '')),
+                        Expanded(child: _buildAnalyticsItem('Avg Products/Order', avgProductsPerOrder.toStringAsFixed(2), '')),
+                      ],
+                    ),
+                  ],
                 ),
               );
             },
@@ -947,28 +881,22 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       .toList();
                   topProducts.sort((a, b) => (b['quantitySold'] as int).compareTo(a['quantitySold'] as int));
                   final top5 = topProducts.take(5).toList();
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Top 5 Products (by sales)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 20),
-                          if (top5.isEmpty)
-                            const Text('No product sales yet.'),
-                          for (var p in top5)
-                            ListTile(
-                              leading: p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty
-                                  ? Image.network(p['imageUrl'], width: 40, height: 40, fit: BoxFit.cover)
-                                  : const Icon(Icons.shopping_basket, size: 40),
-                              title: Text(p['name'] ?? ''),
-                              trailing: Text('Sold: ${p['quantitySold']}'),
-                            ),
-                        ],
-                      ),
+                  return _expandableCard(
+                    title: 'Top 5 Products (by sales)',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (top5.isEmpty)
+                          const Text('No product sales yet.'),
+                        for (var p in top5)
+                          ListTile(
+                            leading: p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty
+                                ? Image.network(p['imageUrl'], width: 40, height: 40, fit: BoxFit.cover)
+                                : const Icon(Icons.shopping_basket, size: 40),
+                            title: Text(p['name'] ?? ''),
+                            trailing: Text('Sold: ${p['quantitySold']}'),
+                          ),
+                      ],
                     ),
                   );
                 },
@@ -976,11 +904,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             },
           ),
           const SizedBox(height: 20),
-          // Sales by Category (real-time)
+          // Sales by Category (real-time) using product category mapping
           StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-            builder: (context, orderSnap) {
-              if (orderSnap.connectionState == ConnectionState.waiting) {
+            stream: FirebaseFirestore.instance.collection('products').snapshots(),
+            builder: (context, productSnap) {
+              if (productSnap.connectionState == ConnectionState.waiting) {
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -988,70 +916,85 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                 );
               }
-              // Aggregate sales by category
-              final Map<String, double> categorySales = {};
-              if (orderSnap.hasData) {
-                for (var doc in orderSnap.data!.docs) {
+              final Map<String, String> productIdToCategory = {};
+              if (productSnap.hasData) {
+                for (var doc in productSnap.data!.docs) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final category = data['category'] ?? 'Uncategorized';
-                  final amount = (data['totalPrice'] ?? 0).toDouble();
-                  categorySales[category] = (categorySales[category] ?? 0) + amount;
+                  final category = (data['category'] ?? 'Uncategorized').toString();
+                  productIdToCategory[doc.id] = category.isEmpty ? 'Uncategorized' : category;
                 }
               }
-              final sortedCategories = categorySales.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value));
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Sales by Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      if (sortedCategories.isEmpty)
-                        const Text('No sales data.'),
-                      if (sortedCategories.isNotEmpty)
-                        SizedBox(
-                          height: 200,
-                          child: BarChart(
-                            BarChartData(
-                              titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
+                builder: (context, orderSnap) {
+                  if (orderSnap.connectionState == ConnectionState.waiting) {
+                    return const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    );
+                  }
+                  final Map<String, double> categorySales = {};
+                  if (orderSnap.hasData) {
+                    for (var doc in orderSnap.data!.docs) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final productId = (data['productId'] ?? '').toString();
+                      final amount = (data['totalPrice'] ?? 0).toDouble();
+                      final category = productIdToCategory[productId] ?? 'Uncategorized';
+                      categorySales[category] = (categorySales[category] ?? 0) + amount;
+                    }
+                  }
+                  final sortedCategories = categorySales.entries.toList()
+                    ..sort((a, b) => b.value.compareTo(a.value));
+                  return _expandableCard(
+                    title: 'Sales by Category',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (sortedCategories.isEmpty)
+                          const Text('No sales data.'),
+                        if (sortedCategories.isNotEmpty)
+                          SizedBox(
+                            height: 200,
+                            child: BarChart(
+                              BarChartData(
+                                titlesData: FlTitlesData(
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                    ),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        final idx = value.toInt();
+                                        if (idx < 0 || idx >= sortedCategories.length) return const SizedBox();
+                                        return Text(sortedCategories[idx].key, style: const TextStyle(fontSize: 10));
+                                      },
+                                    ),
                                   ),
                                 ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget: (value, meta) {
-                                      final idx = value.toInt();
-                                      if (idx < 0 || idx >= sortedCategories.length) return const SizedBox();
-                                      return Text(sortedCategories[idx].key, style: const TextStyle(fontSize: 10));
-                                    },
-                                  ),
-                                ),
+                                barGroups: [
+                                  for (int i = 0; i < sortedCategories.length; i++)
+                                    BarChartGroupData(
+                                      x: i,
+                                      barRods: [
+                                        BarChartRodData(
+                                          toY: sortedCategories[i].value,
+                                          color: Colors.blue,
+                                        ),
+                                      ],
+                                    ),
+                                ],
                               ),
-                              barGroups: [
-                                for (int i = 0; i < sortedCategories.length; i++)
-                                  BarChartGroupData(
-                                    x: i,
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: sortedCategories[i].value,
-                                        color: Colors.blue,
-                                      ),
-                                    ],
-                                  ),
-                              ],
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -1083,25 +1026,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               final topSuppliers = supplierSales.entries.toList()
                 ..sort((a, b) => b.value.compareTo(a.value));
               final top5 = topSuppliers.take(5).toList();
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Top 5 Suppliers (by sales)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      if (top5.isEmpty)
-                        const Text('No supplier sales yet.'),
-                      for (var entry in top5)
-                        ListTile(
-                          title: Text(supplierNames[entry.key] ?? 'Unknown'),
-                          trailing: Text('₱${entry.value.toStringAsFixed(0)}'),
-                        ),
-                    ],
-                  ),
+              return _expandableCard(
+                title: 'Top 5 Suppliers (by sales)',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (top5.isEmpty)
+                      const Text('No supplier sales yet.'),
+                    for (var entry in top5)
+                      ListTile(
+                        title: Text(supplierNames[entry.key] ?? 'Unknown'),
+                        trailing: Text('₱${entry.value.toStringAsFixed(0)}'),
+                      ),
+                  ],
                 ),
               );
             },
@@ -1134,70 +1071,25 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               final topBuyers = buyerCLV.entries.toList()
                 ..sort((a, b) => b.value.compareTo(a.value));
               final top5 = topBuyers.take(5).toList();
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Top 5 Buyers (Customer Lifetime Value)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      if (top5.isEmpty)
-                        const Text('No buyer data yet.'),
-                      for (var entry in top5)
-                        ListTile(
-                          title: Text(buyerNames[entry.key] ?? 'Unknown'),
-                          trailing: Text('₱${entry.value.toStringAsFixed(0)}'),
-                        ),
-                    ],
-                  ),
+              return _expandableCard(
+                title: 'Top 5 Buyers (Customer Lifetime Value)',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (top5.isEmpty)
+                      const Text('No buyer data yet.'),
+                    for (var entry in top5)
+                      ListTile(
+                        title: Text(buyerNames[entry.key] ?? 'Unknown'),
+                        trailing: Text('₱${entry.value.toStringAsFixed(0)}'),
+                      ),
+                  ],
                 ),
               );
             },
           ),
           const SizedBox(height: 20),
-          // Conversion Rate (orders/total users, real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').snapshots(),
-            builder: (context, orderSnap) {
-              return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('users').snapshots(),
-                builder: (context, userSnap) {
-                  if (orderSnap.connectionState == ConnectionState.waiting || userSnap.connectionState == ConnectionState.waiting) {
-                    return const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    );
-                  }
-                  final totalOrders = orderSnap.data?.docs.length ?? 0;
-                  final totalUsers = userSnap.data?.docs.length ?? 0;
-                  final conversionRate = totalUsers > 0 ? (totalOrders / totalUsers) * 100 : 0;
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Conversion Rate', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 20),
-                          Text('Orders: $totalOrders'),
-                          Text('Users: $totalUsers'),
-                          const SizedBox(height: 8),
-                          Text('Conversion Rate: ${conversionRate.toStringAsFixed(2)}%'),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          // Removed Conversion Rate (not applicable)
           const SizedBox(height: 20),
           // Daily/Weekly Sales Trend (last 7/30 days, real-time)
           StreamBuilder<QuerySnapshot>(
@@ -1236,62 +1128,56 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ..sort((a, b) => a.key.compareTo(b.key));
               final sortedWeekly = weeklySales.entries.toList()
                 ..sort((a, b) => a.key.compareTo(b.key));
-              return Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Sales Trend', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      const Text('Last 7 Days:'),
-                      for (var entry in sortedDaily)
-                        Text('${entry.key}: ₱${entry.value.toStringAsFixed(0)}'),
-                      const SizedBox(height: 12),
-                      const Text('Last 30 Days (by week):'),
-                      for (var entry in sortedWeekly)
-                        Text('${entry.key}: ₱${entry.value.toStringAsFixed(0)}'),
-                      if (sortedDaily.isNotEmpty)
-                        SizedBox(
-                          height: 200,
-                          child: LineChart(
-                            LineChartData(
-                              titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                  ),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget: (value, meta) {
-                                      final idx = value.toInt();
-                                      if (idx < 0 || idx >= sortedDaily.length) return const SizedBox();
-                                      return Text(sortedDaily[idx].key.substring(5)); // MM-DD
-                                    },
-                                  ),
+              return _expandableCard(
+                title: 'Sales Trend',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Last 7 Days:'),
+                    for (var entry in sortedDaily)
+                      Text('${entry.key}: ₱${entry.value.toStringAsFixed(0)}'),
+                    const SizedBox(height: 12),
+                    const Text('Last 30 Days (by week):'),
+                    for (var entry in sortedWeekly)
+                      Text('${entry.key}: ₱${entry.value.toStringAsFixed(0)}'),
+                    if (sortedDaily.isNotEmpty)
+                      SizedBox(
+                        height: 200,
+                        child: LineChart(
+                          LineChartData(
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
                                 ),
                               ),
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: [
-                                    for (int i = 0; i < sortedDaily.length; i++)
-                                      FlSpot(i.toDouble(), sortedDaily[i].value),
-                                  ],
-                                  isCurved: true,
-                                  color: Colors.green,
-                                  barWidth: 3,
-                                  dotData: FlDotData(show: false),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    final idx = value.toInt();
+                                    if (idx < 0 || idx >= sortedDaily.length) return const SizedBox();
+                                    return Text(sortedDaily[idx].key.substring(5));
+                                  },
                                 ),
-                              ],
+                              ),
                             ),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: [
+                                  for (int i = 0; i < sortedDaily.length; i++)
+                                    FlSpot(i.toDouble(), sortedDaily[i].value),
+                                ],
+                                isCurved: true,
+                                color: Colors.green,
+                                barWidth: 3,
+                                dotData: FlDotData(show: false),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               );
             },

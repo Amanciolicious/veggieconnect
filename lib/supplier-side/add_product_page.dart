@@ -28,7 +28,7 @@ class _AddProductPageState extends State<AddProductPage> {
   final _quantityController = TextEditingController(); // Add quantity controller
   int _quantity = 0;
   String _unit = 'kg';
-  String _category = 'Vegetable';
+  String _category = 'Leafy Greens';
   bool _isActive = true;
   String? _imageUrl;
   bool _isUploading = false;
@@ -36,16 +36,11 @@ class _AddProductPageState extends State<AddProductPage> {
 
   // Predefined categories and units
   static const List<String> _categories = [
-    'Vegetable',
-    'Fruit',
-    'Herbs & Spices',
-    'Root Crops',
     'Leafy Greens',
+    'Root Vegetables',
+    'Herbs & Spices',
     'Legumes',
     'Grains',
-    'Organic',
-    'Local Produce',
-    'Seasonal',
   ];
 
   static const List<String> _units = [

@@ -267,20 +267,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         backgroundColor: Color(0xFF6CA04A),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!mounted) return;
-
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
+        actions: const [],
       ),
       drawer: Drawer(
         child: ListView(
@@ -595,9 +582,9 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            crossAxisSpacing: 2,
-            mainAxisSpacing: 2,
-            childAspectRatio: 1.6, // Adjusted for better fit
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
             children: [
               // Total Products
               StreamBuilder<QuerySnapshot>(
@@ -653,68 +640,91 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               ),
             ],
           ),
+          SizedBox(height: 20),
+          Text(
+            'Stock Management',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF222222),
+              fontFamily: 'Poppins',
+            ),
+          ),
+          SizedBox(height: 12),
+          _buildStockOverview(),
         ],
       ),
     );
   }
 
   Widget _buildStatCard(BorderRadius cardRadius, String title, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: cardRadius,
-        border: Border.all(
-          color: Color(0xFF8D9773).withOpacity(0.08),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double w = constraints.maxWidth;
+        final double iconSize = (w * 0.18).clamp(18, 28);
+        final double trendSize = (w * 0.15).clamp(14, 22);
+        final double titleSize = (w * 0.11).clamp(11, 14);
+        final double valueSize = (w * 0.2).clamp(16, 22);
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: cardRadius,
+            border: Border.all(
+              color: Color(0xFF8D9773).withOpacity(0.08),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: 24),
-                const Spacer(),
-                Icon(Icons.trending_up, color: color, size: 16),
+                Row(
+                  children: [
+                    Icon(icon, color: color, size: iconSize),
+                    const Spacer(),
+                    Icon(Icons.trending_up, color: color, size: trendSize),
+                  ],
+                ),
+                SizedBox(height: (w * 0.1).clamp(8, 12)),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    color: Color(0xFF757575),
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                SizedBox(height: (w * 0.03).clamp(2, 6)),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: valueSize,
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
               ],
             ),
-            const Spacer(),
-            Text(
-              title, 
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF757575),
-                fontFamily: 'Poppins',
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: 8),
-            Text(
-              value, 
-              style: TextStyle(
-                fontSize: 20,
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -1150,7 +1160,22 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                     Column(
                       children: [
                         GestureDetector(
-                          onTap: () => _updateStock(docId, quantity + 1),
+                          onTap: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirm Increase'),
+                                content: Text('Increase stock for this product by 1?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                  ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              _updateStock(docId, quantity + 1);
+                            }
+                          },
                           child: Container(
                             decoration: BoxDecoration(
                               color: Color(0xFF6CA04A),
@@ -1175,7 +1200,22 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                         ),
                         SizedBox(height: 10),
                         GestureDetector(
-                          onTap: () => _updateStock(docId, quantity > 0 ? quantity - 1 : 0),
+                          onTap: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirm Decrease'),
+                                content: Text('Decrease stock for this product by 1?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                  ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              _updateStock(docId, quantity > 0 ? quantity - 1 : 0);
+                            }
+                          },
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.red,

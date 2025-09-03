@@ -144,53 +144,61 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           
           SizedBox(height: screenWidth * 0.03),
           
-          // Filter Row
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterDropdown(
-                  'Status',
-                  _statusFilter,
-                  _statusOptions,
-                  (value) => setState(() => _statusFilter = value),
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Expanded(
-                child: _buildFilterDropdown(
-                  'Date',
-                  _dateFilter,
-                  _dateOptions,
-                  (value) => setState(() => _dateFilter = value),
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              ElevatedButton(
-                onPressed: () => setState(() => _showOnlyPending = !_showOnlyPending),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _showOnlyPending ? Colors.green : Colors.grey,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.priority_high,
-                      size: 16,
-                      color: _showOnlyPending ? Colors.white : Colors.grey,
+          // Filter Row - responsive using Wrap to avoid overflow
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final double spacing = screenWidth * 0.02;
+              final double colWidth = (constraints.maxWidth - spacing) / 2;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  SizedBox(
+                    width: colWidth,
+                    child: _buildFilterDropdown(
+                      'Status',
+                      _statusFilter,
+                      _statusOptions,
+                      (value) => setState(() => _statusFilter = value),
                     ),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      'Urgent',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _showOnlyPending ? Colors.white : Colors.grey,
-                        fontWeight: _showOnlyPending ? FontWeight.bold : FontWeight.normal,
-                      ),
+                  ),
+                  SizedBox(
+                    width: colWidth,
+                    child: _buildFilterDropdown(
+                      'Date',
+                      _dateFilter,
+                      _dateOptions,
+                      (value) => setState(() => _dateFilter = value),
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _showOnlyPending = !_showOnlyPending),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _showOnlyPending ? Colors.green : Colors.grey,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.priority_high,
+                          size: 16,
+                          color: _showOnlyPending ? Colors.white : Colors.grey,
+                        ),
+                        SizedBox(width: screenWidth * 0.01),
+                        Text(
+                          'Urgent',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _showOnlyPending ? Colors.white : Colors.grey,
+                            fontWeight: _showOnlyPending ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -294,32 +302,42 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        return Card(
+          elevation: 2,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: (w * 0.22).clamp(18, 24)),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: (w * 0.25).clamp(14, 18),
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ),
+                Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: (w * 0.18).clamp(10, 12),
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -427,11 +445,13 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     final createdAt = order['createdAt'] as Timestamp?;
     final imageUrl = order['imageUrl'];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 2,
-        child: Container(
+    return GestureDetector(
+      onTap: () => _showOrderDetails(order, orderId),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Card(
+          elevation: 2,
+          child: Container(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,8 +595,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           ),
         ),
       ),
-    );
-  }
+      ),
+  );}
 
   Widget _buildStatusChip(String status) {
     Color color;

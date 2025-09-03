@@ -22,7 +22,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   final MapService _mapService = MapService();
   
   List<SupplierLocation> _allSupplierLocations = [];
-  List<SupplierLocation> _nearbySuppliers = [];
+  final List<SupplierLocation> _nearbySuppliers = [];
   List<SupplierLocation> _veryNearbySuppliers = []; // Suppliers within 1km
   LatLng? _userLocation;
   String _userAddress = '';
@@ -33,6 +33,8 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   bool _hasShownVicinityGuide = false; // Track if guide has been shown
   
   List<LatLng>? _routeLine; // Store the current route line
+  Color _routeColor = Colors.blue; // Color for current route polyline
+  bool _isGettingLocation = false;
 
   @override
   void initState() {
@@ -517,7 +519,8 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   }
 
   void _showRouteDirectionsSupplier(SupplierLocation supplier, String profile) {
-    Navigator.of(context).pop();
+    // Keep the current modal/dialog open; do not pop here to avoid
+    // revealing the underlying browse page unintentionally.
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -548,7 +551,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
               if (route == null) {
                 return const Text('No route found');
               }
-              final Map<String, dynamic> routeData = route as Map<String, dynamic>;
+              final Map<String, dynamic> routeData = route;
               final distance = (routeData['distance'] as num) / 1000; // km
               final duration = (routeData['duration'] as num) / 60; // min
               final distanceText = routeData['distanceText'] as String;
@@ -594,6 +597,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     onPressed: () {
                       setState(() {
                         _routeLine = polyline;
+                        _routeColor = profile == 'foot-walking' ? Colors.green : Colors.blue;
                       });
                       Navigator.of(context).pop();
                       // Fit map to route
@@ -642,7 +646,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
 
   Widget _buildRouteInstructions(Map<String, dynamic> route) {
     try {
-              final Map<String, dynamic> routeData = route as Map<String, dynamic>;
+              final Map<String, dynamic> routeData = route;
               final distance = (routeData['distance'] as num) / 1000; // km
               final duration = (routeData['duration'] as num) / 60; // min
       
@@ -848,7 +852,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       Navigator.of(context).pop();
 
       if (route != null) {
-        final Map<String, dynamic> routeData = route as Map<String, dynamic>;
+        final Map<String, dynamic> routeData = route;
         final geometry = routeData['geometry'] as Map<String, dynamic>;
         final coords = geometry['coordinates'] as List<dynamic>;
         final List<LatLng> polyline = coords.map((c) => LatLng(c[1], c[0])).toList();
@@ -988,7 +992,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                                 ),
                               ),
                                     Text(
-                                      '${walkingTime} minutes',
+                                      '$walkingTime minutes',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: Colors.green,
@@ -1026,7 +1030,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                                 ),
                               ),
                                     Text(
-                                      '${drivingTime} minutes',
+                                      '$drivingTime minutes',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: Colors.blue,
@@ -1038,6 +1042,54 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                         ),
                       ],
                     ),
+                        ),
+                        SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  final geom = route['geometry'] as Map<String, dynamic>;
+                                  final coords = geom['coordinates'] as List<dynamic>;
+                                  final List<LatLng> polyline = coords.map((c) => LatLng(c[1], c[0])).toList();
+                                  setState(() {
+                                    _routeLine = polyline;
+                                    _routeColor = Colors.green; // walking
+                                  });
+                                  Navigator.of(context).pop();
+                                  WidgetsBinding.instance.addPostFrameCallback((_) => _fitMapToRoute());
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Walking route displayed on map')),
+                                  );
+                                },
+                                icon: const Icon(Icons.route),
+                                label: const Text('Show Walking Route'),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  final geom = route['geometry'] as Map<String, dynamic>;
+                                  final coords = geom['coordinates'] as List<dynamic>;
+                                  final List<LatLng> polyline = coords.map((c) => LatLng(c[1], c[0])).toList();
+                                  setState(() {
+                                    _routeLine = polyline;
+                                    _routeColor = Colors.blue; // driving
+                                  });
+                                  Navigator.of(context).pop();
+                                  WidgetsBinding.instance.addPostFrameCallback((_) => _fitMapToRoute());
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Driving route displayed on map')),
+                                  );
+                                },
+                                icon: const Icon(Icons.route),
+                                label: const Text('Show Driving Route'),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     );
@@ -1220,8 +1272,8 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     ),
                   );
                 },
-                child: Icon(Icons.clear, color: Colors.white),
                 tooltip: 'Clear Route',
+                child: Icon(Icons.clear, color: Colors.white),
               ),
             ),
         ],
@@ -1330,7 +1382,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
             polylines: [
               Polyline(
                 points: _routeLine!,
-                color: Colors.blue,
+                color: _routeColor,
                 strokeWidth: 6.0,
                 borderColor: Colors.white,
                 borderStrokeWidth: 2.0,
@@ -1514,12 +1566,40 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   }
 
   void _refreshGPSLocation() async {
-    // Implement GPS refresh logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Refreshing GPS location...'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    await _useCurrentLocation();
+  }
+
+  Future<void> _useCurrentLocation() async {
+    if (_isGettingLocation) return;
+    setState(() { _isGettingLocation = true; });
+    try {
+      final data = await _mapService.getCurrentLocationWithAddress();
+      if (data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to get current location'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+      final LatLng? loc = data['location'] as LatLng?;
+      final String? address = data['address'] as String?;
+      if (loc == null || address == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invalid location data'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+      setState(() {
+        _userLocation = loc;
+        _userAddress = address;
+      });
+      // Center map and reload suppliers
+      _mapController.move(loc, 15.0);
+      await _loadSupplierLocations();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Current location set'), backgroundColor: Colors.green),
+      );
+    } finally {
+      if (mounted) setState(() { _isGettingLocation = false; });
+    }
   }
 }

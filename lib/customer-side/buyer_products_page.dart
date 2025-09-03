@@ -29,17 +29,13 @@ class BuyerProductsPage extends StatefulWidget {
 
 class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProviderStateMixin {
   String _selectedCategory = 'All';
-  final List<String> _categories = [
+  final List<String> _categories = const [
     'All', 
     'Leafy Greens', 
     'Root Vegetables', 
-    'Fruits', 
     'Herbs & Spices', 
-    'Organic', 
-    'Seasonal',
-    'Vegetable', 
-    'Fruit', 
-    'Other'
+    'Legumes',
+    'Grains',
   ];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -829,7 +825,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
     if (widget.supplierId != null) {
       return 'Supplier Products';
     } else if (widget.categoryFilter != null && _selectedCategory != 'All') {
-      return '${_selectedCategory} Products';
+      return '$_selectedCategory Products';
     } else {
       return 'Browse Products';
     }

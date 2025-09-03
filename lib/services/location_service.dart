@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -187,7 +186,7 @@ class LocationService {
 
   /// Open app settings for permission management
   Future<void> openAppSettings() async {
-    await openAppSettings();
+    await Geolocator.openAppSettings();
   }
 
   /// Dispose resources

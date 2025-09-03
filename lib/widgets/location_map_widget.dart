@@ -22,7 +22,7 @@ class LocationMapWidget extends StatefulWidget {
   final List<Polyline>? additionalPolylines;
 
   const LocationMapWidget({
-    Key? key,
+    super.key,
     this.initialLocation,
     this.destination,
     this.destinationTitle,
@@ -36,7 +36,7 @@ class LocationMapWidget extends StatefulWidget {
     this.onMapCreated,
     this.additionalMarkers,
     this.additionalPolylines,
-  }) : super(key: key);
+  });
 
   @override
   State<LocationMapWidget> createState() => _LocationMapWidgetState();

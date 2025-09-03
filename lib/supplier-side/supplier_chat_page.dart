@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:intl/intl.dart';
 
 class SupplierChatPage extends StatefulWidget {
   final String conversationId;
@@ -90,7 +91,7 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
                 }
 
                 final messages = snapshot.data!.docs;
-                
+
                 if (messages.isEmpty && _localMessages.isEmpty) {
                   return Center(
                     child: Text(
@@ -103,18 +104,30 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
                   );
                 }
 
+                // Prefer Firestore messages when available to avoid duplicates
+                if (messages.isNotEmpty) {
+                  final fsMessages = messages.map((d) => d.data() as Map<String, dynamic>).toList();
+                  // Persist to local cache (best-effort; avoid setState in builder)
+                  _chatService.setLocalMessages(conversationId: widget.conversationId, messages: fsMessages);
+                  return ListView.builder(
+                    reverse: true,
+                    padding: EdgeInsets.all(padding),
+                    itemCount: fsMessages.length,
+                    itemBuilder: (context, index) {
+                      final message = fsMessages[fsMessages.length - 1 - index];
+                      final isMe = message['senderId'] == user?.uid;
+                      return _buildMessageBubble(message, isMe, messagePadding, borderRadius);
+                    },
+                  );
+                }
+
+                // Fallback to local messages only (offline/initial)
                 return ListView.builder(
                   reverse: true,
                   padding: EdgeInsets.all(padding),
-                  itemCount: messages.length + _localMessages.length,
+                  itemCount: _localMessages.length,
                   itemBuilder: (context, index) {
-                    if (index < _localMessages.length) {
-                      final message = _localMessages[_localMessages.length - 1 - index];
-                      return _buildMessageBubble(message, true, messagePadding, borderRadius);
-                    }
-                    
-                    final messageIndex = index - _localMessages.length;
-                    final message = messages[messageIndex].data() as Map<String, dynamic>;
+                    final message = _localMessages[_localMessages.length - 1 - index];
                     final isMe = message['senderId'] == user?.uid;
                     return _buildMessageBubble(message, isMe, messagePadding, borderRadius);
                   },
@@ -198,6 +211,16 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
   }
 
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe, double messagePadding, double borderRadius) {
+    // Parse timestamp
+    DateTime? ts;
+    final rawTs = message['timestamp'];
+    if (rawTs is Timestamp) {
+      ts = rawTs.toDate();
+    } else if (rawTs is String) {
+      ts = DateTime.tryParse(rawTs);
+    }
+    final timeLabel = ts != null ? DateFormat('h:mm a').format(ts) : '';
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -219,13 +242,30 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
             ),
           ],
         ),
-        child: Text(
-          message['text'] ?? '',
-          style: TextStyle(
-            color: isMe ? Colors.white : Color(0xFF222222),
-            fontFamily: 'Poppins',
-            fontSize: 14,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message['text'] ?? '',
+              style: TextStyle(
+                color: isMe ? Colors.white : Color(0xFF222222),
+                fontFamily: 'Poppins',
+                fontSize: 14,
+              ),
+            ),
+            if (timeLabel.isNotEmpty) ...[
+              SizedBox(height: 4),
+              Text(
+                timeLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isMe ? Colors.white.withOpacity(0.85) : Colors.grey,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

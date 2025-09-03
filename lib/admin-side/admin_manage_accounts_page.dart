@@ -941,10 +941,202 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
     }
   }
 
-  void _viewUserDetails(BuildContext context, double screenWidth, String userId, Map<String, dynamic> user) {
-    // Placeholder for user details view
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('User details view - to be implemented')),
+  void _viewUserDetails(BuildContext context, double screenWidth, String userId, Map<String, dynamic> user) async {
+    final int reportCount = await SupplierReportService.getSupplierReportCount(userId);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: screenWidth * 0.05,
+            right: screenWidth * 0.05,
+            top: screenWidth * 0.05,
+            bottom: MediaQuery.of(context).viewInsets.bottom + screenWidth * 0.05,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: screenWidth * 0.06,
+                    backgroundColor: const Color(0xFF6CA04A).withOpacity(0.15),
+                    child: Text(
+                      (user['fullName'] ?? 'U').toString().isNotEmpty
+                        ? (user['fullName'] as String).substring(0, 1).toUpperCase()
+                        : 'U',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF6CA04A),
+                        fontSize: screenWidth * 0.05,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user['fullName'] ?? 'Unknown User',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        Text(
+                          user['email'] ?? 'No email',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: const Color(0xFF757575),
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: screenWidth * 0.04),
+              Row(
+                children: [
+                  Icon(Icons.badge, size: screenWidth * 0.045, color: const Color(0xFF6CA04A)),
+                  SizedBox(width: screenWidth * 0.02),
+                  Text(
+                    (user['role'] ?? 'user').toString().toUpperCase(),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
+              ),
+              if (user['phone'] != null && user['phone'].toString().isNotEmpty) ...[
+                SizedBox(height: screenWidth * 0.02),
+                Row(
+                  children: [
+                    Icon(Icons.phone, size: screenWidth * 0.045, color: const Color(0xFF6CA04A)),
+                    SizedBox(width: screenWidth * 0.02),
+                    Text(user['phone'], style: TextStyle(fontSize: screenWidth * 0.035, fontFamily: 'Poppins')),
+                  ],
+                ),
+              ],
+              SizedBox(height: screenWidth * 0.05),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6CA04A)),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showBanDialog(context, screenWidth, userId, user);
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                        child: const Text('Ban/Unban', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: reportCount > 0 ? () => _showReportReasons(context, screenWidth, userId) : null,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD)),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                        child: Text(
+                          reportCount > 0 ? 'View Report Reasons ($reportCount)' : 'No Reports',
+                          style: TextStyle(
+                            color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD),
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showReportReasons(BuildContext context, double screenWidth, String userId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: screenWidth * 0.05,
+            right: screenWidth * 0.05,
+            top: screenWidth * 0.05,
+            bottom: MediaQuery.of(context).viewInsets.bottom + screenWidth * 0.05,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Report Reasons',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.03),
+              Flexible(
+                child: StreamBuilder<List<dynamic>>(
+                  stream: SupplierReportService.getSupplierReports(userId),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final reports = snapshot.data!;
+                    if (reports.isEmpty) {
+                      return const Center(child: Text('No reports found'));
+                    }
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: reports.length,
+                      itemBuilder: (context, index) {
+                        final r = reports[index];
+                        final reason = r.reason ?? r['reason'] ?? '';
+                        final productName = r.productName ?? r['productName'] ?? '';
+                        final createdAt = r.createdAt ?? r['createdAt'];
+                        final createdText = createdAt is Timestamp
+                            ? createdAt.toDate().toString().split(' ').first
+                            : '';
+                        return ListTile(
+                          leading: const Icon(Icons.report, color: Colors.redAccent),
+                          title: Text(reason),
+                          subtitle: Text(productName.isNotEmpty ? 'Product: $productName\n$createdText' : createdText),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

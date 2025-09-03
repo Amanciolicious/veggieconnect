@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:intl/intl.dart';
 
 class BuyerChatPage extends StatefulWidget {
   final String supplierId;
@@ -84,7 +85,6 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
                     stream: _chatService.streamMessages(_conversationId!),
                     builder: (context, snapshot) {
                       final docs = snapshot.data?.docs ?? [];
-                      final List<Map<String, dynamic>> merged = [..._localMessages];
                       if (docs.isNotEmpty) {
                         final fsMessages = docs.map((d) {
                           final m = d.data();
@@ -95,16 +95,56 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
                           };
                         }).toList();
                         _chatService.setLocalMessages(conversationId: _conversationId!, messages: fsMessages);
-                        merged
-                          ..clear()
-                          ..addAll(fsMessages);
+                        return ListView.builder(
+                          reverse: true,
+                          padding: EdgeInsets.all(16),
+                          itemCount: fsMessages.length,
+                          itemBuilder: (context, index) {
+                            final message = fsMessages[fsMessages.length - 1 - index];
+                            final isMe = message['senderId'] == user?.uid;
+                            // Build bubble with timestamp
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    constraints: BoxConstraints(maxWidth: 250),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isMe ? Color(0xFF6CA04A) : Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: isMe ? null : Border.all(
+                                        color: Color(0xFF8D9773).withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.grey.withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 3,
+                                          offset: Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: _buildBuyerBubbleContent(message, isMe),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
                       }
+                      // Fallback to local cached messages if no Firestore data
                       return ListView.builder(
                         reverse: true,
                         padding: EdgeInsets.all(16),
-                        itemCount: merged.length,
+                        itemCount: _localMessages.length,
                         itemBuilder: (context, index) {
-                          final message = merged[merged.length - 1 - index];
+                          final message = _localMessages[_localMessages.length - 1 - index];
                           final isMe = message['senderId'] == user?.uid;
                           return Padding(
                             padding: EdgeInsets.only(bottom: 8),
@@ -133,14 +173,7 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
                                       ),
                                     ],
                                   ),
-                                  child: Text(
-                                    message['text'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: isMe ? Colors.white : Colors.black87,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
+                                  child: _buildBuyerBubbleContent(message, isMe),
                                 ),
                               ],
                             ),
@@ -228,5 +261,42 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
       text: _controller.text,
     );
     _controller.clear();
+  }
+
+  Widget _buildBuyerBubbleContent(Map<String, dynamic> message, bool isMe) {
+    DateTime? ts;
+    final rawTs = message['timestamp'];
+    if (rawTs is Timestamp) {
+      ts = rawTs.toDate();
+    } else if (rawTs is String) {
+      ts = DateTime.tryParse(rawTs);
+    }
+    final timeLabel = ts != null ? DateFormat('h:mm a').format(ts) : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          message['text'] ?? '',
+          style: TextStyle(
+            fontSize: 16,
+            color: isMe ? Colors.white : Colors.black87,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        if (timeLabel.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            timeLabel,
+            style: TextStyle(
+              fontSize: 10,
+              color: isMe ? Colors.white.withOpacity(0.85) : Colors.grey,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }

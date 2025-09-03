@@ -719,6 +719,13 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                   SizedBox(height: screenWidth * 0.02),
                   ElevatedButton(
                     onPressed: _getManualLocation,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF6CA04A),
+                      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                     child: Text(
                       'Get Location',
                       style: TextStyle(
@@ -726,13 +733,6 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         fontFamily: 'Poppins',
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF6CA04A),
-                      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),

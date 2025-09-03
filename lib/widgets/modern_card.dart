@@ -245,49 +245,70 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ModernCard(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double w = constraints.maxWidth;
+        // Scale sizes based on available width to avoid overflow on small screens
+        final double iconSize = w * 0.18; // ~22 on 120px card
+        final double trendSize = w * 0.15; // ~18 on 120px card
+        final double titleSize = w * 0.11; // ~13 on 120px card
+        final double valueSize = w * 0.2;  // ~24 on 120px card
+        final double gapLarge = w * 0.1;   // ~12 on 120px card
+        final double gapSmall = w * 0.03;  // ~4 on 120px card
+
+        return ModernCard(
+          onTap: onTap,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(w * 0.08),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: iconSize.clamp(18, 28)),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.trending_up,
+                    color: color,
+                    size: trendSize.clamp(14, 22),
+                  ),
+                ],
               ),
-              const Spacer(),
-              Icon(
-                Icons.trending_up,
-                color: color,
-                size: 20,
+              SizedBox(height: gapLarge.clamp(8, 14)),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: titleSize.clamp(11, 14),
+                  color: const Color(0xFF757575),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: gapSmall.clamp(2, 6)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: valueSize.clamp(16, 24),
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: const Color(0xFF757575),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A1A),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
