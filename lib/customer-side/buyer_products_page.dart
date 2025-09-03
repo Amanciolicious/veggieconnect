@@ -620,10 +620,12 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                             .snapshots()
                                         : null,
                                     builder: (context, snapshot) {
-                                      final isFavorite = snapshot.hasData && 
-                                          snapshot.data!.exists &&
-                                          (snapshot.data!.data() as Map<String, dynamic>)['favorites'] != null &&
-                                          (snapshot.data!.data() as Map<String, dynamic>)['favorites'].contains(productId);
+                                      bool isFavorite = false;
+                                      if (snapshot.hasData && snapshot.data!.exists) {
+                                        final data = snapshot.data!.data() as Map<String, dynamic>;
+                                        final favs = (data['favorites'] as List?)?.cast<String>() ?? const <String>[];
+                                        isFavorite = favs.contains(productId);
+                                      }
                                     
                                       return GestureDetector(
                                         onTap: () => _toggleFavorite(productId),
@@ -977,7 +979,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
         });
       }
       
-      final favorites = List<String>.from(userData.data()?['favorites'] ?? []);
+      final favorites = List<String>.from((userData.data() as Map<String, dynamic>?)?['favorites'] ?? []);
       
       if (favorites.contains(productId)) {
         // Remove from favorites

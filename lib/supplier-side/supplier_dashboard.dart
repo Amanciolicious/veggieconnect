@@ -661,10 +661,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double w = constraints.maxWidth;
-        final double iconSize = (w * 0.18).clamp(18, 28);
-        final double trendSize = (w * 0.15).clamp(14, 22);
-        final double titleSize = (w * 0.11).clamp(11, 14);
-        final double valueSize = (w * 0.2).clamp(16, 22);
+        final double iconSize = (w * 0.16).clamp(16, 24);
+        final double trendSize = (w * 0.13).clamp(12, 18);
+        final double titleSize = (w * 0.10).clamp(10, 13);
+        final double valueSize = (w * 0.18).clamp(14, 18);
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -683,7 +683,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -695,7 +695,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                     Icon(Icons.trending_up, color: color, size: trendSize),
                   ],
                 ),
-                SizedBox(height: (w * 0.1).clamp(8, 12)),
+                SizedBox(height: (w * 0.08).clamp(6, 10)),
                 Text(
                   title,
                   maxLines: 1,
@@ -706,7 +706,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                     fontFamily: 'Poppins',
                   ),
                 ),
-                SizedBox(height: (w * 0.03).clamp(2, 6)),
+                SizedBox(height: (w * 0.02).clamp(2, 4)),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,

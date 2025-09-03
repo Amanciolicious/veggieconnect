@@ -791,7 +791,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                           int totalUsers = users.length;
                                           int favCount = 0;
                                           for (final u in users) {
-                                            final favs = (u['favorites'] as List?)?.cast<String>() ?? const <String>[];
+                                            final data = u.data() as Map<String, dynamic>;
+                                            final favs = (data['favorites'] as List?)?.cast<String>() ?? const <String>[];
                                             if (favs.contains(productId)) favCount++;
                                           }
                                           final pct = totalUsers > 0 ? (favCount * 100.0 / totalUsers) : 0.0;

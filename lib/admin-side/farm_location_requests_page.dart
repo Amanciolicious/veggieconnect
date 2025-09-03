@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -76,6 +77,29 @@ class _FarmLocationRequestsPageState extends State<FarmLocationRequestsPage> {
         requestId: requestId,
         reviewNotes: notes,
       );
+      // After approval, sync to supplier_locations so customers see it
+      try {
+        final req = await _requestService.getRequestById(requestId);
+        if (req != null) {
+          await FirebaseFirestore.instance
+              .collection('supplier_locations')
+              .doc(req.requesterId)
+              .set({
+            'id': req.requesterId,
+            'supplierId': req.requesterId,
+            'supplierName': req.requesterName,
+            'locationName': req.farmName,
+            'description': req.farmDescription,
+            'latitude': req.latitude,
+            'longitude': req.longitude,
+            'address': req.address,
+            'isActive': true,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+            'approvedIcon': true,
+          }, SetOptions(merge: true));
+        }
+      } catch (_) {}
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
