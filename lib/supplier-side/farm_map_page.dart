@@ -185,10 +185,12 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
             children: [
               const Icon(Icons.add_location, color: Colors.blue),
               const SizedBox(width: 8),
-              const Text('Add Supplier Location'),
+              const Text('Add Supplier Location',
+              style: TextStyle(color: Colors.green, fontSize: 13),)
             ],
           ),
-          content: Column(
+          content: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
@@ -228,7 +230,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                 },
               ),
             ],
-          ),
+          )),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

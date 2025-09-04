@@ -57,7 +57,7 @@ class _CartPageState extends State<CartPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Payment Method'),
+        title: const Text('Select Payment Method', style: TextStyle(fontSize: 12),),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,

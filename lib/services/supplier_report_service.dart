@@ -13,6 +13,7 @@ class SupplierReportService {
     required String reason,
     String? productName,
     String? supplierName,
+    String? orderId,
   }) async {
     try {
       await _firestore.collection(_collection).add({
@@ -22,6 +23,7 @@ class SupplierReportService {
         'reason': reason,
         'productName': productName,
         'supplierName': supplierName,
+        'orderId': orderId,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -46,8 +48,8 @@ class SupplierReportService {
   static Future<SupplierReportStats> getSupplierReportStats(String supplierId) async {
     try {
       final reportCount = await getSupplierReportCount(supplierId);
-      // Calculate percentage based on max of 5 reports (100% intensity)
-      final percentage = (reportCount / 5.0 * 100).clamp(0.0, 100.0);
+      // Calculate percentage based on max of 3 reports (100% intensity)
+      final percentage = (reportCount / 3.0 * 100).clamp(0.0, 100.0);
       
       return SupplierReportStats(
         supplierId: supplierId,
@@ -98,7 +100,7 @@ class SupplierReportService {
   /// Get color intensity based on report count (for admin UI)
   static double getReportColorIntensity(int reportCount) {
     // Returns a value between 0.2 and 1.0 based on report count
-    // 0 reports = 0.2 (very light), 5+ reports = 1.0 (full intensity)
-    return (0.2 + (reportCount / 5.0 * 0.8)).clamp(0.2, 1.0);
+    // 0 reports = 0.2 (very light), 3+ reports = 1.0 (full intensity)
+    return (0.2 + (reportCount / 3.0 * 0.8)).clamp(0.2, 1.0);
   }
 }

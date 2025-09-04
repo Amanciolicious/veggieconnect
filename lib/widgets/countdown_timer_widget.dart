@@ -186,7 +186,7 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget>
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: _getTimerColor().withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),

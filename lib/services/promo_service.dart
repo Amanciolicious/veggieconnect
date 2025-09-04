@@ -51,16 +51,14 @@ class PromoService {
       
       if (!promoDoc.exists) {
         await initializeCustomerPromo(customerId);
-        return CustomerPromo(
-          customerId: customerId,
-          hasUsedFirstTimePromo: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+        // Return the newly created promo
+        final newPromoDoc = await _firestore.collection(_collection).doc(customerId).get();
+        return CustomerPromo.fromFirestore(newPromoDoc);
       }
       
       return CustomerPromo.fromFirestore(promoDoc);
     } catch (e) {
+      print('Error getting customer promo: $e');
       return null;
     }
   }
@@ -81,13 +79,37 @@ class PromoService {
   /// Mark first-time promo as used
   static Future<void> markFirstTimePromoAsUsed(String customerId) async {
     try {
+      // First ensure the customer promo document exists
+      await initializeCustomerPromo(customerId);
+      
+      // Then mark it as used
       await _firestore.collection(_collection).doc(customerId).update({
         'hasUsedFirstTimePromo': true,
         'firstTimePromoUsedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      
+      print('Successfully marked first-time promo as used for customer: $customerId');
     } catch (e) {
+      print('Failed to mark promo as used: $e');
       throw Exception('Failed to mark promo as used: $e');
+    }
+  }
+
+  /// Check if customer has ever used the first-time promo
+  static Future<bool> hasUsedFirstTimePromo(String customerId) async {
+    try {
+      final promoDoc = await _firestore.collection(_collection).doc(customerId).get();
+      
+      if (!promoDoc.exists) {
+        return false; // No promo document means never used
+      }
+      
+      final customerPromo = CustomerPromo.fromFirestore(promoDoc);
+      return customerPromo.hasUsedFirstTimePromo;
+    } catch (e) {
+      print('Error checking if promo was used: $e');
+      return false;
     }
   }
 

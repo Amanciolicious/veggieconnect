@@ -8,6 +8,8 @@ import 'package:veggieconnect/supplier-side/supplier_orders_page.dart';
 import '../authentication/login_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:veggieconnect/services/cloudinary_service.dart';
+import 'package:veggieconnect/services/notification_service.dart';
+import 'package:veggieconnect/widgets/notification_center.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -267,7 +269,60 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         backgroundColor: Color(0xFF6CA04A),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: const [],
+        actions: [
+          StreamBuilder<int>(
+            stream: NotificationService().getUnreadCountStream(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    onPressed: () async {
+                      // Mark all notifications as read when opening notification center
+                      NotificationService().markAllAsRead();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationCenter(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.notifications,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(

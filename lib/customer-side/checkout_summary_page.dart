@@ -7,6 +7,7 @@ import 'package:veggieconnect/models/promo_model.dart';
 import 'digital_receipt_page.dart';
 import '../services/payment_service.dart';
 import '../services/promo_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/payment_status_checker.dart';
 // Added for debugPrint
 
@@ -260,6 +261,17 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         final orderDoc = ordersRef.doc();
         final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
         
+        // Calculate discount if promo is applied
+        double finalAmount = total;
+        double discountAmount = 0;
+        if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
+          final promoDiscount = PromoService.calculateFirstTimeDiscount(total, true);
+          if (promoDiscount != null) {
+            finalAmount = promoDiscount.finalAmount;
+            discountAmount = promoDiscount.discountAmount;
+          }
+        }
+
         batch.set(orderDoc, {
           'buyerId': user.uid,
           'productId': data['productId'],
@@ -272,17 +284,50 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
           'createdAt': FieldValue.serverTimestamp(),
           'paymentMethod': selectedPaymentMethod,
           'paymentStatus': selectedPaymentMethod == 'cash_on_pickup' ? 'pending' : 'unpaid',
-          'paymentAmount': total,
+          'paymentAmount': finalAmount,
+          'originalAmount': total,
+          'discountAmount': discountAmount,
+          'hasPromoApplied': _applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo,
+          'promoType': (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) ? 'First Time Customer' : null,
           'paymentDate': FieldValue.serverTimestamp(),
           'imageUrl': data['imageUrl'],
           'supplierName': data['supplierName'],
           'orderId': orderId,
-          'totalAmount': total,
+          'totalAmount': finalAmount,
         });
       }
 
       // Commit the batch first to create all orders
       await batch.commit();
+
+      // Send notifications to suppliers about new orders
+      final notificationService = NotificationService();
+      final suppliers = <String, String>{}; // supplierId -> supplierName
+      
+      for (final doc in widget.cartItems) {
+        final data = doc.data();
+        final supplierId = data['sellerId'] as String?;
+        final supplierName = data['supplierName'] as String?;
+        
+        if (supplierId != null && supplierName != null) {
+          suppliers[supplierId] = supplierName;
+        }
+      }
+      
+      // Send notification to each supplier
+      for (final entry in suppliers.entries) {
+        await notificationService.sendFCMNotification(
+          recipientId: entry.key,
+          title: 'New Order Received',
+          body: 'You have received a new order #$orderId',
+          type: 'order_update',
+          data: {
+            'orderId': orderId,
+            'status': 'pending',
+            'screen': 'orders',
+          },
+        );
+      }
 
       // Process payment based on method
       Map<String, dynamic> paymentResult;
@@ -362,8 +407,17 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
 
             debugPrint('Paymongo connection successful, creating external payment intent...');
             
+            // Calculate final amount with promo discount
+            double finalAmount = _calculateTotal();
+            if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
+              final promoDiscount = PromoService.calculateFirstTimeDiscount(_calculateTotal(), true);
+              if (promoDiscount != null) {
+                finalAmount = promoDiscount.finalAmount;
+              }
+            }
+
             paymentResult = await _paymentService.createExternalPaymentIntent(
-            amount: _calculateFinalTotal(),
+            amount: finalAmount,
             currency: 'PHP',
             paymentMethod: selectedPaymentMethod,
             orderId: orderId,
@@ -577,6 +631,43 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       }
 
       if (paymentResult['success']) {
+        // Mark first-time promo as used if it was applied
+        if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
+          try {
+            await PromoService.markFirstTimePromoAsUsed(user.uid);
+            print('First-time promo marked as used for customer: ${user.uid}');
+            
+            // Send promo usage notification
+            await notificationService.sendFCMNotification(
+              recipientId: user.uid,
+              title: 'Promo Applied Successfully',
+              body: 'Your first-time customer discount has been applied to this order',
+              type: 'promo',
+              data: {
+                'orderId': orderId,
+                'promoType': 'first_time_customer',
+                'screen': 'order_details',
+              },
+            );
+          } catch (e) {
+            print('Failed to mark promo as used: $e');
+            // Don't fail the entire order if promo marking fails
+          }
+        }
+
+        // Send payment confirmation notification to customer
+        await notificationService.sendFCMNotification(
+          recipientId: user.uid,
+          title: 'Order Confirmed',
+          body: 'Your order #$orderId has been placed successfully',
+          type: 'order_update',
+          data: {
+            'orderId': orderId,
+            'status': 'pending',
+            'screen': 'order_details',
+          },
+        );
+
         // Clear cart
         final cartBatch = FirebaseFirestore.instance.batch();
         for (final doc in widget.cartItems) {

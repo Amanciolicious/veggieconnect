@@ -2,9 +2,9 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:veggieconnect/services/supplier_report_service.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/star_rating_widget.dart';
+import '../widgets/product_feedback_modal.dart';
 import 'package:flutter/material.dart';
 import 'buyer_chat_page.dart';
 
@@ -235,12 +235,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   );
                                 },
                               ),
-                              // Report icon - only show for customers viewing other suppliers' products
-                              if (user != null && user!.uid != (widget.product['sellerId'] ?? ''))
-                                IconButton(
-                                  icon: const Icon(Icons.report_problem, color: Colors.red),
-                                  onPressed: () => _showReportDialog(context),
-                                ),
+                              // Report functionality removed - customers can only report after completing orders
                             ],
                           ),
                           
@@ -399,6 +394,148 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 ],
                               );
                             },
+                          ),
+                          
+                          // Customer Reviews Section
+                          SizedBox(height: screenWidth * 0.04),
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.04),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFF8FAF5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Color(0xFF8D9773).withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.star_rate,
+                                      color: Color(0xFF6CA04A),
+                                      size: screenWidth * 0.05,
+                                    ),
+                                    SizedBox(width: screenWidth * 0.02),
+                                    Text(
+                                      'Customer Reviews',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.045,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF333333),
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                    Spacer(),
+                                    StreamBuilder<QuerySnapshot>(
+                                      stream: FirebaseFirestore.instance
+                                          .collection('order_ratings')
+                                          .where('products', arrayContains: {
+                                            'productId': widget.productId,
+                                          })
+                                          .snapshots(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                          return Text(
+                                            'No reviews yet',
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.035,
+                                              color: Colors.grey[600],
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          );
+                                        }
+                                        
+                                        final reviews = snapshot.data!.docs;
+                                        final totalRating = reviews.fold<double>(0, (sum, d) {
+                                          final products = d['products'] as List<dynamic>? ?? [];
+                                          for (final product in products) {
+                                            if (product is Map<String, dynamic> && 
+                                                product['productId'] == widget.productId) {
+                                              return sum + ((d['rating'] ?? 0) as num).toDouble();
+                                            }
+                                          }
+                                          return sum;
+                                        });
+                                        
+                                        final productReviews = reviews.where((d) {
+                                          final products = d['products'] as List<dynamic>? ?? [];
+                                          return products.any((product) => 
+                                            product is Map<String, dynamic> && 
+                                            product['productId'] == widget.productId);
+                                        }).length;
+                                        
+                                        final average = productReviews > 0 ? totalRating / productReviews : 0.0;
+                                        
+                                        return Row(
+                                          children: [
+                                            StarRatingDisplay(
+                                              rating: average,
+                                              size: screenWidth * 0.04,
+                                              showRatingText: true,
+                                            ),
+                                            SizedBox(width: screenWidth * 0.02),
+                                            Text(
+                                              '($productReviews)',
+                                              style: TextStyle(
+                                                fontSize: screenWidth * 0.035,
+                                                color: Color(0xFF757575),
+                                                fontFamily: 'Poppins',
+                                              ),
+                                            ),
+                                            SizedBox(width: screenWidth * 0.02),
+                                            GestureDetector(
+                                              onTap: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => ProductFeedbackModal(
+                                                    productId: widget.productId,
+                                                    supplierId: product['sellerId'] ?? '',
+                                                    productName: product['name'] ?? 'Product',
+                                                  ),
+                                                );
+                                              },
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: screenWidth * 0.03,
+                                                  vertical: screenWidth * 0.015,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Color(0xFF6CA04A),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.rate_review,
+                                                      color: Colors.white,
+                                                      size: screenWidth * 0.035,
+                                                    ),
+                                                    SizedBox(width: screenWidth * 0.015),
+                                                    Text(
+                                                      'View Reviews',
+                                                      style: TextStyle(
+                                                        fontSize: screenWidth * 0.032,
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontFamily: 'Poppins',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         
                           SizedBox(height: screenWidth * 0.02),
@@ -613,71 +750,5 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  void _showReportDialog(BuildContext context) async {
-    final TextEditingController reasonController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Report Supplier', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Please provide a reason for reporting this supplier:', 
-                   style: TextStyle(fontSize: 14, color: Color(0xFF757575), fontFamily: 'Poppins')),
-              const SizedBox(height: 16),
-              TextField(
-                controller: reasonController,
-                decoration: const InputDecoration(
-                  hintText: 'Enter reason for report...',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(fontSize: 12, fontFamily: 'Poppins', backgroundColor: Colors.grey, color: Colors.green)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (reasonController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a reason for the report')),
-                  );
-                  return;
-                }
-                
-                try {
-                  await SupplierReportService.submitReport(
-                    supplierId: widget.product['sellerId'] ?? '',
-                    reporterId: user!.uid,
-                    productId: widget.productId,
-                    reason: reasonController.text.trim(),
-                    productName: widget.product['name'],
-                    supplierName: widget.product['supplierName'],
-                  );
-                  
-                  if (!mounted) return;
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Report submitted successfully')),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to submit report: $e')),
-                  );
-                }
-              },
-              child: Text('Submit Report', style: TextStyle(fontSize: 12, backgroundColor: Colors.red, color: Colors.white, fontFamily: 'Poppins')),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Report functionality removed - customers can only report after completing orders
 }

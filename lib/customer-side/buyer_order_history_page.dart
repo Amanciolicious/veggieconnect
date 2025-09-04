@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'rating_dialog.dart';
+import 'package:veggieconnect/services/supplier_report_service.dart';
+import 'package:veggieconnect/services/ban_service.dart';
 
 class BuyerOrderHistoryPage extends StatefulWidget {
   const BuyerOrderHistoryPage({super.key});
@@ -229,24 +231,62 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                           ],
                           if (status == 'picked_up') ...[
                             SizedBox(height: screenWidth * 0.03),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF6CA04A),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            Row(
+                              children: [
+                                // Rate Button
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: order['hasRating'] == true 
+                                          ? Colors.grey 
+                                          : Color(0xFF6CA04A),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                    ),
+                                    onPressed: order['hasRating'] == true 
+                                        ? null 
+                                        : () => _showRatingDialog(context, orders[index].id, order),
+                                    child: Text(
+                                      order['hasRating'] == true ? 'Already Rated' : 'Rate Order',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: screenWidth * 0.035,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                              ),
-                              onPressed: () => _showRatingDialog(context, orders[index].id, order),
-                              child: Text(
-                                'Rate Order',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: screenWidth * 0.035,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
+                                SizedBox(width: screenWidth * 0.03),
+                                // Report Button
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: order['hasReport'] == true 
+                                          ? Colors.grey 
+                                          : Colors.red,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                    ),
+                                    onPressed: order['hasReport'] == true 
+                                        ? null 
+                                        : () => _showReportDialog(context, orders[index].id, order),
+                                    child: Text(
+                                      order['hasReport'] == true ? 'Already Reported' : 'Report Supplier',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: screenWidth * 0.035,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ],
@@ -290,5 +330,137 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
         products: List<Map<String, dynamic>>.from(products),
       ),
     );
+  }
+
+  void _showReportDialog(BuildContext context, String orderId, Map<String, dynamic> order) async {
+    final TextEditingController reasonController = TextEditingController();
+    final user = FirebaseAuth.instance.currentUser;
+    
+    if (user == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Report Supplier', 
+            style: TextStyle(
+              fontSize: 18, 
+              fontWeight: FontWeight.bold, 
+              fontFamily: 'Poppins'
+            )
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Please provide a reason for reporting this supplier:', 
+                style: TextStyle(
+                  fontSize: 14, 
+                  color: Color(0xFF757575), 
+                  fontFamily: 'Poppins'
+                )
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter reason for report...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel', 
+                style: TextStyle(
+                  fontSize: 12, 
+                  fontFamily: 'Poppins', 
+                  color: Colors.grey
+                )
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (reasonController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a reason for the report')),
+                  );
+                  return;
+                }
+                
+                try {
+                  // Submit the report
+                  await SupplierReportService.submitReport(
+                    supplierId: order['sellerId'] ?? '',
+                    reporterId: user.uid,
+                    productId: order['productId'] ?? '',
+                    reason: reasonController.text.trim(),
+                    productName: order['productName'] ?? '',
+                    supplierName: order['supplierName'] ?? 'Unknown Supplier',
+                    orderId: orderId,
+                  );
+                  
+                  // Update order to mark as reported
+                  await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+                    'hasReport': true,
+                    'reportTimestamp': FieldValue.serverTimestamp(),
+                  });
+                  
+                  // Check if supplier should be banned (3+ reports)
+                  await _checkAndApplyAutoBan(order['sellerId'] ?? '');
+                  
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Report submitted successfully')),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to submit report: $e')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(
+                'Submit Report', 
+                style: TextStyle(
+                  fontSize: 12, 
+                  color: Colors.white, 
+                  fontFamily: 'Poppins'
+                )
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _checkAndApplyAutoBan(String supplierId) async {
+    try {
+      final reportCount = await SupplierReportService.getSupplierReportCount(supplierId);
+      
+      if (reportCount >= 3) {
+        // Check if supplier is already banned
+        final existingBan = await BanService.checkUserBanStatus(supplierId);
+        if (existingBan == null) {
+          // Apply temporary ban for 7 days
+          await BanService.applyTemporaryBan(
+            userId: supplierId,
+            bannedBy: 'system',
+            reason: 'Automatic ban due to 3 or more reports',
+            durationDays: 7,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking auto-ban: $e');
+    }
   }
 }

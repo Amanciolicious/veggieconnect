@@ -6,6 +6,7 @@ import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'notification_service.dart';
 
 class ChatService {
   ChatService._internal();
@@ -155,11 +156,59 @@ class ChatService {
         'lastMessageTime': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      
+      // Send notification to the other party
+      await _sendChatNotification(conversationId, senderId, text.trim());
+      
       developer.log('Message sent successfully');
     } catch (e) {
       developer.log('Error sending message: $e');
       // Queue message for retry when connection is restored
       await _queueOfflineMessage(conversationId, message);
+    }
+  }
+
+  // Send chat notification to the other party
+  Future<void> _sendChatNotification(String conversationId, String senderId, String message) async {
+    try {
+      // Get conversation details
+      final convDoc = await _firestore.collection('conversations').doc(conversationId).get();
+      if (!convDoc.exists) return;
+      
+      final convData = convDoc.data() as Map<String, dynamic>;
+      final buyerId = convData['buyerId'] as String?;
+      final supplierId = convData['supplierId'] as String?;
+      final buyerName = convData['buyerName'] as String?;
+      final supplierName = convData['supplierName'] as String?;
+      
+      // Determine recipient
+      String? recipientId;
+      String? senderName;
+      
+      if (senderId == buyerId) {
+        recipientId = supplierId;
+        senderName = buyerName;
+      } else if (senderId == supplierId) {
+        recipientId = buyerId;
+        senderName = supplierName;
+      }
+      
+      if (recipientId != null && senderName != null) {
+        final notificationService = NotificationService();
+        await notificationService.sendFCMNotification(
+          recipientId: recipientId,
+          title: 'New Message from $senderName',
+          body: message,
+          type: 'chat',
+          data: {
+            'conversationId': conversationId,
+            'senderName': senderName,
+            'screen': 'chat',
+          },
+        );
+      }
+    } catch (e) {
+      developer.log('Error sending chat notification: $e');
     }
   }
   

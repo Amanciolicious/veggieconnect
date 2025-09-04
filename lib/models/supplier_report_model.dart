@@ -9,6 +9,7 @@ class SupplierReport {
   final DateTime createdAt;
   final String? productName;
   final String? supplierName;
+  final String? orderId;
 
   SupplierReport({
     required this.id,
@@ -19,6 +20,7 @@ class SupplierReport {
     required this.createdAt,
     this.productName,
     this.supplierName,
+    this.orderId,
   });
 
   factory SupplierReport.fromFirestore(DocumentSnapshot doc) {
@@ -32,6 +34,7 @@ class SupplierReport {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       productName: data['productName'],
       supplierName: data['supplierName'],
+      orderId: data['orderId'],
     );
   }
 
@@ -44,6 +47,7 @@ class SupplierReport {
       'createdAt': Timestamp.fromDate(createdAt),
       'productName': productName,
       'supplierName': supplierName,
+      'orderId': orderId,
     };
   }
 }

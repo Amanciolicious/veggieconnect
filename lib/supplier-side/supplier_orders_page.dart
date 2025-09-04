@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'supplier_chat_page.dart';
 
@@ -834,7 +835,21 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
 
   Future<void> _updateOrderStatus(String orderId, String newStatus) async {
     try {
+      // Get order data before updating
+      final orderDoc = await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .get();
       
+      if (!orderDoc.exists) {
+        throw Exception('Order not found');
+      }
+      
+      final orderData = orderDoc.data() as Map<String, dynamic>;
+      final buyerId = orderData['buyerId'] as String?;
+      final buyerName = orderData['buyerName'] as String?;
+      
+      // Update order status
       await FirebaseFirestore.instance
           .collection('orders')
           .doc(orderId)
@@ -842,6 +857,22 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         'status': newStatus,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Send notification to customer
+      if (buyerId != null) {
+        final notificationService = NotificationService();
+        await notificationService.sendFCMNotification(
+          recipientId: buyerId,
+          title: 'Order Update',
+          body: 'Your order #$orderId status has been updated to ${newStatus.toUpperCase()}',
+          type: 'order_update',
+          data: {
+            'orderId': orderId,
+            'status': newStatus,
+            'screen': 'order_details',
+          },
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -860,7 +891,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           ),
         );
       }
-    } finally {
     }
   }
 

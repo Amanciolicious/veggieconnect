@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'content_filter_service.dart';
 import 'farm_location_request_service.dart';
+import 'notification_service.dart';
 
 class AutoApprovalService {
   static final AutoApprovalService _instance = AutoApprovalService._internal();
@@ -80,6 +81,22 @@ class AutoApprovalService {
     if (supplierId == null) return;
 
     try {
+      final notificationService = NotificationService();
+      
+      // Send FCM notification to supplier only
+      await notificationService.sendFCMNotification(
+        recipientId: supplierId,
+        title: 'Product Approved',
+        body: 'Your product "$productName" has been approved and is now live',
+        type: 'product_approval',
+        data: {
+          'productName': productName,
+          'status': 'approved',
+          'screen': 'products',
+        },
+      );
+      
+      // Add notification to Firestore for supplier only
       await FirebaseFirestore.instance.collection('notifications').add({
         'userId': supplierId,
         'title': 'Product Approved!',
@@ -88,7 +105,15 @@ class AutoApprovalService {
         'productName': productName,
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
+        'targetRole': 'supplier', // Ensure only suppliers see this
       });
+      
+      // Send in-app notification with role filtering
+      notificationService.sendProductApprovalNotification(
+        productName: productName,
+        status: 'approved',
+        supplierId: supplierId,
+      );
     } catch (e) {
       debugPrint('Error sending approval notification: $e');
     }
@@ -147,6 +172,54 @@ class AutoApprovalService {
 
   // Check if the service is running
   bool get isRunning => _isRunning;
+
+  /// Send rejection notification to supplier
+  Future<void> _sendRejectionNotification(String? supplierId, String productName, String reason) async {
+    if (supplierId == null) return;
+
+    try {
+      final notificationService = NotificationService();
+      
+      // Send FCM notification to supplier only
+      await notificationService.sendFCMNotification(
+        recipientId: supplierId,
+        title: 'Product Rejected',
+        body: 'Your product "$productName" was rejected: $reason',
+        type: 'product_approval',
+        data: {
+          'productName': productName,
+          'status': 'rejected',
+          'reason': reason,
+          'screen': 'products',
+        },
+      );
+      
+      // Add notification to Firestore for supplier only
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': supplierId,
+        'title': 'Product Rejected',
+        'body': 'Your product "$productName" was rejected: $reason',
+        'type': 'product_rejected',
+        'productName': productName,
+        'reason': reason,
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+        'targetRole': 'supplier', // Ensure only suppliers see this
+      });
+      
+      // Send in-app notification with role filtering
+      notificationService.sendProductApprovalNotification(
+        productName: productName,
+        status: 'rejected',
+        supplierId: supplierId,
+        reason: reason,
+      );
+      
+      debugPrint('✅ Product $productName rejection notification sent to supplier');
+    } catch (e) {
+      debugPrint('💥 Error sending rejection notification: $e');
+    }
+  }
 
   // Manual trigger for auto-approvals (useful for testing)
   Future<void> triggerAutoApprovals() async {

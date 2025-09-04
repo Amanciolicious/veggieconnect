@@ -294,32 +294,60 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   builder: (context, reportSnapshot) {
                     final reportCount = reportSnapshot.data ?? 0;
                     final intensity = SupplierReportService.getReportColorIntensity(reportCount);
-                    final percentage = (reportCount / 5.0 * 100).clamp(0.0, 100.0);
+                    final percentage = (reportCount / 3.0 * 100).clamp(0.0, 100.0); // Changed to 3 reports max
+                    
+                    // Determine color based on report count
+                    Color reportColor;
+                    String warningText = '';
+                    if (reportCount >= 3) {
+                      reportColor = Colors.red;
+                      warningText = 'AUTO-BANNED';
+                    } else if (reportCount >= 2) {
+                      reportColor = Colors.orange;
+                      warningText = 'WARNING';
+                    } else {
+                      reportColor = Colors.grey;
+                    }
                     
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.025, vertical: screenWidth * 0.015),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(intensity),
+                        color: reportColor.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                        border: Border.all(color: Colors.red, width: 1),
+                        border: Border.all(color: reportColor, width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.report_problem,
+                            reportCount >= 3 ? Icons.block : Icons.report_problem,
                             size: screenWidth * 0.035,
                             color: Colors.white,
                           ),
                           SizedBox(width: screenWidth * 0.01),
-                          Text(
-                            '$reportCount (${percentage.toInt()}%)',
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
-                            ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$reportCount/3 Reports',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.03,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              if (warningText.isNotEmpty)
+                                Text(
+                                  warningText,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.025,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),

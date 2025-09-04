@@ -340,7 +340,41 @@ class NotificationService {
     required String body,
     String type = 'general',
     Map<String, dynamic>? data,
-  }) {
+    String? targetUserId,
+    String? targetUserRole,
+  }) async {
+    // Check if notification should be filtered by user role
+    if (targetUserId != null) {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+      
+      // Only send to the specific user if targetUserId matches current user
+      if (currentUser.uid != targetUserId) return;
+      
+      // If targetUserRole is specified, check if current user has that role
+      if (targetUserRole != null) {
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .get();
+          
+          if (userDoc.exists) {
+            final userData = userDoc.data() as Map<String, dynamic>?;
+            final userRole = userData?['role']?.toString().toLowerCase();
+            if (userRole != targetUserRole.toLowerCase()) {
+              return; // Don't send notification if user doesn't have the required role
+            }
+          } else {
+            return; // User document doesn't exist
+          }
+        } catch (e) {
+          debugPrint('Error checking user role for notification: $e');
+          return;
+        }
+      }
+    }
+
     final notification = NotificationData(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
@@ -359,14 +393,45 @@ class NotificationService {
     required String orderId,
     required String status,
     String? message,
+    String? recipientId,
+    String? recipientName,
+    String? recipientRole,
   }) {
+    String title = 'Order Update';
+    String body = message ?? 'Your order #$orderId status has been updated to $status';
+    
+    // Customize message based on status
+    switch (status.toLowerCase()) {
+      case 'pending':
+        title = 'New Order Received';
+        body = 'You have a new order #$orderId';
+        break;
+      case 'processing':
+        title = 'Order Processing';
+        body = 'Your order #$orderId is being prepared';
+        break;
+      case 'picked_up':
+      case 'completed':
+        title = 'Order Completed';
+        body = 'Your order #$orderId has been completed';
+        break;
+      case 'cancelled':
+        title = 'Order Cancelled';
+        body = 'Your order #$orderId has been cancelled';
+        break;
+    }
+
     sendInAppNotification(
-      title: 'Order Update',
-      body: message ?? 'Your order #$orderId status has been updated to $status',
+      title: title,
+      body: body,
       type: 'order_update',
+      targetUserId: recipientId,
+      targetUserRole: recipientRole,
       data: {
         'orderId': orderId,
         'status': status,
+        'recipientId': recipientId,
+        'recipientName': recipientName,
         'screen': 'order_details',
       },
     );
@@ -377,22 +442,353 @@ class NotificationService {
     required String senderName,
     required String message,
     String? chatId,
+    String? recipientId,
   }) {
     sendInAppNotification(
       title: 'New Message from $senderName',
       body: message,
       type: 'chat',
+      targetUserId: recipientId,
       data: {
         'senderName': senderName,
         'chatId': chatId,
+        'recipientId': recipientId,
         'screen': 'chat',
       },
     );
   }
 
+  // Send payment notification
+  void sendPaymentNotification({
+    required String orderId,
+    required String status,
+    required String amount,
+    String? recipientId,
+    String? recipientRole,
+  }) {
+    String title = 'Payment Update';
+    String body = 'Payment for order #$orderId: $status';
+    
+    switch (status.toLowerCase()) {
+      case 'paid':
+        title = 'Payment Received';
+        body = 'Payment of ₱$amount for order #$orderId has been received';
+        break;
+      case 'failed':
+        title = 'Payment Failed';
+        body = 'Payment for order #$orderId failed. Please try again';
+        break;
+      case 'pending':
+        title = 'Payment Pending';
+        body = 'Payment of ₱$amount for order #$orderId is pending';
+        break;
+    }
+
+    sendInAppNotification(
+      title: title,
+      body: body,
+      type: 'payment',
+      targetUserId: recipientId,
+      targetUserRole: recipientRole,
+      data: {
+        'orderId': orderId,
+        'status': status,
+        'amount': amount,
+        'recipientId': recipientId,
+        'screen': 'order_details',
+      },
+    );
+  }
+
+  // Send product approval notification
+  void sendProductApprovalNotification({
+    required String productName,
+    required String status,
+    required String supplierId,
+    String? reason,
+  }) {
+    String title = 'Product $status';
+    String body = 'Your product "$productName" has been $status';
+    
+    if (status.toLowerCase() == 'rejected' && reason != null) {
+      body += ': $reason';
+    }
+
+    sendInAppNotification(
+      title: title,
+      body: body,
+      type: 'product_approval',
+      targetUserId: supplierId,
+      targetUserRole: 'supplier',
+      data: {
+        'productName': productName,
+        'status': status,
+        'supplierId': supplierId,
+        'reason': reason,
+        'screen': 'products',
+      },
+    );
+  }
+
+  // Send promo notification
+  void sendPromoNotification({
+    required String title,
+    required String body,
+    required String recipientId,
+    String? promoType,
+  }) {
+    sendInAppNotification(
+      title: title,
+      body: body,
+      type: 'promo',
+      data: {
+        'recipientId': recipientId,
+        'promoType': promoType,
+        'screen': 'profile',
+      },
+    );
+  }
+
+  // Send admin notification
+  void sendAdminNotification({
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) {
+    sendInAppNotification(
+      title: title,
+      body: body,
+      type: 'admin_$type',
+      data: data ?? {},
+    );
+  }
+
+  // Send low stock notification
+  void sendLowStockNotification({
+    required String productName,
+    required int currentStock,
+    required String supplierId,
+  }) {
+    sendInAppNotification(
+      title: 'Low Stock Alert',
+      body: 'Your product "$productName" is running low (${currentStock} left)',
+      type: 'low_stock',
+      targetUserId: supplierId,
+      targetUserRole: 'supplier',
+      data: {
+        'productName': productName,
+        'currentStock': currentStock,
+        'supplierId': supplierId,
+        'screen': 'products',
+      },
+    );
+  }
+
+  // Send rating notification
+  void sendRatingNotification({
+    required String orderId,
+    required String customerName,
+    required int rating,
+    String? supplierId,
+  }) {
+    sendInAppNotification(
+      title: 'New Rating Received',
+      body: 'You received a $rating-star rating from $customerName for order #$orderId',
+      type: 'rating',
+      targetUserId: supplierId,
+      targetUserRole: 'supplier',
+      data: {
+        'orderId': orderId,
+        'customerName': customerName,
+        'rating': rating,
+        'supplierId': supplierId,
+        'screen': 'orders',
+      },
+    );
+  }
+
+  // Send system notification
+  void sendSystemNotification({
+    required String title,
+    required String body,
+    String? recipientId,
+    Map<String, dynamic>? data,
+  }) {
+    sendInAppNotification(
+      title: title,
+      body: body,
+      type: 'system',
+      data: {
+        'recipientId': recipientId,
+        ...?data,
+      },
+    );
+  }
+
+  // Send FCM notification to specific user
+  Future<void> sendFCMNotification({
+    required String recipientId,
+    required String title,
+    required String body,
+    String type = 'general',
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      // Get recipient's FCM token
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(recipientId)
+          .get();
+      
+      if (!userDoc.exists) {
+        debugPrint('User $recipientId not found');
+        return;
+      }
+      
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final fcmToken = userData['fcmToken'] as String?;
+      
+      if (fcmToken == null) {
+        debugPrint('No FCM token found for user $recipientId');
+        return;
+      }
+
+      // Send notification via FCM
+      await _sendFCMToToken(
+        token: fcmToken,
+        title: title,
+        body: body,
+        type: type,
+        data: data,
+      );
+      
+      debugPrint('FCM notification sent to $recipientId');
+    } catch (e) {
+      debugPrint('Error sending FCM notification: $e');
+    }
+  }
+
+  // Send FCM notification to multiple users
+  Future<void> sendFCMNotificationToMultiple({
+    required List<String> recipientIds,
+    required String title,
+    required String body,
+    String type = 'general',
+    Map<String, dynamic>? data,
+  }) async {
+    for (final recipientId in recipientIds) {
+      await sendFCMNotification(
+        recipientId: recipientId,
+        title: title,
+        body: body,
+        type: type,
+        data: data,
+      );
+    }
+  }
+
+  // Send FCM notification to all users of a specific role
+  Future<void> sendFCMNotificationToRole({
+    required String role,
+    required String title,
+    required String body,
+    String type = 'general',
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final usersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: role)
+          .get();
+      
+      final recipientIds = usersSnapshot.docs.map((doc) => doc.id).toList();
+      
+      await sendFCMNotificationToMultiple(
+        recipientIds: recipientIds,
+        title: title,
+        body: body,
+        type: type,
+        data: data,
+      );
+    } catch (e) {
+      debugPrint('Error sending FCM notification to role $role: $e');
+    }
+  }
+
+  // Internal method to send FCM to specific token
+  Future<void> _sendFCMToToken({
+    required String token,
+    required String title,
+    required String body,
+    String type = 'general',
+    Map<String, dynamic>? data,
+  }) async {
+    // This would typically use a server-side function or FCM Admin SDK
+    // For now, we'll just log the notification
+    debugPrint('Would send FCM to token $token: $title - $body');
+    
+    // In a real implementation, you would:
+    // 1. Use Firebase Admin SDK on your server
+    // 2. Or use Cloud Functions to send FCM notifications
+    // 3. Or use a third-party service like OneSignal
+    
+    // For now, we'll create a local notification as a fallback
+    final notificationData = NotificationData(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      body: body,
+      type: type,
+      timestamp: DateTime.now(),
+      data: data ?? {},
+    );
+    
+    _addToHistory(notificationData);
+    _notificationController.add(notificationData);
+  }
+
   // Get notification history stream
   Stream<List<NotificationData>> getNotificationHistory() {
     return Stream.value(_notificationHistory);
+  }
+
+  // Get unread notifications count
+  int getUnreadCount() {
+    return _notificationHistory.where((notification) => !notification.isRead).length;
+  }
+
+  // Get unread notifications stream
+  Stream<int> getUnreadCountStream() {
+    return Stream.value(getUnreadCount());
+  }
+
+  // Mark notification as read
+  void markAsRead(String notificationId) {
+    final index = _notificationHistory.indexWhere((n) => n.id == notificationId);
+    if (index != -1) {
+      _notificationHistory[index] = _notificationHistory[index].copyWith(isRead: true);
+      _saveNotificationHistory();
+      _notificationController.add(_notificationHistory[index]);
+    }
+  }
+
+  // Mark all notifications as read
+  void markAllAsRead() {
+    for (int i = 0; i < _notificationHistory.length; i++) {
+      if (!_notificationHistory[i].isRead) {
+        _notificationHistory[i] = _notificationHistory[i].copyWith(isRead: true);
+      }
+    }
+    _saveNotificationHistory();
+    // Broadcast the change
+    for (final notification in _notificationHistory) {
+      _notificationController.add(notification);
+    }
+  }
+
+  // Mark notification as read when viewed
+  void markAsReadWhenViewed(String notificationId) {
+    markAsRead(notificationId);
   }
 
   // Dispose resources
@@ -415,6 +811,7 @@ class NotificationData {
   final String type;
   final DateTime timestamp;
   final Map<String, dynamic> data;
+  final bool isRead;
 
   NotificationData({
     required this.id,
@@ -423,7 +820,28 @@ class NotificationData {
     required this.type,
     required this.timestamp,
     required this.data,
+    this.isRead = false,
   });
+
+  NotificationData copyWith({
+    String? id,
+    String? title,
+    String? body,
+    String? type,
+    DateTime? timestamp,
+    Map<String, dynamic>? data,
+    bool? isRead,
+  }) {
+    return NotificationData(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      type: type ?? this.type,
+      timestamp: timestamp ?? this.timestamp,
+      data: data ?? this.data,
+      isRead: isRead ?? this.isRead,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -433,6 +851,7 @@ class NotificationData {
       'type': type,
       'timestamp': timestamp.toIso8601String(),
       'data': data,
+      'isRead': isRead,
     };
   }
 
@@ -444,6 +863,7 @@ class NotificationData {
       type: json['type'],
       timestamp: DateTime.parse(json['timestamp']),
       data: Map<String, dynamic>.from(json['data']),
+      isRead: json['isRead'] ?? false,
     );
   }
 } 

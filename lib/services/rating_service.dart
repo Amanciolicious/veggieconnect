@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'notification_service.dart';
 
 class RatingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -56,10 +57,42 @@ class RatingService {
       // Update supplier average rating
       await _updateSupplierRating(supplierId);
 
+      // Send notification to supplier about new rating
+      await _sendRatingNotification(orderId, supplierId, rating, supplierName);
+
       return true;
     } catch (e) {
       print('Error submitting rating: $e');
       return false;
+    }
+  }
+
+  /// Send rating notification to supplier
+  static Future<void> _sendRatingNotification(String orderId, String supplierId, int rating, String? supplierName) async {
+    try {
+      // Get customer name
+      final user = _auth.currentUser;
+      if (user == null) return;
+      
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final userData = userDoc.data() as Map<String, dynamic>?;
+      final customerName = userData?['name'] ?? user.displayName ?? 'Customer';
+      
+      final notificationService = NotificationService();
+      await notificationService.sendFCMNotification(
+        recipientId: supplierId,
+        title: 'New Rating Received',
+        body: 'You received a $rating-star rating from $customerName for order #$orderId',
+        type: 'rating',
+        data: {
+          'orderId': orderId,
+          'customerName': customerName,
+          'rating': rating,
+          'screen': 'orders',
+        },
+      );
+    } catch (e) {
+      print('Error sending rating notification: $e');
     }
   }
 

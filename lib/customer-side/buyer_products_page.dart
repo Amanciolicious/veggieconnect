@@ -634,7 +634,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                           child: Icon(
                                             isFavorite ? Icons.favorite : Icons.favorite_border,
                                             color: isFavorite ? Colors.red : Colors.red,
-                                            size: 18,
+                                            size: 20,
                                           ),
                                         ),
                                       );
@@ -675,7 +675,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                       child: Icon(
                                         Icons.chat_bubble, 
                                         color: Colors.blue, 
-                                        size: 18
+                                        size: 20
                                       ),
                                     ),
                                   ),
