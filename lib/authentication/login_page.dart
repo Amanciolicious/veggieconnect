@@ -444,42 +444,25 @@ class _LoginPageState extends State<LoginPage> {
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom - 32,
+            ),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
               // Logo and Title
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.grey.withOpacity(0.2),
                 ),
                 child: Column(
                   children: [
-                    // Replace icon with actual logo
-                    Image.asset(
-                      'assets/logo/veggieconnectlogo.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                          child: Icon(
-                            Icons.eco,
-                            size: 40,
-                            color: Colors.green,
-                          ),
-                        );
-                      },
-                    ),
                     const SizedBox(height: 12),
                     Text(
                       'VeggieConnect',
@@ -504,7 +487,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 24),
               // Login Form
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.grey.withOpacity(0.2),
@@ -671,7 +654,9 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

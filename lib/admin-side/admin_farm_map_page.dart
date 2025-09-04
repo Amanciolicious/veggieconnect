@@ -746,6 +746,7 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
                 Positioned(
                   top: screenWidth * 0.12,
                   right: screenWidth * 0.04,

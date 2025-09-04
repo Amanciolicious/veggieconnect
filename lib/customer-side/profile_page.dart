@@ -389,87 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: EdgeInsets.all(screenWidth * 0.04),
             child: Column(
               children: [
-                // Profile Picture Section
-                Container(
-                  padding: EdgeInsets.all(screenWidth * 0.06),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Color(0xFF8D9773).withOpacity(0.08),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _pickAvatar,
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: screenWidth * 0.15,
-                              backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
-                              backgroundImage: _getProfileImage(userData),
-                              child: _getProfileImage(userData) == null
-                                  ? Icon(
-                                      Icons.person,
-                                      size: screenWidth * 0.15,
-                                      color: Color(0xFF6CA04A),
-                                    )
-                                  : null,
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF6CA04A),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: screenWidth * 0.04),
-                      Text(
-                        userData['name'] ?? user.displayName ?? 'User',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.055,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      Text(
-                        userData['email'] ?? user.email ?? '',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          color: Color(0xFF757575),
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                SizedBox(height: screenWidth * 0.06),
-                
-                // Profile Information Section
+                // Profile Section
                 Container(
                   padding: EdgeInsets.all(screenWidth * 0.06),
                   decoration: BoxDecoration(
@@ -492,7 +412,126 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Profile Information',
+                        'Profile',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      SizedBox(height: screenWidth * 0.04),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _pickAvatar,
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: screenWidth * 0.08,
+                                  backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
+                                  backgroundImage: _getProfileImage(userData),
+                                  child: _getProfileImage(userData) == null
+                                      ? Icon(
+                                          Icons.person,
+                                          size: screenWidth * 0.08,
+                                          color: Color(0xFF6CA04A),
+                                        )
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFF6CA04A),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: screenWidth * 0.04),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userData['name'] ?? user.displayName ?? 'User',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  userData['email'] ?? user.email ?? '',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.035,
+                                    color: Color(0xFF757575),
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF6CA04A).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Role: ${userData['role']?.toString().toUpperCase() ?? 'CUSTOMER'}',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF6CA04A),
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: screenWidth * 0.06),
+                
+                // Personal Information Section
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.06),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Color(0xFF8D9773).withOpacity(0.08),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Personal Information',
                         style: TextStyle(
                           fontSize: screenWidth * 0.05,
                           fontWeight: FontWeight.bold,
@@ -501,150 +540,239 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       SizedBox(height: screenWidth * 0.04),
                       
-                      // Role Badge
-                      if (userData['role'] != null)
-                        Container(
-                          margin: EdgeInsets.only(bottom: screenWidth * 0.04),
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Color(0xFF6CA04A).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Role: ${userData['role']?.toString().toUpperCase() ?? 'CUSTOMER'}',
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.035,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF6CA04A),
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                        ),
-                      
-                      // Name Field
-                      Text(
-                        'Full Name',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF757575),
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xFFF8FAF5),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Color(0xFF8D9773).withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            hintText: 'Enter your full name',
-                            hintStyle: TextStyle(
-                              color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: screenWidth * 0.04,
-                          ),
-                        ),
-                      ),
-                      
-                      SizedBox(height: screenWidth * 0.04),
-                      
-                      // Email Field
-                      Text(
-                        'Email Address',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF757575),
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xFFF8FAF5),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Color(0xFF8D9773).withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            hintText: 'Enter your email address',
-                            hintStyle: TextStyle(
-                              color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: screenWidth * 0.04,
-                          ),
-                          enabled: false, // Email usually shouldn't be editable
-                        ),
-                      ),
-                      
-                      SizedBox(height: screenWidth * 0.04),
-                      
-                      // Additional Information Section
-                      if (userData['phone'] != null && userData['phone'].toString().isNotEmpty) ...[
+                      // Phone Information
+                      if (userData['phone'] != null && userData['phone'].toString().isNotEmpty)
                         _buildInfoRow(Icons.phone, 'Phone', userData['phone'], screenWidth),
-                        SizedBox(height: screenWidth * 0.03),
-                      ],
                       
-                      if (userData['address'] != null && userData['address'].toString().isNotEmpty) ...[
+                      if (userData['phone'] != null && userData['phone'].toString().isNotEmpty)
+                        SizedBox(height: screenWidth * 0.03),
+                      
+                      // Address Information
+                      if (userData['address'] != null && userData['address'].toString().isNotEmpty)
                         _buildInfoRow(Icons.location_on, 'Address', userData['address'], screenWidth),
-                        SizedBox(height: screenWidth * 0.03),
-                      ],
                       
-                      if (userData['dateOfBirth'] != null && userData['dateOfBirth'].toString().isNotEmpty) ...[
-                        _buildInfoRow(Icons.cake, 'Date of Birth', userData['dateOfBirth'], screenWidth),
+                      if (userData['address'] != null && userData['address'].toString().isNotEmpty)
                         SizedBox(height: screenWidth * 0.03),
-                      ],
                       
+                      // Member Since
                       _buildInfoRow(Icons.calendar_today, 'Member Since', 
                         userData['createdAt'] != null 
                           ? (userData['createdAt'] as Timestamp).toDate().toString().split(' ')[0]
                           : 'N/A', 
                         screenWidth),
-                      
-                      if (userData['lastLogin'] != null) ...[
-                        SizedBox(height: screenWidth * 0.03),
-                        _buildInfoRow(Icons.access_time, 'Last Login', 
-                          (userData['lastLogin'] as Timestamp).toDate().toString().split(' ')[0], 
-                          screenWidth),
-                      ],
-                      
-                      if (userData['isVerified'] != null) ...[
-                        SizedBox(height: screenWidth * 0.03),
-                        _buildInfoRow(
-                          userData['isVerified'] == true ? Icons.verified : Icons.pending,
-                          'Verification Status',
-                          userData['isVerified'] == true ? 'Verified' : 'Pending',
-                          screenWidth,
-                          valueColor: userData['isVerified'] == true ? Colors.green : Colors.orange,
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: screenWidth * 0.06),
+                
+                // Order History Section
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.06),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Color(0xFF8D9773).withOpacity(0.08),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order History',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
                         ),
-                      ],
+                      ),
+                      SizedBox(height: screenWidth * 0.04),
                       
-                      SizedBox(height: screenWidth * 0.06),
+                      // Order History Content
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('orders')
+                            .where('buyerId', isEqualTo: user.uid)
+                            .orderBy('createdAt', descending: true)
+                            .limit(5)
+                            .snapshots(),
+                        builder: (context, orderSnapshot) {
+                          if (orderSnapshot.connectionState == ConnectionState.waiting) {
+                            return Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                                ),
+                              ),
+                            );
+                          }
+                          
+                          if (!orderSnapshot.hasData || orderSnapshot.data!.docs.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.shopping_bag_outlined,
+                                      size: 48,
+                                      color: Colors.grey[400],
+                                    ),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'No orders yet',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.04,
+                                        color: Colors.grey[600],
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      'Start shopping to see your order history here',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.035,
+                                        color: Colors.grey[500],
+                                        fontFamily: 'Poppins',
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          
+                          final orders = orderSnapshot.data!.docs;
+                          return Column(
+                            children: orders.map((orderDoc) {
+                              final orderData = orderDoc.data() as Map<String, dynamic>;
+                              final orderId = orderDoc.id;
+                              final status = orderData['status'] ?? 'pending';
+                              final total = orderData['total'] ?? 0.0;
+                              final createdAt = orderData['createdAt'] as Timestamp?;
+                              final dateStr = createdAt != null 
+                                ? createdAt.toDate().toString().split(' ')[0]
+                                : 'N/A';
+                              
+                              Color statusColor;
+                              switch (status.toLowerCase()) {
+                                case 'completed':
+                                  statusColor = Colors.green;
+                                  break;
+                                case 'processing':
+                                  statusColor = Colors.blue;
+                                  break;
+                                case 'cancelled':
+                                  statusColor = Colors.red;
+                                  break;
+                                default:
+                                  statusColor = Colors.orange;
+                              }
+                              
+                              return Container(
+                                margin: EdgeInsets.only(bottom: screenWidth * 0.03),
+                                padding: EdgeInsets.all(screenWidth * 0.04),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFF8FAF5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Color(0xFF8D9773).withOpacity(0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.shopping_bag,
+                                        color: statusColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    SizedBox(width: screenWidth * 0.03),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Order #${orderId.substring(0, 8)}...',
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.04,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            dateStr,
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.035,
+                                              color: Color(0xFF757575),
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '₱${total.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF6CA04A),
+                                            fontFamily: 'Poppins',
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            status.toUpperCase(),
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.03,
+                                              fontWeight: FontWeight.bold,
+                                              color: statusColor,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
                       
-                      // Update Profile Button
+                      SizedBox(height: screenWidth * 0.04),
+                      
+                      // View All Orders Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -655,13 +783,12 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          onPressed: () async {
-                            await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'name': _nameController.text.trim()});
-                            Navigator.pop(context);
-                            setState(() {});
+                          onPressed: () {
+                            // Navigate to full order history page
+                            // You can implement this navigation later
                           },
                           child: Text(
-                            'Update Profile',
+                            'View All Orders',
                             style: TextStyle(
                               fontSize: screenWidth * 0.045,
                               fontWeight: FontWeight.bold,

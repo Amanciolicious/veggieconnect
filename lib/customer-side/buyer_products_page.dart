@@ -456,9 +456,9 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                       return GridView.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.04,
-                          mainAxisSpacing: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.04,
-                          childAspectRatio: isSmallScreen ? 0.7 : 0.75,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.85,
                         ),
                         itemCount: products.length,
                         itemBuilder: (context, index) {
@@ -634,7 +634,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                           child: Icon(
                                             isFavorite ? Icons.favorite : Icons.favorite_border,
                                             color: isFavorite ? Colors.red : Colors.red,
-                                            size: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
+                                            size: 18,
                                           ),
                                         ),
                                       );
@@ -675,7 +675,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                       child: Icon(
                                         Icons.chat_bubble, 
                                         color: Colors.blue, 
-                                        size: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04
+                                        size: 18
                                       ),
                                     ),
                                   ),
@@ -979,7 +979,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
         });
       }
       
-      final favorites = List<String>.from((userData.data() as Map<String, dynamic>?)?['favorites'] ?? []);
+      final favorites = List<String>.from((userData.data())?['favorites'] ?? []);
       
       if (favorites.contains(productId)) {
         // Remove from favorites

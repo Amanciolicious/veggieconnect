@@ -544,19 +544,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           Text(
             'System Overview',
             style: GoogleFonts.inter(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: MediaQuery.of(context).size.width < 420 ? 2 : 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: MediaQuery.of(context).size.width < 420 ? 0.95 : 1.15,
+            crossAxisCount: 2,
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 6,
+            childAspectRatio: 0.9,
             children: [
               // Total Users (suppliers and buyers only, exclude admins)
               StreamBuilder<QuerySnapshot>(
@@ -659,7 +659,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               color: const Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           ActionCard(
             title: 'Manage Accounts',
             subtitle: 'View and manage user accounts',
@@ -704,7 +704,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         children: [
           const Text(
             'Analytics',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           // Revenue Overview (real-time)
@@ -1229,6 +1229,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _buildProfileTab() {
     final user = FirebaseAuth.instance.currentUser;
+    final screenWidth = MediaQuery.of(context).size.width;
     
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots(),
@@ -1243,167 +1244,217 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         final data = snapshot.data!.data() as Map<String, dynamic>;
         
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(screenWidth * 0.04),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Admin Profile',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1A1A1A),
+              // Profile Section
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.06),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF8D9773).withOpacity(0.08),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Profile Image and Basic Info Section
-              ModernCard(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: _showProfileImageOptions,
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4CAF50).withOpacity(0.1),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.transparent,
-                              backgroundImage: _getAdminProfileImage(data),
-                              child: _getAdminProfileImage(data) == null
-                                  ? const Icon(
-                                      Icons.admin_panel_settings,
-                                      size: 50,
-                                      color: Color(0xFF4CAF50),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4CAF50),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
                     Text(
-                      data['name'] ?? user.displayName ?? 'Admin User',
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A1A1A),
+                        fontFamily: 'Poppins',
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      data['email'] ?? user.email ?? '',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        color: const Color(0xFF757575),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Role: ${data['role']?.toString().toUpperCase() ?? 'ADMIN'}',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF4CAF50),
+                    SizedBox(height: screenWidth * 0.04),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _showProfileImageOptions,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: screenWidth * 0.08,
+                                backgroundColor: Color(0xFF4CAF50).withOpacity(0.1),
+                                backgroundImage: _getAdminProfileImage(data),
+                                child: _getAdminProfileImage(data) == null
+                                    ? Icon(
+                                        Icons.admin_panel_settings,
+                                        size: screenWidth * 0.08,
+                                        color: Color(0xFF4CAF50),
+                                      )
+                                    : null,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF4CAF50),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        SizedBox(width: screenWidth * 0.04),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                data['name'] ?? user.displayName ?? 'Admin User',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                data['email'] ?? user.email ?? '',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: Color(0xFF757575),
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF4CAF50).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Role: ${data['role']?.toString().toUpperCase() ?? 'ADMIN'}',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF4CAF50),
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: screenWidth * 0.06),
               
               // Personal Information Section
-              ModernCard(
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.06),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF8D9773).withOpacity(0.08),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Personal Information',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A1A1A),
+                        fontFamily: 'Poppins',
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: screenWidth * 0.04),
+                    
+                    // Phone Information
+                    if (data['phone'] != null && data['phone'].toString().isNotEmpty)
+                      _buildAdminInfoRow(Icons.phone, 'Phone', data['phone'], screenWidth),
                     
                     if (data['phone'] != null && data['phone'].toString().isNotEmpty)
-                      _buildAdminInfoRow(Icons.phone, 'Phone', data['phone']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Address Information
+                    if (data['address'] != null && data['address'].toString().isNotEmpty)
+                      _buildAdminInfoRow(Icons.location_on, 'Address', data['address'], screenWidth),
                     
                     if (data['address'] != null && data['address'].toString().isNotEmpty)
-                      _buildAdminInfoRow(Icons.location_on, 'Address', data['address']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Department Information
+                    if (data['department'] != null && data['department'].toString().isNotEmpty)
+                      _buildAdminInfoRow(Icons.business, 'Department', data['department'], screenWidth),
                     
                     if (data['department'] != null && data['department'].toString().isNotEmpty)
-                      _buildAdminInfoRow(Icons.business, 'Department', data['department']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Employee ID Information
+                    if (data['employeeId'] != null && data['employeeId'].toString().isNotEmpty)
+                      _buildAdminInfoRow(Icons.badge, 'Employee ID', data['employeeId'], screenWidth),
                     
                     if (data['employeeId'] != null && data['employeeId'].toString().isNotEmpty)
-                      _buildAdminInfoRow(Icons.badge, 'Employee ID', data['employeeId']),
+                      SizedBox(height: screenWidth * 0.03),
                     
+                    // Member Since
                     _buildAdminInfoRow(Icons.calendar_today, 'Member Since', 
                       data['createdAt'] != null 
                         ? (data['createdAt'] as Timestamp).toDate().toString().split(' ')[0]
-                        : 'N/A'),
+                        : 'N/A', 
+                      screenWidth),
                     
-                    if (data['lastLogin'] != null)
+                    if (data['lastLogin'] != null) ...[
+                      SizedBox(height: screenWidth * 0.03),
                       _buildAdminInfoRow(Icons.access_time, 'Last Login', 
-                        (data['lastLogin'] as Timestamp).toDate().toString().split(' ')[0]),
+                        (data['lastLogin'] as Timestamp).toDate().toString().split(' ')[0], 
+                        screenWidth),
+                    ],
                     
+                    SizedBox(height: screenWidth * 0.03),
                     _buildAdminInfoRow(Icons.security, 'Access Level', 
-                      data['accessLevel'] ?? 'Full Access'),
+                      data['accessLevel'] ?? 'Full Access', 
+                      screenWidth),
                     
-                    if (data['isActive'] != null)
+                    if (data['isActive'] != null) ...[
+                      SizedBox(height: screenWidth * 0.03),
                       _buildAdminInfoRow(
                         data['isActive'] == true ? Icons.check_circle : Icons.cancel,
                         'Account Status',
                         data['isActive'] == true ? 'Active' : 'Inactive',
+                        screenWidth,
                         valueColor: data['isActive'] == true ? Colors.green : Colors.red,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -1474,41 +1525,30 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _buildAdminInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF4CAF50),
+  Widget _buildAdminInfoRow(IconData icon, String label, String value, double screenWidth, {Color? valueColor}) {
+    return Row(
+      children: [
+        Icon(icon, color: Color(0xFF757575), size: screenWidth * 0.04),
+        SizedBox(width: screenWidth * 0.02),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF757575),
+            fontFamily: 'Poppins',
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF757575),
-              ),
-            ),
+        ),
+        Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            color: valueColor ?? Color(0xFF757575),
+            fontFamily: 'Poppins',
           ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: valueColor ?? const Color(0xFF1A1A1A),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

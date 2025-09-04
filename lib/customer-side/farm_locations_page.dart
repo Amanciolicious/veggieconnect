@@ -1359,14 +1359,14 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 onTap: () => _showSupplierDetails(supplier),
                 child: Container(
                       decoration: BoxDecoration(
-                    color: (supplier.createdAt != null && DateTime.now().difference(supplier.createdAt!).inHours < 24)
+                    color: (DateTime.now().difference(supplier.createdAt).inHours < 24)
                         ? Colors.blue
                         : (distance <= _vicinityRadius ? Colors.orange : Colors.green),
                         shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: Icon(
-                        (supplier.createdAt != null && DateTime.now().difference(supplier.createdAt!).inHours < 24)
+                        (DateTime.now().difference(supplier.createdAt).inHours < 24)
                             ? Icons.verified
                             : Icons.store,
                         color: Colors.white,

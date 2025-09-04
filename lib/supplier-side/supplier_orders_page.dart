@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'supplier_chat_page.dart';
 
 class SupplierOrdersPage extends StatefulWidget {
@@ -26,8 +27,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     'all',
     'pending',
     'processing',
-    'shipped',
-    'delivered',
+    'picked_up',
     'cancelled',
   ];
 
@@ -174,7 +174,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                   ElevatedButton(
                     onPressed: () => setState(() => _showOnlyPending = !_showOnlyPending),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _showOnlyPending ? Colors.green : Colors.grey,
+                      backgroundColor: _showOnlyPending ? Colors.green : Colors.red,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -182,14 +182,14 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                         Icon(
                           Icons.priority_high,
                           size: 16,
-                          color: _showOnlyPending ? Colors.white : Colors.grey,
+                          color: _showOnlyPending ? Colors.red : Colors.deepOrange,
                         ),
                         SizedBox(width: screenWidth * 0.01),
                         Text(
                           'Urgent',
                           style: TextStyle(
                             fontSize: 12,
-                            color: _showOnlyPending ? Colors.white : Colors.grey,
+                            color: _showOnlyPending ? Colors.white : Colors.white,
                             fontWeight: _showOnlyPending ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
@@ -463,12 +463,46 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Order #${orderId.substring(0, 8)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'Order #${orderId.substring(0, 8)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (order['hasRating'] == true) ...[
+                              SizedBox(width: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF6CA04A).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Color(0xFF6CA04A), width: 1),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.star,
+                                      color: Color(0xFF6CA04A),
+                                      size: 12,
+                                    ),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'Rated',
+                                      style: TextStyle(
+                                        color: Color(0xFF6CA04A),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         if (createdAt != null)
                           Text(
@@ -611,10 +645,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         color = Colors.blue;
         text = 'PROCESSING';
         break;
-      case 'shipped':
-        color = Colors.purple;
-        text = 'SHIPPED';
-        break;
       case 'picked_up':
         color = Colors.green;
         text = 'PICKED UP';
@@ -684,19 +714,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         ),
       ]);
     } else if (status == 'processing') {
-      actions.addAll([
-        const PopupMenuItem(
-          value: 'ship',
-          child: Row(
-            children: [
-              Icon(Icons.local_shipping, size: 16),
-              SizedBox(width: 8),
-              Text('Mark as Shipped'),
-            ],
-          ),
-        ),
-      ]);
-    } else if (status == 'shipped') {
       actions.addAll([
         const PopupMenuItem(
           value: 'pickup',
@@ -803,9 +820,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       case 'process':
         _updateOrderStatus(orderId, 'processing');
         break;
-      case 'ship':
-        _updateOrderStatus(orderId, 'shipped');
-        break;
       case 'pickup':
         _updateOrderStatus(orderId, 'picked_up');
         break;
@@ -871,6 +885,108 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                 _buildOrderDetailRow('Note', order['note']),
               if (order['createdAt'] != null)
                 _buildOrderDetailRow('Created', DateFormat('MMM dd, yyyy - HH:mm').format((order['createdAt'] as Timestamp).toDate())),
+              
+              // Rating and Feedback Section
+              if (order['hasRating'] == true) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  'Customer Rating & Feedback',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6CA04A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('order_ratings')
+                      .where('orderId', isEqualTo: orderId)
+                      .snapshots(),
+                  builder: (context, ratingSnapshot) {
+                    if (ratingSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    if (!ratingSnapshot.hasData || ratingSnapshot.data!.docs.isEmpty) {
+                      return const Text('No rating available');
+                    }
+                    
+                    final ratingDoc = ratingSnapshot.data!.docs.first;
+                    final ratingData = ratingDoc.data() as Map<String, dynamic>;
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Star Rating Display
+                        Row(
+                          children: [
+                            Text(
+                              'Rating: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            StarRatingDisplay(
+                              rating: (ratingData['rating'] ?? 0).toDouble(),
+                              size: 20.0,
+                              activeColor: Color(0xFFFFD700),
+                              inactiveColor: Colors.grey[300]!,
+                              showRatingText: true,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Feedback Button
+                        if (ratingData['feedback'] != null && ratingData['feedback'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: () => _showFeedbackModal(context, ratingData),
+                            icon: Icon(Icons.message, size: 16),
+                            label: Text('View Customer Feedback'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF6CA04A),
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                                SizedBox(width: 8),
+                                Text(
+                                  'No written feedback provided',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -1009,5 +1125,169 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         );
       }
     }
+  }
+
+
+  void _showFeedbackModal(BuildContext context, Map<String, dynamic> ratingData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Color(0xFF6CA04A).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.message, color: Color(0xFF6CA04A), size: 20),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Customer Feedback',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6CA04A),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Customer Info
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xFF6CA04A).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Color(0xFF6CA04A).withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF6CA04A).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.person, color: Color(0xFF6CA04A), size: 20),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Customer',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6CA04A).withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            ratingData['buyerName'] ?? 'Anonymous',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6CA04A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+              
+              // Rating Display
+              Row(
+                children: [
+                  Text(
+                    'Rating: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  StarRatingDisplay(
+                    rating: (ratingData['rating'] ?? 0).toDouble(),
+                    size: 24.0,
+                    activeColor: Color(0xFFFFD700),
+                    inactiveColor: Colors.grey[300]!,
+                    showRatingText: true,
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              
+              // Feedback Text
+              Text(
+                'Customer Feedback:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF6CA04A),
+                ),
+              ),
+              SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Text(
+                  ratingData['feedback'] ?? 'No feedback provided',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ),
+              
+              // Date
+              if (ratingData['timestamp'] != null) ...[
+                SizedBox(height: 12),
+                Text(
+                  'Submitted: ${DateFormat('MMM dd, yyyy - HH:mm').format((ratingData['timestamp'] as Timestamp).toDate())}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF6CA04A),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 } 

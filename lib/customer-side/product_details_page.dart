@@ -180,7 +180,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               SizedBox(width: screenWidth * 0.02),
                               StreamBuilder<QuerySnapshot>(
                                 stream: FirebaseFirestore.instance
-                                    .collection('order_ratings')
+                                    .collection('ratings')
                                     .where('supplierId', isEqualTo: product['sellerId'])
                                     .snapshots(),
                                 builder: (context, snapshot) {
@@ -244,10 +244,105 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             ],
                           ),
                           
+                          // Real-time Rating Percentage Display
                           SizedBox(height: screenWidth * 0.02),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
-                                .collection('order_ratings')
+                                .collection('ratings')
+                                .where('supplierId', isEqualTo: product['sellerId'])
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                return Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.star_border, color: Colors.grey, size: 16),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'No ratings yet',
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.032,
+                                          color: Colors.grey[600],
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              
+                              final docs = snapshot.data!.docs;
+                              final totalRating = docs.fold<double>(0, (sum, d) => sum + ((d['rating'] ?? 0) as num).toDouble());
+                              final average = totalRating / docs.length;
+                              final percentage = (average / 5.0) * 100;
+                              
+                              // Calculate rating distribution
+                              final counts = List<int>.filled(6, 0);
+                              for (final d in docs) {
+                                final r = (d['rating'] ?? 0) as int;
+                                if (r >= 1 && r <= 5) counts[r]++;
+                              }
+                              final total = docs.length;
+                              final fiveStarCount = counts[5];
+                              final fourStarCount = counts[4];
+                              final highRatingCount = fiveStarCount + fourStarCount;
+                              final highRatingPercentage = total > 0 ? (highRatingCount * 100.0 / total) : 0.0;
+                              
+                              return Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF6CA04A).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Color(0xFF6CA04A).withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.star, color: Color(0xFF6CA04A), size: 16),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '${percentage.toStringAsFixed(0)}% Satisfaction',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.032,
+                                        color: Color(0xFF6CA04A),
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFF6CA04A),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '${highRatingPercentage.toStringAsFixed(0)}% 4-5★',
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.028,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          
+                          SizedBox(height: screenWidth * 0.02),
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('ratings')
                                 .where('supplierId', isEqualTo: product['sellerId'])
                                 .snapshots(),
                             builder: (context, snapshot) {
@@ -545,7 +640,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(fontSize: 14, fontFamily: 'Poppins')),
+              child: Text('Cancel', style: TextStyle(fontSize: 12, fontFamily: 'Poppins', backgroundColor: Colors.grey, color: Colors.green)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -578,7 +673,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   );
                 }
               },
-              child: Text('Submit Report', style: TextStyle(fontSize: 14, color: Colors.white, fontFamily: 'Poppins')),
+              child: Text('Submit Report', style: TextStyle(fontSize: 12, backgroundColor: Colors.red, color: Colors.white, fontFamily: 'Poppins')),
             ),
           ],
         );

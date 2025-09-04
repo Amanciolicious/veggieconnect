@@ -443,10 +443,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   fontFamily: 'Poppins',
                 ),
               ),
-              selected: _selectedIndex == 3,
+              selected: _selectedIndex == 4,
               onTap: () {
                 setState(() {
-                  _selectedIndex = 3;
+                  _selectedIndex = 4;
                 });
                 Navigator.pop(context);
               },
@@ -535,6 +535,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           _buildOverviewTab(cardRadius),
           _buildProductsTab(),
           _buildStockManagementTab(),
+          SupplierOrdersPage(),
           _buildProfileTab(),
         ],
       ),
@@ -549,9 +550,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         color: Colors.white,
         items: const [
           Icon(Icons.home, size: 30, color: Colors.green,),
-          Icon(Icons.gif_outlined, size: 30, color: Colors.green,),
+          Icon(Icons.inventory, size: 30, color: Colors.green,),
           Icon(Icons.inventory_2, size: 30, color: Colors.green,),
-          Icon(Icons.person_outline, size: 30, color: Colors.green,),
+          Icon(Icons.shopping_cart, size: 30, color: Colors.green,),
+          Icon(Icons.person, size: 30, color: Colors.green,),
         ],
       ),
     );
@@ -1047,9 +1049,9 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
-          childAspectRatio: 1.6,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.2,
           children: [
             _buildStatCard(BorderRadius.circular(20), 'Total Products', '$totalProducts', Icons.inventory, Colors.blue),
             _buildStatCard(BorderRadius.circular(20), 'Low Stock', '$lowStockProducts', Icons.warning, Colors.orange),
@@ -1057,8 +1059,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
             _buildStatCard(BorderRadius.circular(20), 'Total Value', '₱${totalValue.toStringAsFixed(2)}', Icons.attach_money, Colors.green),
           ],
         );
+        
       },
     );
+    
   }
 
   Widget _buildStockList() {
@@ -1285,6 +1289,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
 
   Widget _buildProfileTab() {
     final user = FirebaseAuth.instance.currentUser;
+    final screenWidth = MediaQuery.of(context).size.width;
     
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots(),
@@ -1299,173 +1304,219 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         final data = snapshot.data!.data() as Map<String, dynamic>;
         
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(screenWidth * 0.04),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Profile',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Profile Image and Basic Info Section
+              // Profile Section
               Container(
+                padding: EdgeInsets.all(screenWidth * 0.06),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF8D9773).withOpacity(0.08),
+                    width: 1.2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
                       offset: Offset(0, 2),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(20),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: _showProfileImageOptions,
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
-                            backgroundImage: _getSupplierProfileImage(data),
-                            child: _getSupplierProfileImage(data) == null
-                                ? Icon(
-                                    Icons.store,
-                                    size: 50,
-                                    color: Color(0xFF6CA04A),
-                                  )
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Color(0xFF6CA04A),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: Icon(
-                                Icons.camera_alt,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16),
                     Text(
-                      data['name'] ?? 'Supplier Name',
+                      'Profile',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF222222),
                         fontFamily: 'Poppins',
                       ),
                     ),
-                    Text(
-                      data['email'] ?? user.email ?? '',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF6CA04A).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Role: ${data['role']?.toString().toUpperCase() ?? 'SUPPLIER'}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6CA04A),
-                          fontFamily: 'Poppins',
+                    SizedBox(height: screenWidth * 0.04),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _showProfileImageOptions,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: screenWidth * 0.08,
+                                backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
+                                backgroundImage: _getSupplierProfileImage(data),
+                                child: _getSupplierProfileImage(data) == null
+                                    ? Icon(
+                                        Icons.store,
+                                        size: screenWidth * 0.08,
+                                        color: Color(0xFF6CA04A),
+                                      )
+                                    : null,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF6CA04A),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        SizedBox(width: screenWidth * 0.04),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                data['name'] ?? 'Supplier Name',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                data['email'] ?? user.email ?? '',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: Color(0xFF757575),
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF6CA04A).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Role: ${data['role']?.toString().toUpperCase() ?? 'SUPPLIER'}',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6CA04A),
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               
-              SizedBox(height: 20),
+              SizedBox(height: screenWidth * 0.06),
               
-              // Detailed Information Section
+              // Personal Information Section
               Container(
+                padding: EdgeInsets.all(screenWidth * 0.06),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF8D9773).withOpacity(0.08),
+                    width: 1.2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
                       offset: Offset(0, 2),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Personal Information',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF222222),
                         fontFamily: 'Poppins',
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: screenWidth * 0.04),
+                    
+                    // Phone Information
+                    if (data['phone'] != null && data['phone'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.phone, 'Phone', data['phone'], screenWidth),
                     
                     if (data['phone'] != null && data['phone'].toString().isNotEmpty)
-                      _buildInfoRow(Icons.phone, 'Phone', data['phone']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Address Information
+                    if (data['address'] != null && data['address'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.location_on, 'Address', data['address'], screenWidth),
                     
                     if (data['address'] != null && data['address'].toString().isNotEmpty)
-                      _buildInfoRow(Icons.location_on, 'Address', data['address']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Business Name Information
+                    if (data['businessName'] != null && data['businessName'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.business, 'Business Name', data['businessName'], screenWidth),
                     
                     if (data['businessName'] != null && data['businessName'].toString().isNotEmpty)
-                      _buildInfoRow(Icons.business, 'Business Name', data['businessName']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Business Type Information
+                    if (data['businessType'] != null && data['businessType'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.category, 'Business Type', data['businessType'], screenWidth),
                     
                     if (data['businessType'] != null && data['businessType'].toString().isNotEmpty)
-                      _buildInfoRow(Icons.category, 'Business Type', data['businessType']),
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Description Information
+                    if (data['description'] != null && data['description'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.description, 'Description', data['description'], screenWidth),
                     
                     if (data['description'] != null && data['description'].toString().isNotEmpty)
-                      _buildInfoRow(Icons.description, 'Description', data['description']),
+                      SizedBox(height: screenWidth * 0.03),
                     
+                    // Member Since
                     _buildInfoRow(Icons.calendar_today, 'Member Since', 
                       data['createdAt'] != null 
                         ? (data['createdAt'] as Timestamp).toDate().toString().split(' ')[0]
-                        : 'N/A'),
+                        : 'N/A', 
+                      screenWidth),
                     
-                    if (data['lastLogin'] != null)
+                    if (data['lastLogin'] != null) ...[
+                      SizedBox(height: screenWidth * 0.03),
                       _buildInfoRow(Icons.access_time, 'Last Login', 
-                        (data['lastLogin'] as Timestamp).toDate().toString().split(' ')[0]),
+                        (data['lastLogin'] as Timestamp).toDate().toString().split(' ')[0], 
+                        screenWidth),
+                    ],
                     
-                    if (data['isVerified'] != null)
+                    if (data['isVerified'] != null) ...[
+                      SizedBox(height: screenWidth * 0.03),
                       _buildInfoRow(
                         data['isVerified'] == true ? Icons.verified : Icons.pending,
                         'Verification Status',
                         data['isVerified'] == true ? 'Verified' : 'Pending',
+                        screenWidth,
                         valueColor: data['isVerified'] == true ? Colors.green : Colors.orange,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -1553,43 +1604,30 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Color(0xFF6CA04A),
+  Widget _buildInfoRow(IconData icon, String label, String value, double screenWidth, {Color? valueColor}) {
+    return Row(
+      children: [
+        Icon(icon, color: Color(0xFF757575), size: screenWidth * 0.04),
+        SizedBox(width: screenWidth * 0.02),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF757575),
+            fontFamily: 'Poppins',
           ),
-          SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF757575),
-                fontFamily: 'Poppins',
-              ),
-            ),
+        ),
+        Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            color: valueColor ?? Color(0xFF757575),
+            fontFamily: 'Poppins',
           ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                color: valueColor ?? Color(0xFF222222),
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

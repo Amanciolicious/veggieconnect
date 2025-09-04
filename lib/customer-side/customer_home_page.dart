@@ -15,10 +15,12 @@ import 'package:veggieconnect/customer-side/product_details_page.dart';
 import 'package:veggieconnect/customer-side/customer_messages_page.dart';
 import 'package:veggieconnect/customer-side/cart_page.dart';
 import 'package:veggieconnect/customer-side/favorite_page.dart';
+import 'package:veggieconnect/customer-side/profile_page.dart';
 import 'buyer_order_history_page.dart';
 import 'farm_locations_page.dart';
 import '../widgets/modern_app_bar.dart';
 import '../services/cloudinary_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 // Chat and notification center removed
 
@@ -280,6 +282,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           FavoritePage(),
           CartPage(),
           BuyerProductsPage(),
+          _ProfileTab()
         ],
       ),
       bottomNavigationBar: CurvedNavigationBar(
@@ -294,6 +297,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           Icon(Icons.favorite, size: 30, color: Colors.green),
           Icon(Icons.shopping_cart, size: 30, color: Colors.green),
           Icon(Icons.search, size: 30, color: Colors.green),
+          Icon(Icons.person, size: 30, color: Colors.green),
         ],
       ),
     );
@@ -437,6 +441,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             Navigator.pop(context);
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => BuyerProductsPage()),
+            );
+          }),
+          _buildDrawerItem(Icons.person_outline, 'Profile', () {
+            Navigator.pop(context);
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => ProfilePage()),
             );
           }),
           _buildDrawerItem(Icons.history, 'Order History', () {
@@ -714,38 +724,40 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           ),
                         ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Stack(
                         children: [
-                          Expanded(
-                            flex: 3,
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(isSmallScreen ? 12 : 16),
-                                  topRight: Radius.circular(isSmallScreen ? 12 : 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(isSmallScreen ? 12 : 16),
+                                      topRight: Radius.circular(isSmallScreen ? 12 : 16),
+                                    ),
+                                  ),
+                                  child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(isSmallScreen ? 12 : 16),
+                                            topRight: Radius.circular(isSmallScreen ? 12 : 16),
+                                          ),
+                                          child: Image.network(
+                                            data['imageUrl'],
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey[400],
+                                          size: isSmallScreen ? 35.0 : 40.0,
+                                        ),
                                 ),
                               ),
-                              child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(isSmallScreen ? 12 : 16),
-                                        topRight: Radius.circular(isSmallScreen ? 12 : 16),
-                                      ),
-                                      child: Image.network(
-                                        data['imageUrl'],
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.image_not_supported,
-                                      color: Colors.grey[400],
-                                      size: isSmallScreen ? 35.0 : 40.0,
-                                    ),
-                            ),
-                          ),
                           Expanded(
                             flex: 2,
                             child: Padding(
@@ -780,50 +792,76 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      // Favorites percentage badge
-                                      StreamBuilder<QuerySnapshot>(
-                                        stream: FirebaseFirestore.instance.collection('users').snapshots(),
-                                        builder: (context, usersSnap) {
-                                          if (!usersSnap.hasData) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          final users = usersSnap.data!.docs;
-                                          int totalUsers = users.length;
-                                          int favCount = 0;
-                                          for (final u in users) {
-                                            final data = u.data() as Map<String, dynamic>;
-                                            final favs = (data['favorites'] as List?)?.cast<String>() ?? const <String>[];
-                                            if (favs.contains(productId)) favCount++;
-                                          }
-                                          final pct = totalUsers > 0 ? (favCount * 100.0 / totalUsers) : 0.0;
-                                          return Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.pink.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
+                                      // Popular badge
+                                      if ((data['popularity'] ?? 0) > 5)
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            'Popular',
+                                            style: TextStyle(
+                                              color: Colors.orange,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: isSmallScreen ? screenWidth * 0.03 : 12,
+                                              fontFamily: 'Poppins',
                                             ),
-                                            child: Text(
-                                              '${pct.toStringAsFixed(0)}% fav',
-                                              style: TextStyle(
-                                                color: Colors.pink,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: isSmallScreen ? screenWidth * 0.03 : 12,
-                                                fontFamily: 'Poppins',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ],
                               ),
                             ),
                           ),
+                          // Favorite button
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: StreamBuilder<DocumentSnapshot>(
+                              stream: user != null 
+                                ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
+                                : null,
+                              builder: (context, userSnap) {
+                                if (!userSnap.hasData) {
+                                  return const SizedBox.shrink();
+                                }
+                                final userData = userSnap.data!.data() as Map<String, dynamic>?;
+                                final favorites = List<String>.from(userData?['favorites'] ?? []);
+                                final isFavorite = favorites.contains(productId);
+                                
+                                return GestureDetector(
+                                  onTap: () => _toggleFavorite(productId),
+                                  child: Container(
+                                    padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.012 : screenWidth * 0.015),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.grey.withOpacity(0.2),
+                                          spreadRadius: 1,
+                                          blurRadius: 3,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                                      color: isFavorite ? Colors.red : Colors.grey[600],
+                                      size: isSmallScreen ? screenWidth * 0.04 : 18,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  );
+                    ],),
+                  ));
                 },
               );
             },
@@ -1021,6 +1059,90 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       ),
     );
   }
+
+  Future<void> _toggleFavorite(String productId) async {
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to add favorites.')),
+      );
+      return;
+    }
+
+    try {
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(user!.uid);
+      final userData = await userDoc.get();
+      
+      if (!userData.exists) {
+        await userDoc.set({
+          'favorites': [],
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      final favorites = List<String>.from((userData.data())?['favorites'] ?? []);
+      
+      if (favorites.contains(productId)) {
+        // Remove from favorites
+        favorites.remove(productId);
+        await userDoc.update({
+          'favorites': favorites,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        await _updateProductPopularity(productId, -1);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removed from favorites'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        // Add to favorites
+        favorites.add(productId);
+        await userDoc.update({
+          'favorites': favorites,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        await _updateProductPopularity(productId, 1);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to favorites'),
+              backgroundColor: Color(0xFF6CA04A),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error toggling favorite: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorites: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateProductPopularity(String productId, int change) async {
+    try {
+      final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final productDoc = await transaction.get(productRef);
+        if (productDoc.exists) {
+          final currentPopularity = productDoc.data()?['popularity'] ?? 0;
+          transaction.update(productRef, {'popularity': currentPopularity + change});
+        }
+      });
+    } catch (e) {
+      debugPrint('Failed to update product popularity: $e');
+    }
+  }
 }
 
 class _VeggieCard extends StatelessWidget {
@@ -1125,39 +1247,491 @@ class _NotificationsTab extends StatelessWidget {
   }
 }
 
-class _ProfileTab extends StatelessWidget {
+class _ProfileTab extends StatefulWidget {
   const _ProfileTab();
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.person_outline,
-            size: 64,
-            color: Color(0xFF4CAF50),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Profile',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
+  State<_ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<_ProfileTab> {
+  String? _avatarUrl;
+  String? _localAvatarPath;
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalProfileImage();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLocalProfileImage() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // No longer using local profile images - all images are now stored on Cloudinary
+      // This method is kept for compatibility but does nothing
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!kIsWeb) ...[
+              ListTile(
+                leading: Icon(Icons.photo_library, color: Color(0xFF6CA04A)),
+                title: Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromSource(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: Color(0xFF6CA04A)),
+                title: Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromSource(ImageSource.camera);
+                },
+              ),
+            ],
+            ListTile(
+              leading: Icon(Icons.cloud_upload, color: Color(0xFF6CA04A)),
+              title: Text('Upload via Cloudinary'),
+              onTap: () async {
+                Navigator.pop(context);
+                if (kIsWeb) {
+                  await _uploadViaCloudinaryWeb();
+                } else {
+                  await _uploadViaCloudinaryMobile();
+                }
+              },
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Manage your account settings',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Color(0xFF757575),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.link, color: Color(0xFF6CA04A)),
+              title: Text('Enter Image URL'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _promptImageUrlInput();
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Future<void> _uploadViaCloudinaryWeb() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final bytes = await CloudinaryService.pickImageFromWeb();
+      if (bytes == null) return;
+      final url = await CloudinaryService.uploadBytes(bytes, fileName: 'avatar_${user.uid}.jpg');
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'avatarUrl': url});
+      setState(() {
+        _avatarUrl = url;
+        _localAvatarPath = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uploaded to Cloudinary successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cloudinary upload failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _uploadViaCloudinaryMobile() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
+      
+      if (picked != null) {
+        final file = File(picked.path);
+        final url = await CloudinaryService.uploadFile(file);
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'avatarUrl': url});
+        
+        setState(() {
+          _avatarUrl = url;
+          _localAvatarPath = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Uploaded to Cloudinary successfully')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cloudinary upload failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _promptImageUrlInput() async {
+    final controller = TextEditingController(text: _avatarUrl ?? '');
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Set Profile Image URL'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: 'https://example.com/image.jpg',
+              labelText: 'Image URL',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF6CA04A)),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      final url = controller.text.trim();
+      final isValid = url.startsWith('http://') || url.startsWith('https://');
+      if (!isValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid http(s) URL')),
+        );
+        return;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'avatarUrl': url});
+
+      setState(() {
+        _avatarUrl = url;
+        _localAvatarPath = null; // prefer URL
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile image updated successfully')),
+      );
+    }
+  }
+
+  Future<void> _pickImageFromSource(ImageSource source) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: 75,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
+      
+      if (picked != null) {
+        final file = File(picked.path);
+        final url = await CloudinaryService.uploadFile(file);
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'avatarUrl': url});
+
+        setState(() {
+          _avatarUrl = url;
+          _localAvatarPath = null;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile image uploaded to Cloudinary successfully')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile image: $e')),
+      );
+    }
+  }
+
+  ImageProvider? _getProfileImage(Map<String, dynamic> data) {
+    // Priority: state URL (fresh upload) > Network from Firestore
+    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
+      return NetworkImage(_avatarUrl!);
+    }
+    
+    final dynamicUrl = data['avatarUrl'];
+    if (dynamicUrl is String && dynamicUrl.isNotEmpty) {
+      return NetworkImage(dynamicUrl);
+    }
+    
+    return null;
+  }
+
+  Row _buildInfoRow(IconData icon, String label, String value, double screenWidth, {Color? valueColor}) {
+    return Row(
+      children: [
+        Icon(icon, color: Color(0xFF757575), size: screenWidth * 0.04),
+        SizedBox(width: screenWidth * 0.02),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF757575),
+            fontFamily: 'Poppins',
+          ),
+        ),
+        Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            color: valueColor ?? Color(0xFF757575),
+            fontFamily: 'Poppins',
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final user = FirebaseAuth.instance.currentUser;
+    
+    if (user == null) {
+      return Center(
+        child: Text(
+          'Please log in to view your profile.',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF757575),
+            fontFamily: 'Poppins',
+          ),
+        ),
+      );
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        
+        final userData = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+        _nameController.text = userData['name'] ?? user.displayName ?? '';
+        _emailController.text = userData['email'] ?? user.email ?? '';
+        
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(screenWidth * 0.04),
+          child: Column(
+            children: [
+              // Profile Section
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.06),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF8D9773).withOpacity(0.08),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    SizedBox(height: screenWidth * 0.04),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _pickAvatar,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: screenWidth * 0.08,
+                                backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
+                                backgroundImage: _getProfileImage(userData),
+                                child: _getProfileImage(userData) == null
+                                    ? Icon(
+                                        Icons.person,
+                                        size: screenWidth * 0.08,
+                                        color: Color(0xFF6CA04A),
+                                      )
+                                    : null,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF6CA04A),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.04),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                userData['name'] ?? user.displayName ?? 'User',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                userData['email'] ?? user.email ?? '',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: Color(0xFF757575),
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF6CA04A).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Role: ${userData['role']?.toString().toUpperCase() ?? 'CUSTOMER'}',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6CA04A),
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              SizedBox(height: screenWidth * 0.06),
+              
+              // Personal Information Section
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.06),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF8D9773).withOpacity(0.08),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Personal Information',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    SizedBox(height: screenWidth * 0.04),
+                    
+                    // Phone Information
+                    if (userData['phone'] != null && userData['phone'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.phone, 'Phone', userData['phone'], screenWidth),
+                    
+                    if (userData['phone'] != null && userData['phone'].toString().isNotEmpty)
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Address Information
+                    if (userData['address'] != null && userData['address'].toString().isNotEmpty)
+                      _buildInfoRow(Icons.location_on, 'Address', userData['address'], screenWidth),
+                    
+                    if (userData['address'] != null && userData['address'].toString().isNotEmpty)
+                      SizedBox(height: screenWidth * 0.03),
+                    
+                    // Member Since
+                    _buildInfoRow(Icons.calendar_today, 'Member Since', 
+                      userData['createdAt'] != null 
+                        ? (userData['createdAt'] as Timestamp).toDate().toString().split(' ')[0]
+                        : 'N/A', 
+                      screenWidth),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

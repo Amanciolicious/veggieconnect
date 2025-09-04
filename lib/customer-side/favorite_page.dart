@@ -123,19 +123,19 @@ class _FavoritePageState extends State<FavoritePage> {
                           Text(
                             'Your Favorite Products',
                             style: TextStyle(
-                              fontSize: screenWidth * 0.06,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Poppins',
                             ),
                           ),
-                          SizedBox(height: screenWidth * 0.04),
+                          SizedBox(height: 20),
                           Expanded(
                             child: GridView.builder(
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                crossAxisSpacing: screenWidth * 0.04,
-                                mainAxisSpacing: screenWidth * 0.04,
-                                childAspectRatio: 0.75,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 0.6,
                               ),
                               itemCount: products.length,
                               itemBuilder: (context, index) {

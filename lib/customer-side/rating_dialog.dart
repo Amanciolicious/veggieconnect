@@ -56,18 +56,18 @@ class _RatingDialogState extends State<RatingDialog> {
       // Create rating document
       final ratingData = {
         'orderId': widget.orderId,
-        'customerId': user.uid,
-        'customerName': user.displayName ?? 'Customer',
+        'buyerId': user.uid,
+        'buyerName': user.displayName ?? 'Customer',
         'supplierId': widget.supplierId,
         'supplierName': widget.supplierName,
         'rating': _rating,
         'feedback': _feedbackController.text.trim(),
         'products': widget.products,
-        'createdAt': FieldValue.serverTimestamp(),
+        'timestamp': FieldValue.serverTimestamp(),
       };
 
       await FirebaseFirestore.instance
-          .collection('ratings')
+          .collection('order_ratings')
           .add(ratingData);
 
       // Update order documents to mark as rated
@@ -82,7 +82,7 @@ class _RatingDialogState extends State<RatingDialog> {
       if (ordersQuery.docs.isNotEmpty) {
         final batch = FirebaseFirestore.instance.batch();
         for (final doc in ordersQuery.docs) {
-          batch.update(doc.reference, {'isRated': true});
+          batch.update(doc.reference, {'hasRating': true});
         }
         await batch.commit();
       } else {
