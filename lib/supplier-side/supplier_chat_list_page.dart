@@ -222,7 +222,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                               fontFamily: 'Poppins',
                             ),
                           ),
-                        if (conversation['unreadCount'] != null && conversation['unreadCount'] > 0)
+                        if (conversation['lastMessageSenderId'] != null && conversation['lastMessageSenderId'] != user.uid && (conversation['lastMessage']?.toString().isNotEmpty ?? false))
                           Container(
                             margin: EdgeInsets.only(top: 4),
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -231,7 +231,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              '${conversation['unreadCount']}',
+                              'NEW',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

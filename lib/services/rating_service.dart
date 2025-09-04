@@ -75,7 +75,7 @@ class RatingService {
       if (user == null) return;
       
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
-      final userData = userDoc.data() as Map<String, dynamic>?;
+      final userData = userDoc.data();
       final customerName = userData?['name'] ?? user.displayName ?? 'Customer';
       
       final notificationService = NotificationService();

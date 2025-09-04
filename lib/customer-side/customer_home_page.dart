@@ -22,7 +22,6 @@ import '../widgets/modern_app_bar.dart';
 import '../widgets/notification_center.dart';
 import '../services/cloudinary_service.dart';
 import '../services/notification_service.dart';
-import 'package:image_picker/image_picker.dart';
 
 // Chat and notification center removed
 
@@ -702,8 +701,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 .collection('products')
                 .where('status', isEqualTo: 'approved')
                 .where('isVerified', isEqualTo: true)
-                .orderBy('popularity', descending: true)
-                .limit(6)
+                // Avoid composite index requirement; sort client-side by popularity
+                .limit(30)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -747,6 +746,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 );
               }
               
+              // Sort by popularity on the client to avoid Firestore composite index errors
+              final sortedDocs = snapshot.data!.docs
+                  .where((d) => ((d.data() as Map<String, dynamic>)['popularity'] ?? 0) > 0)
+                  .toList()
+                ..sort((a, b) {
+                  final ap = (a.data() as Map<String, dynamic>)['popularity'] ?? 0;
+                  final bp = (b.data() as Map<String, dynamic>)['popularity'] ?? 0;
+                  return (bp as num).compareTo(ap as num);
+                });
+
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -756,9 +765,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   mainAxisSpacing: isSmallScreen ? 12 : 15,
                   childAspectRatio: isSmallScreen ? 0.75 : 0.8,
                 ),
-                itemCount: snapshot.data!.docs.length,
+                itemCount: sortedDocs.length > 6 ? 6 : sortedDocs.length,
                 itemBuilder: (context, index) {
-                  final doc = snapshot.data!.docs[index];
+                  final doc = sortedDocs[index];
                   final data = doc.data() as Map<String, dynamic>;
                   final productId = doc.id;
                   
@@ -783,8 +792,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                flex: 3,
+                              AspectRatio(
+                                aspectRatio: 1.4,
                                 child: Container(
                                   width: double.infinity,
                                   decoration: BoxDecoration(
@@ -812,9 +821,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                         ),
                                 ),
                               ),
-                          Expanded(
-                            flex: 2,
-                            child: Padding(
+                              Padding(
                               padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.025 : 12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -868,8 +875,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
+                              ),
                           // Favorite button
                           Positioned(
                             top: 8,
@@ -1189,8 +1195,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final productDoc = await transaction.get(productRef);
         if (productDoc.exists) {
-          final currentPopularity = productDoc.data()?['popularity'] ?? 0;
-          transaction.update(productRef, {'popularity': currentPopularity + change});
+          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
+          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          transaction.update(productRef, {'popularity': nextValue});
         }
       });
     } catch (e) {

@@ -433,7 +433,10 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                         return const Center(child: CircularProgressIndicator());
                       }
                       
-                      final products = productSnapshot.data ?? [];
+                      // Only show products with popularity > 0 for Popular logic
+                      final products = (productSnapshot.data ?? [])
+                          .where((d) => (((d.data() as Map<String, dynamic>)['popularity']) ?? 0) > 0)
+                          .toList();
                       
                       // Sort by popularity
                       products.sort((a, b) {
@@ -1035,8 +1038,9 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final productDoc = await transaction.get(productRef);
         if (productDoc.exists) {
-          final currentPopularity = productDoc.data()?['popularity'] ?? 0;
-          transaction.update(productRef, {'popularity': currentPopularity + change});
+          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
+          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          transaction.update(productRef, {'popularity': nextValue});
         }
       });
     } catch (e) {

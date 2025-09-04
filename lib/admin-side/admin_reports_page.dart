@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'admin_dashboard.dart';
 
 class AdminReportsPage extends StatelessWidget {
   const AdminReportsPage({super.key});
@@ -13,6 +14,14 @@ class AdminReportsPage extends StatelessWidget {
       backgroundColor: Color(0xFFF8FAF5),
       appBar: AppBar(
         backgroundColor: Color(0xFF6CA04A),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            );
+          },
+        ),
         title: Text(
           'Reports',
           style: TextStyle(

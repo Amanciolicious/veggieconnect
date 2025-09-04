@@ -106,11 +106,8 @@ class PerformanceService {
   // Initialize image cache
   Future<void> _initializeImageCache() async {
     try {
-      // Configure CachedNetworkImage settings
-      CachedNetworkImage.logLevel = kDebugMode ? CacheManagerLogLevel.verbose : CacheManagerLogLevel.none;
-      
-      // Set cache size and age
-      // Note: These settings are handled by the cached_network_image package
+      // Note: cached_network_image does not expose global log-level configuration.
+      // Initialization kept minimal; per-image options can be set in widgets.
       debugPrint('Image cache initialized');
     } catch (e) {
       debugPrint('Error initializing image cache: $e');

@@ -7,6 +7,7 @@ import '../widgets/star_rating_widget.dart';
 import '../widgets/product_feedback_modal.dart';
 import 'package:flutter/material.dart';
 import 'buyer_chat_page.dart';
+import 'customer_home_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -104,6 +105,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       backgroundColor: Color(0xFFF8FAF5),
       appBar: AppBar(
         backgroundColor: Color(0xFF6CA04A),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+            );
+          },
+        ),
         elevation: 0,
         title: Text(
           'Product Details',

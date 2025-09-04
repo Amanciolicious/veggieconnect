@@ -207,8 +207,30 @@ class NotificationService {
         data: message.data,
       );
 
-      // Add to history
+      // Add to history (local)
       _addToHistory(notificationData);
+
+      // Persist to Firestore per-recipient for cross-device visibility
+      try {
+        final recipientId = message.data['recipientId'] as String?;
+        if (recipientId != null && recipientId.isNotEmpty) {
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(recipientId)
+              .collection('notifications')
+              .doc(notificationData.id)
+              .set({
+            'title': notificationData.title,
+            'body': notificationData.body,
+            'type': notificationData.type,
+            'timestamp': FieldValue.serverTimestamp(),
+            'data': notificationData.data,
+            'isRead': false,
+          });
+        }
+      } catch (e) {
+        debugPrint('Failed to persist notification: $e');
+      }
 
       // Show local notification
       _showLocalNotification(notificationData);
@@ -360,7 +382,7 @@ class NotificationService {
               .get();
           
           if (userDoc.exists) {
-            final userData = userDoc.data() as Map<String, dynamic>?;
+            final userData = userDoc.data();
             final userRole = userData?['role']?.toString().toLowerCase();
             if (userRole != targetUserRole.toLowerCase()) {
               return; // Don't send notification if user doesn't have the required role
@@ -572,7 +594,7 @@ class NotificationService {
   }) {
     sendInAppNotification(
       title: 'Low Stock Alert',
-      body: 'Your product "$productName" is running low (${currentStock} left)',
+      body: 'Your product "$productName" is running low ($currentStock left)',
       type: 'low_stock',
       targetUserId: supplierId,
       targetUserRole: 'supplier',
@@ -664,6 +686,29 @@ class NotificationService {
       );
       
       debugPrint('FCM notification sent to $recipientId');
+
+      // Also persist to Firestore so it appears in in-app notification lists
+      try {
+        final notificationId = DateTime.now().millisecondsSinceEpoch.toString();
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(recipientId)
+            .collection('notifications')
+            .doc(notificationId)
+            .set({
+          'title': title,
+          'body': body,
+          'type': type,
+          'timestamp': FieldValue.serverTimestamp(),
+          'data': {
+            ...?data,
+            'recipientId': recipientId,
+          },
+          'isRead': false,
+        });
+      } catch (e) {
+        debugPrint('Error saving notification to Firestore: $e');
+      }
     } catch (e) {
       debugPrint('Error sending FCM notification: $e');
     }
@@ -724,27 +769,9 @@ class NotificationService {
     String type = 'general',
     Map<String, dynamic>? data,
   }) async {
-    // This would typically use a server-side function or FCM Admin SDK
-    // For now, we'll just log the notification
-    debugPrint('Would send FCM to token $token: $title - $body');
-    
-    // In a real implementation, you would:
-    // 1. Use Firebase Admin SDK on your server
-    // 2. Or use Cloud Functions to send FCM notifications
-    // 3. Or use a third-party service like OneSignal
-    
-    // For now, we'll create a local notification as a fallback
-    final notificationData = NotificationData(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      body: body,
-      type: type,
-      timestamp: DateTime.now(),
-      data: data ?? {},
-    );
-    
-    _addToHistory(notificationData);
-    _notificationController.add(notificationData);
+    // TODO: Integrate server-side FCM send. For client-side, avoid showing local fallback
+    // to ensure only the intended recipient device gets notified.
+    debugPrint('Queued FCM to token $token: $title - $body');
   }
 
   // Get notification history stream

@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:veggieconnect/customer-side/buyer_products_page.dart';
 import 'package:veggieconnect/customer-side/checkout_summary_page.dart'; // Added import for CheckoutSummaryPage
 
 class CartPage extends StatefulWidget {
@@ -195,13 +196,36 @@ class _CartPageState extends State<CartPage> {
         _selectedOnlineMethod = paymentMethod;
       }
     });
+    // Confirm before placing order to avoid misclicks
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Place Order?'),
+        content: const Text('Do you want to place the order for all items in your cart?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes, Place Order')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
     try {
       final batch = FirebaseFirestore.instance.batch();
+      // Resolve buyer name for supplier views
+      String buyerName = user!.displayName ?? '';
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+        if (userDoc.exists) {
+          buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
+        }
+      } catch (_) {}
       final ordersRef = FirebaseFirestore.instance.collection('orders');
       for (final doc in cartItems) {
         final data = doc.data();
         batch.set(ordersRef.doc(), {
           'buyerId': user!.uid,
+          'buyerName': buyerName,
           'productId': data['productId'],
           'sellerId': data['sellerId'],
           'productName': data['name'],
@@ -217,8 +241,32 @@ class _CartPageState extends State<CartPage> {
       }
       await batch.commit();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order placed for all cart items! Payment: ${_getPaymentMethodDisplayName(paymentMethod)}')),
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Order placed!'),
+            content: Text('Payment method: ${_getPaymentMethodDisplayName(paymentMethod)}'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  // Stay on cart
+                },
+                child: const Text('OK'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => BuyerProductsPage()),
+                    (route) => false,
+                  );
+                },
+                child: const Text('Continue Shopping'),
+              ),
+            ],
+          ),
         );
       }
     } catch (e) {
@@ -322,7 +370,7 @@ class _CartPageState extends State<CartPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                      valueColor: AlwaysStoppedAnimation<Color?>(Color(0xFF6CA04A)),
                     ),
                   );
                 }

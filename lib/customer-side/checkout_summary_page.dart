@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:veggieconnect/customer-side/buyer_products_page.dart';
 import 'package:veggieconnect/models/promo_model.dart';
-import 'digital_receipt_page.dart';
 import '../services/payment_service.dart';
+import 'cart_page.dart';
 import '../services/promo_service.dart';
 import '../services/notification_service.dart';
-import '../widgets/payment_status_checker.dart';
 // Added for debugPrint
 
 class CheckoutSummaryPage extends StatefulWidget {
@@ -241,6 +241,20 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
   }
 
   Future<void> _processPayment() async {
+    // Confirm before placing order to avoid misclicks
+    if (!mounted) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Place Order?'),
+        content: const Text('Do you want to place this order now?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes, Place Order')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
     if (isProcessing) return;
 
     setState(() => isProcessing = true);
@@ -248,6 +262,14 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Not logged in');
+      // Resolve buyer name for supplier views
+      String buyerName = user.displayName ?? '';
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
+        }
+      } catch (_) {}
 
       final total = _calculateTotal();
       final orderId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -274,6 +296,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
 
         batch.set(orderDoc, {
           'buyerId': user.uid,
+          'buyerName': buyerName,
           'productId': data['productId'],
           'sellerId': data['sellerId'],
           'productName': data['name'],
@@ -329,308 +352,26 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         );
       }
 
-      // Process payment based on method
-      Map<String, dynamic> paymentResult;
+      // Handle payment based on method
+      if (selectedPaymentMethod == 'gcash' || selectedPaymentMethod == 'paymaya') {
+        // Open sandbox checkout URL in external browser
+        final launched = selectedPaymentMethod == 'gcash'
+            ? await _paymentService.launchGcashCheckout()
+            : await _paymentService.launchPayMayaCheckout();
 
-      if (selectedPaymentMethod == 'cash_on_pickup') {
-        // For cash on pickup, orders are already created with payment info
-        // Just return success since no additional processing is needed
-        paymentResult = {
-          'success': true,
-          'payment_method': 'cash_on_pickup',
-          'payment_status': 'pending',
-          'order_id': orderId,
-        };
-      } else {
-        // Process online payment (GCash/PayMaya) with external browser
-        try {
-          // Get user information for payment
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-          
-          final userData = userDoc.data() ?? {};
-          final customerName = userData['name'] ?? 'Customer';
-          final customerEmail = userData['email'] ?? 'customer@example.com';
-
-          // Use the new external payment method for GCash/PayMaya
-          if (_paymentService.requiresExternalBrowser(selectedPaymentMethod)) {
-            // Test Paymongo connection first
-            debugPrint('Testing Paymongo connection before creating payment...');
-            final connectionTest = await _paymentService.testPaymongoConnection();
-            
-            debugPrint('Connection test result: $connectionTest');
-            debugPrint('Connection test success: ${connectionTest['success']}');
-            
-            if (!connectionTest['success']) {
-              debugPrint('Paymongo connection failed: ${connectionTest['error']}');
-              // Show connection error and fallback to cash on pickup
-              if (mounted) {
-                final shouldFallback = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Payment Service Unavailable'),
-                    content: Text(
-                      'Online payment service is currently unavailable.\n\n'
-                      'Error: ${connectionTest['error']}\n'
-                      'Details: ${connectionTest['details']}\n\n'
-                      'Would you like to proceed with Cash on Pickup instead?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Use Cash on Pickup'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (shouldFallback == true) {
-                  selectedPaymentMethod = 'cash_on_pickup';
-                  paymentResult = {
-                    'success': true,
-                    'payment_method': 'cash_on_pickup',
-                    'payment_status': 'pending',
-                    'order_id': orderId,
-                  };
-                  
-                } else {
-                  throw Exception('Payment cancelled by user');
-                }
-              }
-            }
-
-            debugPrint('Paymongo connection successful, creating external payment intent...');
-            
-            // Calculate final amount with promo discount
-            double finalAmount = _calculateTotal();
-            if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
-              final promoDiscount = PromoService.calculateFirstTimeDiscount(_calculateTotal(), true);
-              if (promoDiscount != null) {
-                finalAmount = promoDiscount.finalAmount;
-              }
-            }
-
-            paymentResult = await _paymentService.createExternalPaymentIntent(
-            amount: finalAmount,
-            currency: 'PHP',
-            paymentMethod: selectedPaymentMethod,
-            orderId: orderId,
-            customerEmail: customerEmail,
-            customerName: customerName,
-            metadata: {
-              'buyer_id': user.uid,
-              'order_type': 'cart_checkout',
-            },
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(launched
+                  ? 'Opened ${_getPaymentMethodDisplayName(selectedPaymentMethod)} to complete payment. Returning to cart.'
+                  : 'Could not open ${_getPaymentMethodDisplayName(selectedPaymentMethod)}. Returning to cart.'),
+            ),
           );
-
-            if (paymentResult['success'] && paymentResult['redirect_url'] != null) {
-              // Show confirmation dialog for external browser redirect
-              if (mounted) {
-                final shouldRedirect = await showDialog<bool>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => AlertDialog(
-                    title: Text('Complete Payment with ${_getPaymentMethodDisplayName(selectedPaymentMethod)}'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'You will be redirected to ${_getPaymentMethodDisplayName(selectedPaymentMethod)} in your browser to complete the payment.',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Payment Details:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Text('Amount: ₱${_calculateFinalTotal().toStringAsFixed(2)}'),
-                              Text('Order ID: $orderId'),
-                              Text('Payment Method: ${_getPaymentMethodDisplayName(selectedPaymentMethod)}'),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          '⚠️ Important: Please complete the payment in your browser and return to the app.',
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(context, true),
-                        icon: const Icon(Icons.payment),
-                        label: Text('Pay with ${_getPaymentMethodDisplayName(selectedPaymentMethod)}'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (shouldRedirect == true) {
-                  // Launch external browser for payment
-                  final launchResult = await _paymentService.launchExternalPayment(
-                    redirectUrl: paymentResult['redirect_url'],
-                    orderId: orderId,
-                    paymentMethod: selectedPaymentMethod,
-                  );
-
-                  if (launchResult['success']) {
-                    // Show success message and instructions
-                    if (mounted) {
-                      await showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Payment Gateway Opened'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Your payment gateway has been opened in your browser.',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                ),
-                                child: const Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Next Steps:',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text('1. Complete payment in your browser'),
-                                    Text('2. Return to this app'),
-                                    Text('3. Check your order status'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    // Update payment result to indicate external redirect
-                  paymentResult = {
-                    'success': true,
-                    'payment_method': selectedPaymentMethod,
-                    'payment_status': 'pending',
-                    'order_id': orderId,
-                      'payment_intent_id': paymentResult['payment_intent_id'],
-                      'external_redirect': true,
-                      'message': 'Payment gateway opened in external browser',
-                  };
-                  } else {
-                    throw Exception(launchResult['error']);
-                  }
-                } else {
-                  throw Exception('Payment cancelled by user');
-                }
-              }
-            } else {
-              throw Exception(paymentResult['error']);
-            }
-          } else {
-            // Fallback to legacy payment method for other payment types
-            paymentResult = await _paymentService.processOnlinePayment(
-              amount: _calculateFinalTotal(),
-              currency: 'PHP',
-              paymentMethod: selectedPaymentMethod,
-              orderId: orderId,
-              customerEmail: customerEmail,
-              customerName: customerName,
-              metadata: {
-                'buyer_id': user.uid,
-                'order_type': 'cart_checkout',
-              },
-            );
-          }
-        } catch (e) {
-            // If online payment fails, fall back to cash on pickup
-            if (mounted) {
-              final shouldFallback = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Payment Method Unavailable'),
-                  content: Text(
-                    'Online payment (${_getPaymentMethodDisplayName(selectedPaymentMethod)}) is currently unavailable. '
-                  'Would you like to proceed with Cash on Pickup instead?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Use Cash on Pickup'),
-                  ),
-                ],
-              ),
-            );
-
-            if (shouldFallback == true) {
-              // Update the payment method to cash on pickup
-              selectedPaymentMethod = 'cash_on_pickup';
-              paymentResult = {
-                'success': true,
-                'payment_method': 'cash_on_pickup',
-                'payment_status': 'pending',
-                'order_id': orderId,
-              };
-            } else {
-              throw Exception('Payment failed: $e');
-            }
-          } else {
-            throw Exception('Payment failed: $e');
-          }
         }
       }
 
-      if (paymentResult['success']) {
+      // For all methods, finalize: mark promo used, clear cart, and go back to cart page
+      {
         // Mark first-time promo as used if it was applied
         if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
           try {
@@ -655,10 +396,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
           }
         }
 
-        // Send payment confirmation notification to customer
+        // Send order confirmation notification to customer
         await notificationService.sendFCMNotification(
           recipientId: user.uid,
-          title: 'Order Confirmed',
+          title: 'Order Placed',
           body: 'Your order #$orderId has been placed successfully',
           type: 'order_update',
           data: {
@@ -681,75 +422,37 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         await cartBatch.commit();
 
         if (mounted) {
-          // Check if this was an external browser payment
-          if (paymentResult['external_redirect'] == true) {
-            // Show payment status checker for external payments
-            await showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => AlertDialog(
-                title: const Text('Payment Initiated'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Your payment has been initiated in your browser. Please complete the payment and return to check the status.',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 16),
-                    PaymentStatusChecker(
-                      orderId: orderId,
-                      sourceId: paymentResult['payment_intent_id'],
-                      onStatusUpdated: () {
-                        // Refresh the page or show updated status
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Order placed!'),
+              content: const Text('Your order has been placed successfully.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const CartPage()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('View Cart'),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DigitalReceiptPage(
-                            cartItems: widget.cartItems,
-                            total: _calculateFinalTotal(),
-                            paymentMethod: selectedPaymentMethod,
-                            orderId: orderId,
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('View Receipt'),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            // For cash on pickup or other immediate payments, go directly to receipt
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DigitalReceiptPage(
-                cartItems: widget.cartItems,
-                total: _calculateFinalTotal(),
-                paymentMethod: selectedPaymentMethod,
-                orderId: orderId,
-              ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => BuyerProductsPage()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('Continue Shopping'),
+                ),
+              ],
             ),
           );
-          }
         }
-      } else {
-        throw Exception(paymentResult['error']);
       }
     } catch (e) {
       if (mounted) {
@@ -1236,7 +939,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color?>(Colors.white),
                     ),
                   )
                 : Text(

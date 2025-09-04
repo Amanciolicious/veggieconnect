@@ -11,6 +11,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final Color? backgroundColor;
   final bool showBackButton;
+  final VoidCallback? onBackTap;
 
   const ModernAppBar({
     super.key,
@@ -21,6 +22,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.backgroundColor,
     this.showBackButton = false,
+    this.onBackTap,
   });
 
   @override
@@ -43,7 +45,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
             children: [
               if (showBackButton)
                 GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () => onBackTap != null ? onBackTap!() : Navigator.of(context).pop(),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(

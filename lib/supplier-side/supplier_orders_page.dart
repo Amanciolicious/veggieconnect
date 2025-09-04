@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
+import 'package:veggieconnect/supplier-side/supplier_dashboard.dart';
 import 'supplier_chat_page.dart';
 
 class SupplierOrdersPage extends StatefulWidget {
@@ -59,6 +60,14 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const SupplierDashboard()),
+            );
+          },
+        ),
         title: Text(
           'Orders Management',
           style: TextStyle(
@@ -251,8 +260,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
 
           final orders = snapshot.data!.docs;
           final totalOrders = orders.length;
-          final pendingOrders = orders.where((doc) => 
-            (doc.data() as Map<String, dynamic>)['status'] == 'pending').length;
+          final pendingOrders = orders.where((doc) {
+            final s = (doc.data() as Map<String, dynamic>)['status'];
+            return s == null || s == 'pending' || s == 'placed';
+          }).length;
           final processingOrders = orders.where((doc) => 
             (doc.data() as Map<String, dynamic>)['status'] == 'processing').length;
           final completedOrders = orders.where((doc) => 
@@ -368,12 +379,16 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         // Apply filters
         orders = orders.where((doc) {
           final order = doc.data() as Map<String, dynamic>;
+          // Normalize legacy/unknown statuses to pending
+          final normalizedStatus = (order['status'] == null || order['status'] == 'placed')
+              ? 'pending'
+              : order['status'];
           
           // Status filter
           if (statusFilter != 'all' && statusFilter != 'completed') {
-            if (order['status'] != statusFilter) return false;
+            if (normalizedStatus != statusFilter) return false;
           } else if (statusFilter == 'completed') {
-            if (order['status'] != 'picked_up') return false;
+            if (normalizedStatus != 'picked_up') return false;
           }
 
           // Search filter
@@ -429,7 +444,18 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             final order = doc.data() as Map<String, dynamic>;
             final orderId = doc.id;
             
-            return _buildOrderCard(order, orderId);
+            return FutureBuilder<String>(
+              future: _resolveBuyerName(order['buyerId'] as String?, order['buyerName'] as String?),
+              builder: (context, snap) {
+                final resolved = Map<String, dynamic>.from(order);
+                // Ensure UI uses normalized status
+                if (resolved['status'] == null || resolved['status'] == 'placed') {
+                  resolved['status'] = 'pending';
+                }
+                if (snap.hasData) resolved['buyerName'] = snap.data;
+                return _buildOrderCard(resolved, orderId);
+              },
+            );
           },
         );
       },
@@ -437,12 +463,12 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order, String orderId) {
-    final status = order['status'] ?? 'pending';
+    final status = (order['status'] == null || order['status'] == 'placed') ? 'pending' : order['status'];
     final productName = order['productName'] ?? 'Unknown Product';
     final quantity = order['quantity'] ?? 1;
-    final price = order['price'] ?? 0.0;
-    final totalAmount = (price * quantity).toDouble();
-    final buyerName = order['buyerName'] ?? 'Unknown Buyer';
+    final price = (order['price'] ?? 0) as num;
+    final totalAmount = (order['totalAmount'] ?? (price * quantity)).toDouble();
+    final buyerName = order['buyerName'] ?? (order['buyerId'] != null ? 'Loading…' : 'Unknown Buyer');
     final createdAt = order['createdAt'] as Timestamp?;
     final imageUrl = order['imageUrl'];
 
@@ -634,6 +660,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   );}
 
   Widget _buildStatusChip(String status) {
+    // Normalize for display
+    if (status == 'placed' || status.isEmpty) {
+      status = 'pending';
+    }
     Color color;
     String text;
     
@@ -655,8 +685,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         text = 'CANCELLED';
         break;
       default:
-        color = Colors.grey;
-        text = 'UNKNOWN';
+        color = Colors.orange;
+        text = 'PENDING';
     }
 
     return Container(
@@ -894,6 +924,20 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     }
   }
 
+  Future<String> _resolveBuyerName(String? buyerId, String? fallback) async {
+    if (fallback != null && fallback.trim().isNotEmpty) return fallback;
+    if (buyerId == null) return 'Unknown Buyer';
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(buyerId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final name = (data['name'] ?? '').toString().trim();
+        if (name.isNotEmpty) return name;
+      }
+    } catch (_) {}
+    return 'Unknown Buyer';
+  }
+
   void _showOrderDetails(Map<String, dynamic> order, String orderId) {
     showDialog(
       context: context,
@@ -910,7 +954,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
               _buildOrderDetailRow('Total', '₱${((order['price'] ?? 0) * (order['quantity'] ?? 1)).toStringAsFixed(2)}'),
               _buildOrderDetailRow('Buyer', order['buyerName'] ?? 'N/A'),
               _buildOrderDetailRow('Payment Method', _getPaymentMethodDisplayName(order['paymentMethod'] ?? 'N/A')),
-              _buildOrderDetailRow('Status', (order['status'] ?? 'pending').toUpperCase()),
+              _buildOrderDetailRow('Status', ((order['status'] == null || order['status'] == 'placed') ? 'pending' : order['status']).toUpperCase()),
               if (order['note'] != null)
                 _buildOrderDetailRow('Note', order['note']),
               if (order['createdAt'] != null)

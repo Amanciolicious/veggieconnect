@@ -378,7 +378,11 @@ class _ProfilePageState extends State<ProfilePage> {
         stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+              ),
+            );
           }
           
           final userData = snapshot.data?.data() as Map<String, dynamic>? ?? {};
@@ -438,9 +442,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                         )
                                       : null,
                                 ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
+                                Align(
+                                  alignment: Alignment.bottomRight,
                                   child: Container(
                                     padding: EdgeInsets.all(4),
                                     decoration: BoxDecoration(
@@ -608,11 +611,17 @@ class _ProfilePageState extends State<ProfilePage> {
                             .snapshots(),
                         builder: (context, orderSnapshot) {
                           if (orderSnapshot.connectionState == ConnectionState.waiting) {
-                            return Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                            return Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                                  ),
                                 ),
                               ),
                             );
@@ -660,7 +669,13 @@ class _ProfilePageState extends State<ProfilePage> {
                               final orderData = orderDoc.data() as Map<String, dynamic>;
                               final orderId = orderDoc.id;
                               final status = orderData['status'] ?? 'pending';
-                              final total = orderData['total'] ?? 0.0;
+                              final unitPrice = (orderData['price'] ?? 0) as num;
+                              final qty = (orderData['quantity'] ?? 1) as num;
+                              final totalNum = (orderData['totalAmount'] ??
+                                  orderData['paymentAmount'] ??
+                                  orderData['total'] ??
+                                  (unitPrice * qty)) as num;
+                              final total = totalNum.toDouble();
                               final createdAt = orderData['createdAt'] as Timestamp?;
                               final dateStr = createdAt != null 
                                 ? createdAt.toDate().toString().split(' ')[0]

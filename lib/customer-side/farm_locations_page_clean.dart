@@ -1272,7 +1272,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          valueColor: AlwaysStoppedAnimation<Color?>(Colors.green),
         ),
       );
     }

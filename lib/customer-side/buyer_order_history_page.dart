@@ -405,11 +405,29 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                     orderId: orderId,
                   );
                   
-                  // Update order to mark as reported
-                  await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
-                    'hasReport': true,
-                    'reportTimestamp': FieldValue.serverTimestamp(),
-                  });
+                  // Update ALL item docs for this order to mark as reported
+                  final sharedOrderId = (order['orderId'] ?? orderId).toString();
+                  final query = await FirebaseFirestore.instance
+                      .collection('orders')
+                      .where('orderId', isEqualTo: sharedOrderId)
+                      .where('buyerId', isEqualTo: user.uid)
+                      .get();
+                  if (query.docs.isNotEmpty) {
+                    final batch = FirebaseFirestore.instance.batch();
+                    for (final d in query.docs) {
+                      batch.update(d.reference, {
+                        'hasReport': true,
+                        'reportTimestamp': FieldValue.serverTimestamp(),
+                      });
+                    }
+                    await batch.commit();
+                  } else {
+                    // Fallback: update the clicked doc to avoid failures if query misses
+                    await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+                      'hasReport': true,
+                      'reportTimestamp': FieldValue.serverTimestamp(),
+                    });
+                  }
                   
                   // Check if supplier should be banned (3+ reports)
                   await _checkAndApplyAutoBan(order['sellerId'] ?? '');

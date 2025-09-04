@@ -155,6 +155,7 @@ class ChatService {
         'lastMessage': text.trim(),
         'lastMessageTime': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        'lastMessageSenderId': senderId,
       });
       
       // Send notification to the other party

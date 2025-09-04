@@ -587,7 +587,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                          valueColor: AlwaysStoppedAnimation<Color?>(Color(0xFF6CA04A)),
                         ),
                       )
                     else if (_useCurrentLocation)

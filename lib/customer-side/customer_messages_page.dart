@@ -191,6 +191,8 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
               final supplierName = data['supplierName'] ?? 'Unknown Supplier';
               final lastMessage = data['lastMessage'] ?? '';
               final lastMessageTime = data['lastMessageTime'] as Timestamp?;
+              final lastSenderId = data['lastMessageSenderId'];
+              final showUnread = lastSenderId != null && lastSenderId != user.uid && (lastMessage?.toString().isNotEmpty ?? false);
               final isSelected = _selectedConversations.contains(conversationId);
 
               return Container(
@@ -264,10 +266,37 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                           isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
                           color: isSelected ? Color(0xFF6CA04A) : Color(0xFF757575),
                         )
-                      : Icon(
-                          Icons.arrow_forward_ios,
-                          size: screenWidth * 0.04,
-                          color: Color(0xFF757575),
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (lastMessageTime != null)
+                              Text(
+                                _formatTimestamp(lastMessageTime),
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.03,
+                                  color: Color(0xFF757575),
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            if (showUnread)
+                              Container(
+                                margin: EdgeInsets.only(top: 4),
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'NEW',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                   onTap: () {
                     if (_isSelectionMode) {

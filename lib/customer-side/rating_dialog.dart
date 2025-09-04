@@ -53,6 +53,25 @@ class _RatingDialogState extends State<RatingDialog> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
+      // Prevent duplicate rating submission for the same order by the same buyer
+      final existing = await FirebaseFirestore.instance
+          .collection('order_ratings')
+          .where('orderId', isEqualTo: widget.orderId)
+          .where('buyerId', isEqualTo: user.uid)
+          .limit(1)
+          .get();
+      if (existing.docs.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have already rated this order'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.of(context).pop(false);
+        return;
+      }
+
       // Create rating document
       final ratingData = {
         'orderId': widget.orderId,
@@ -279,7 +298,7 @@ class _RatingDialogState extends State<RatingDialog> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color?>(Colors.white),
                   ),
                 )
               : Text(

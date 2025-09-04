@@ -399,6 +399,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   'createdAt': FieldValue.serverTimestamp(),
                   'updatedAt': FieldValue.serverTimestamp(),
                   'imageUrl': _imageUrl ?? '',
+                  'popularity': 0, // default favorites count
                   'status': status,
                   'isVerified': isVerified,
                   'rejectionReason': '',
