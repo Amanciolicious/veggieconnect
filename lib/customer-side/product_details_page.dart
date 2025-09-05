@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/star_rating_widget.dart';
 import '../widgets/product_feedback_modal.dart';
+import '../widgets/product_rating_dialog.dart';
+import '../services/product_rating_service.dart';
 import 'package:flutter/material.dart';
 import 'buyer_chat_page.dart';
 import 'customer_home_page.dart';
@@ -189,8 +191,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               SizedBox(width: screenWidth * 0.02),
                               StreamBuilder<QuerySnapshot>(
                                 stream: FirebaseFirestore.instance
-                                    .collection('ratings')
-                                    .where('supplierId', isEqualTo: product['sellerId'])
+                                    .collection('product_ratings')
+                                    .where('productId', isEqualTo: widget.productId)
                                     .snapshots(),
                                 builder: (context, snapshot) {
                                   if (!snapshot.hasData) {
@@ -252,8 +254,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           SizedBox(height: screenWidth * 0.02),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
-                                .collection('ratings')
-                                .where('supplierId', isEqualTo: product['sellerId'])
+                                .collection('product_ratings')
+                                .where('productId', isEqualTo: widget.productId)
                                 .snapshots(),
                             builder: (context, snapshot) {
                               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -346,8 +348,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           SizedBox(height: screenWidth * 0.02),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
-                                .collection('ratings')
-                                .where('supplierId', isEqualTo: product['sellerId'])
+                                .collection('product_ratings')
+                                .where('productId', isEqualTo: widget.productId)
                                 .snapshots(),
                             builder: (context, snapshot) {
                               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -440,43 +442,74 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     Spacer(),
                                     StreamBuilder<QuerySnapshot>(
                                       stream: FirebaseFirestore.instance
-                                          .collection('order_ratings')
-                                          .where('products', arrayContains: {
-                                            'productId': widget.productId,
-                                          })
+                                          .collection('product_ratings')
+                                          .where('productId', isEqualTo: widget.productId)
                                           .snapshots(),
                                       builder: (context, snapshot) {
                                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                                          return Text(
-                                            'No reviews yet',
-                                            style: TextStyle(
-                                              fontSize: screenWidth * 0.035,
-                                              color: Colors.grey[600],
-                                              fontFamily: 'Poppins',
-                                            ),
+                                          return Row(
+                                            children: [
+                                              Text(
+                                                'No reviews yet',
+                                                style: TextStyle(
+                                                  fontSize: screenWidth * 0.035,
+                                                  color: Colors.grey[600],
+                                                  fontFamily: 'Poppins',
+                                                ),
+                                              ),
+                                              SizedBox(width: screenWidth * 0.02),
+                                              if (user != null && product['sellerId'] != user?.uid)
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (context) => ProductRatingDialog(
+                                                        productId: widget.productId,
+                                                        supplierId: product['sellerId'] ?? '',
+                                                        productName: product['name'] ?? 'Product',
+                                                        supplierName: product['supplierName'] ?? 'Supplier',
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    padding: EdgeInsets.symmetric(
+                                                      horizontal: screenWidth * 0.03,
+                                                      vertical: screenWidth * 0.015,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Color(0xFF6CA04A),
+                                                      borderRadius: BorderRadius.circular(20),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.star,
+                                                          color: Colors.white,
+                                                          size: screenWidth * 0.035,
+                                                        ),
+                                                        SizedBox(width: screenWidth * 0.015),
+                                                        Text(
+                                                          'Rate Product',
+                                                          style: TextStyle(
+                                                            fontSize: screenWidth * 0.032,
+                                                            color: Colors.white,
+                                                            fontWeight: FontWeight.w600,
+                                                            fontFamily: 'Poppins',
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
                                           );
                                         }
                                         
                                         final reviews = snapshot.data!.docs;
-                                        final totalRating = reviews.fold<double>(0, (sum, d) {
-                                          final products = d['products'] as List<dynamic>? ?? [];
-                                          for (final product in products) {
-                                            if (product is Map<String, dynamic> && 
-                                                product['productId'] == widget.productId) {
-                                              return sum + ((d['rating'] ?? 0) as num).toDouble();
-                                            }
-                                          }
-                                          return sum;
-                                        });
-                                        
-                                        final productReviews = reviews.where((d) {
-                                          final products = d['products'] as List<dynamic>? ?? [];
-                                          return products.any((product) => 
-                                            product is Map<String, dynamic> && 
-                                            product['productId'] == widget.productId);
-                                        }).length;
-                                        
-                                        final average = productReviews > 0 ? totalRating / productReviews : 0.0;
+                                        final totalRating = reviews.fold<double>(0, (sum, d) => 
+                                          sum + ((d['rating'] ?? 0) as num).toDouble());
+                                        final average = totalRating / reviews.length;
                                         
                                         return Row(
                                           children: [
@@ -487,7 +520,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                             ),
                                             SizedBox(width: screenWidth * 0.02),
                                             Text(
-                                              '($productReviews)',
+                                              '(${reviews.length})',
                                               style: TextStyle(
                                                 fontSize: screenWidth * 0.035,
                                                 color: Color(0xFF757575),
@@ -537,6 +570,52 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                                 ),
                                               ),
                                             ),
+                                            if (user != null && product['sellerId'] != user?.uid) ...[
+                                              SizedBox(width: screenWidth * 0.02),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) => ProductRatingDialog(
+                                                      productId: widget.productId,
+                                                      supplierId: product['sellerId'] ?? '',
+                                                      productName: product['name'] ?? 'Product',
+                                                      supplierName: product['supplierName'] ?? 'Supplier',
+                                                    ),
+                                                  );
+                                                },
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.03,
+                                                    vertical: screenWidth * 0.015,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.orange,
+                                                    borderRadius: BorderRadius.circular(20),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.star,
+                                                        color: Colors.white,
+                                                        size: screenWidth * 0.035,
+                                                      ),
+                                                      SizedBox(width: screenWidth * 0.015),
+                                                      Text(
+                                                        'Rate',
+                                                        style: TextStyle(
+                                                          fontSize: screenWidth * 0.032,
+                                                          color: Colors.white,
+                                                          fontWeight: FontWeight.w600,
+                                                          fontFamily: 'Poppins',
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         );
                                       },

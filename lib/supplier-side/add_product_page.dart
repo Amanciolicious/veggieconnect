@@ -9,6 +9,7 @@ import 'dart:io';
 import '../services/cloudinary_service.dart';
 import '../services/content_filter_service.dart';
 import '../services/tax_service.dart';
+import '../services/product_rating_service.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -422,6 +423,9 @@ class _AddProductPageState extends State<AddProductPage> {
               originalPrice: originalPrice,
               netPrice: netPrice,
             );
+            
+            // Initialize product rating fields
+            await ProductRatingService.initializeProductRating(productId);
           }
           
           // Since image is already uploaded to Cloudinary in _pickImage, use the URL directly

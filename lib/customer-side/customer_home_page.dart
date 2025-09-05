@@ -933,29 +933,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ),
         ),
         
-        // Test Notification Button (for development/testing)
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
-          child: ElevatedButton.icon(
-            onPressed: () async {
-              await NotificationService().sendTestNotification();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Test notification sent!'),
-                  backgroundColor: Color(0xFF4CAF50),
-                ),
-              );
-            },
-            icon: const Icon(Icons.notifications_active),
-            label: const Text('Send Test Notification'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-          ),
-        ),
-        
         const SizedBox(height: 20),
       ],
     );

@@ -109,10 +109,8 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                    .collection('order_ratings')
-                    .where('products', arrayContains: {
-                      'productId': widget.productId,
-                    })
+                    .collection('product_ratings')
+                    .where('productId', isEqualTo: widget.productId)
                     .orderBy('timestamp', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {

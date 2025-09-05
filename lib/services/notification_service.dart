@@ -963,19 +963,6 @@ class NotificationService {
     markAsRead(notificationId);
   }
 
-  // Test method to send a sample notification
-  Future<void> sendTestNotification() async {
-    await sendInAppNotification(
-      title: 'Test Notification',
-      body: 'This is a test notification to verify the system is working',
-      type: 'test',
-      data: {
-        'screen': 'home',
-        'test': true,
-      },
-    );
-  }
-
   // Dispose resources
   void dispose() {
     _notificationController.close();
