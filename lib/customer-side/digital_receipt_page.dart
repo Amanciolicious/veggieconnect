@@ -67,15 +67,43 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
 
   Future<void> _downloadReceipt() async {
     try {
-      // Request storage permission
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Storage permission is required to save the receipt'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      // Request storage permissions
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+        Permission.manageExternalStorage,
+      ].request();
+      
+      // Check if any storage permission is granted
+      bool hasStoragePermission = statuses[Permission.storage]?.isGranted == true ||
+                                 statuses[Permission.manageExternalStorage]?.isGranted == true;
+      
+      if (!hasStoragePermission) {
+        // Show dialog to guide user to settings
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Storage Permission Required'),
+              content: Text(
+                'To save receipts, please grant storage permission in your device settings.\n\n'
+                'Go to Settings > Apps > VeggieConnect > Permissions > Storage and enable it.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    openAppSettings();
+                  },
+                  child: Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+        }
         return;
       }
 

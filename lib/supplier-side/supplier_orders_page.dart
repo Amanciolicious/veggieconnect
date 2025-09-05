@@ -60,31 +60,27 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: const Color(0xFF6CA04A),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const SupplierDashboard()),
-            );
-          },
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Orders Management',
           style: TextStyle(
-            fontSize: screenWidth * 0.055,
             color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           tabs: const [
-            Tab(text: 'All Orders'),
+            Tab(text: 'All Order'),
             Tab(text: 'Pending'),
             Tab(text: 'Processing'),
             Tab(text: 'Picked Up'),
@@ -94,10 +90,129 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       body: Column(
         children: [
           // Search and Filter Section
-          _buildSearchAndFilterSection(screenWidth),
-          
-          // Statistics Cards
-          _buildStatisticsSection(screenWidth),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Column(
+              children: [
+                // Search Bar
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search orders by product, buyer, ...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF6CA04A)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Filter Row
+                Row(
+                  children: [
+                    // Status Filter
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _statusFilter,
+                        decoration: InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        items: _statusOptions.map((String status) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status.toUpperCase()),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _statusFilter = newValue!;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Date Filter
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _dateFilter,
+                        decoration: InputDecoration(
+                          labelText: 'Date',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        items: _dateOptions.map((String date) {
+                          return DropdownMenuItem<String>(
+                            value: date,
+                            child: Text(date.replaceAll('_', ' ').toUpperCase()),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _dateFilter = newValue!;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Urgent Button
+                if (_showOnlyPending)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning, color: Colors.red, size: 16),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Urgent',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
           
           // Orders List
           Expanded(
@@ -107,7 +222,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                 _buildOrdersList('all'),
                 _buildOrdersList('pending'),
                 _buildOrdersList('processing'),
-                _buildOrdersList('completed'),
+                _buildOrdersList('picked_up'),
               ],
             ),
           ),
@@ -116,349 +231,521 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     );
   }
 
-  Widget _buildSearchAndFilterSection(double screenWidth) {
+  Widget _buildOrdersList(String status) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _getOrdersStream(status),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No orders found',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Orders will appear here when customers place them',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final orders = snapshot.data!.docs;
+        final filteredOrders = _filterOrders(orders, status);
+
+        // Order Summary Cards
+        return Column(
+          children: [
+            // Summary Cards
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Total',
+                      orders.length.toString(),
+                      Icons.shopping_cart,
+                      const Color(0xFF6CA04A),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Pending',
+                      orders.where((doc) => 
+                        (doc.data() as Map<String, dynamic>)['status'] == 'pending' ||
+                        (doc.data() as Map<String, dynamic>)['status'] == null
+                      ).length.toString(),
+                      Icons.schedule,
+                      Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Processing',
+                      orders.where((doc) => 
+                        (doc.data() as Map<String, dynamic>)['status'] == 'processing'
+                      ).length.toString(),
+                      Icons.sync,
+                      Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Picked Up',
+                      orders.where((doc) => 
+                        (doc.data() as Map<String, dynamic>)['status'] == 'picked_up'
+                      ).length.toString(),
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Orders List
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: filteredOrders.length,
+                itemBuilder: (context, index) {
+                  final doc = filteredOrders[index];
+                  final order = doc.data() as Map<String, dynamic>;
+                  return _buildOrderCard(order, doc.id);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryCard(String title, String count, IconData icon, Color color) {
     return Container(
-      padding: EdgeInsets.all(screenWidth * 0.04),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
-            blurRadius: 3,
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Search Bar
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search orders by product, buyer, or order ID...',
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenWidth * 0.03,
-              ),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            count,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value.toLowerCase();
-              });
-            },
           ),
-          
-          SizedBox(height: screenWidth * 0.03),
-          
-          // Filter Row - responsive using Wrap to avoid overflow
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final double spacing = screenWidth * 0.02;
-              final double colWidth = (constraints.maxWidth - spacing) / 2;
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildFilterDropdown(
-                      'Status',
-                      _statusFilter,
-                      _statusOptions,
-                      (value) => setState(() => _statusFilter = value),
-                    ),
-                  ),
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildFilterDropdown(
-                      'Date',
-                      _dateFilter,
-                      _dateOptions,
-                      (value) => setState(() => _dateFilter = value),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => setState(() => _showOnlyPending = !_showOnlyPending),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _showOnlyPending ? Colors.green : Colors.red,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.priority_high,
-                          size: 16,
-                          color: _showOnlyPending ? Colors.red : Colors.deepOrange,
-                        ),
-                        SizedBox(width: screenWidth * 0.01),
-                        Text(
-                          'Urgent',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _showOnlyPending ? Colors.white : Colors.white,
-                            fontWeight: _showOnlyPending ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterDropdown(
-    String label,
-    String currentValue,
-    List<String> options,
-    Function(String) onChanged,
-  ) {
-    return DropdownButtonFormField<String>(
-      initialValue: currentValue,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      items: options.map((option) {
-        return DropdownMenuItem(
-          value: option,
-          child: Text(
-            option.replaceAll('_', ' ').toUpperCase(),
-            style: const TextStyle(fontSize: 12),
-          ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        if (value != null) onChanged(value);
-      },
-    );
-  }
-
-  Widget _buildStatisticsSection(double screenWidth) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('orders')
-            .where('sellerId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const SizedBox.shrink();
-          }
-
-          final orders = snapshot.data!.docs;
-          final totalOrders = orders.length;
-          final pendingOrders = orders.where((doc) {
-            final s = (doc.data() as Map<String, dynamic>)['status'];
-            return s == null || s == 'pending' || s == 'placed';
-          }).length;
-          final processingOrders = orders.where((doc) => 
-            (doc.data() as Map<String, dynamic>)['status'] == 'processing').length;
-          final completedOrders = orders.where((doc) => 
-            (doc.data() as Map<String, dynamic>)['status'] == 'picked_up').length;
-
-          return Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Total',
-                  totalOrders.toString(),
-                  Icons.shopping_cart,
-                  Colors.green,
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Expanded(
-                child: _buildStatCard(
-                  'Pending',
-                  pendingOrders.toString(),
-                  Icons.schedule,
-                  Colors.orange,
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Expanded(
-                child: _buildStatCard(
-                  'Processing',
-                  processingOrders.toString(),
-                  Icons.pending,
-                  Colors.blue,
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Expanded(
-                child: _buildStatCard(
-                  'Picked Up',
-                  completedOrders.toString(),
-                  Icons.check_circle,
-                  Colors.green,
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        return Card(
-          elevation: 2,
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: (w * 0.22).clamp(18, 24)),
-                const SizedBox(height: 4),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: (w * 0.25).clamp(14, 18),
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ),
-                Text(
-                  title,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: (w * 0.18).clamp(10, 12),
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildOrdersList(String statusFilter) {
+  Stream<QuerySnapshot> _getOrdersStream(String status) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Center(child: Text('Not logged in'));
+      return Stream.empty();
     }
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+    Query query = FirebaseFirestore.instance
+        .collection('orders')
+        .where('sellerId', isEqualTo: user.uid)
+        .orderBy('createdAt', descending: true);
+
+    if (status != 'all' && status != 'pending') {
+      query = query.where('status', isEqualTo: status);
+    }
+
+    return query.snapshots();
+  }
+
+  List<QueryDocumentSnapshot> _filterOrders(List<QueryDocumentSnapshot> orders, String status) {
+    return orders.where((doc) {
+      final order = doc.data() as Map<String, dynamic>;
+      
+      // Status filter for pending (handle both 'pending' and null values)
+      if (status == 'pending') {
+        final orderStatus = order['status'];
+        if (orderStatus != 'pending' && orderStatus != null) {
+          return false;
+        }
+      }
+      
+      // Search filter
+      if (_searchQuery.isNotEmpty) {
+        final productName = (order['productName'] ?? '').toString().toLowerCase();
+        final buyerName = (order['buyerName'] ?? '').toString().toLowerCase();
+        final searchQuery = _searchQuery.toLowerCase();
+        
+        if (!productName.contains(searchQuery) && !buyerName.contains(searchQuery)) {
+          return false;
+        }
+      }
+      
+      // Date filter
+      if (_dateFilter != 'all') {
+        final createdAt = order['createdAt'] as Timestamp?;
+        if (createdAt == null) return false;
+        
+        final orderDate = createdAt.toDate();
+        switch (_dateFilter) {
+          case 'today':
+            if (!_isToday(orderDate)) return false;
+            break;
+          case 'this_week':
+            if (!_isThisWeek(orderDate)) return false;
+            break;
+          case 'this_month':
+            if (!_isThisMonth(orderDate)) return false;
+            break;
+          case 'last_month':
+            if (!_isLastMonth(orderDate)) return false;
+            break;
+        }
+      }
+      
+      return true;
+    }).toList();
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  bool _isThisWeek(DateTime date) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    return date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
+           date.isBefore(endOfWeek.add(const Duration(days: 1)));
+  }
+
+  bool _isThisMonth(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month;
+  }
+
+  bool _isLastMonth(DateTime date) {
+    final now = DateTime.now();
+    final lastMonth = now.month == 1 ? 12 : now.month - 1;
+    final lastMonthYear = now.month == 1 ? now.year - 1 : now.year;
+    return date.year == lastMonthYear && date.month == lastMonth;
+  }
+
+  void _handleOrderAction(String orderId, String action, Map<String, dynamic> order) {
+    switch (action) {
+      case 'view':
+        _showOrderDetails(order, orderId);
+        break;
+      case 'process':
+        _updateOrderStatus(orderId, 'processing');
+        break;
+      case 'pickup':
+        _updateOrderStatus(orderId, 'picked_up');
+        break;
+      case 'cancel':
+        _showCancelOrderDialog(orderId);
+        break;
+      case 'message':
+        _openChatWithBuyer(order['buyerId'], order['buyerName']);
+        break;
+    }
+  }
+
+  Future<void> _updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      // Get order data before updating
+      final orderDoc = await FirebaseFirestore.instance
           .collection('orders')
-          .where('sellerId', isEqualTo: user.uid)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          .doc(orderId)
+          .get();
+      
+      if (!orderDoc.exists) {
+        throw Exception('Order not found');
+      }
+      
+      final orderData = orderDoc.data() as Map<String, dynamic>;
+      final buyerId = orderData['buyerId'] as String?;
+      final buyerName = orderData['buyerName'] as String?;
+      
+      // Update order status
+      await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .update({
+        'status': newStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Send notification to customer
+      if (buyerId != null) {
+        final notificationService = NotificationService();
+        String title = '';
+        String body = '';
+        
+        switch (newStatus) {
+          case 'processing':
+            title = 'Order Processing Started';
+            body = 'Your order #${orderId.substring(0, 8)} is now being processed by the supplier.';
+            break;
+          case 'picked_up':
+            title = 'Order Picked Up';
+            body = 'Your order #${orderId.substring(0, 8)} has been picked up successfully!';
+            break;
+          case 'cancelled':
+            title = 'Order Cancelled';
+            body = 'Your order #${orderId.substring(0, 8)} has been cancelled.';
+            break;
         }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        var orders = snapshot.data!.docs;
-
-        // Apply filters
-        orders = orders.where((doc) {
-          final order = doc.data() as Map<String, dynamic>;
-          // Normalize legacy/unknown statuses to pending
-          final normalizedStatus = (order['status'] == null || order['status'] == 'placed')
-              ? 'pending'
-              : order['status'];
-          
-          // Status filter
-          if (statusFilter != 'all' && statusFilter != 'completed') {
-            if (normalizedStatus != statusFilter) return false;
-          } else if (statusFilter == 'completed') {
-            if (normalizedStatus != 'picked_up') return false;
-          }
-
-          // Search filter
-          if (_searchQuery.isNotEmpty) {
-            final searchLower = _searchQuery.toLowerCase();
-            final productName = (order['productName'] ?? '').toString().toLowerCase();
-            final buyerName = (order['buyerName'] ?? '').toString().toLowerCase();
-            final orderId = doc.id.toLowerCase();
-            
-            if (!productName.contains(searchLower) &&
-                !buyerName.contains(searchLower) &&
-                !orderId.contains(searchLower)) {
-              return false;
-            }
-          }
-
-          // Date filter
-          if (_dateFilter != 'all') {
-            final createdAt = order['createdAt'] as Timestamp?;
-            if (createdAt != null) {
-              final orderDate = createdAt.toDate();
-              final now = DateTime.now();
-              
-              switch (_dateFilter) {
-                case 'today':
-                  if (!_isSameDay(orderDate, now)) return false;
-                  break;
-                case 'this_week':
-                  if (!_isThisWeek(orderDate)) return false;
-                  break;
-                case 'this_month':
-                  if (!_isThisMonth(orderDate)) return false;
-                  break;
-                case 'last_month':
-                  if (!_isLastMonth(orderDate)) return false;
-                  break;
-              }
-            }
-          }
-
-          return true;
-        }).toList();
-
-        if (orders.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            final doc = orders[index];
-            final order = doc.data() as Map<String, dynamic>;
-            final orderId = doc.id;
-            
-            return FutureBuilder<String>(
-              future: _resolveBuyerName(order['buyerId'] as String?, order['buyerName'] as String?),
-              builder: (context, snap) {
-                final resolved = Map<String, dynamic>.from(order);
-                // Ensure UI uses normalized status
-                if (resolved['status'] == null || resolved['status'] == 'placed') {
-                  resolved['status'] = 'pending';
-                }
-                if (snap.hasData) resolved['buyerName'] = snap.data;
-                return _buildOrderCard(resolved, orderId);
-              },
-            );
+        
+        await notificationService.sendFCMNotification(
+          recipientId: buyerId,
+          title: title,
+          body: body,
+          type: 'order_update',
+          data: {
+            'orderId': orderId,
+            'status': newStatus,
+            'screen': 'order_details',
           },
         );
-      },
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order status updated to ${newStatus.replaceAll('_', ' ').toUpperCase()}'),
+            backgroundColor: const Color(0xFF6CA04A),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update order: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String> _getBuyerName(String? buyerId) async {
+    if (buyerId == null) return 'Unknown Buyer';
+    
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(buyerId)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        return userData['name'] ?? 'Unknown Buyer';
+      }
+    } catch (e) {
+      print('Error fetching buyer name: $e');
+    }
+    
+    return 'Unknown Buyer';
+  }
+
+  void _showOrderDetails(Map<String, dynamic> order, String orderId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Order Details - #${orderId.substring(0, 8)}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildOrderDetailRow('Product', order['productName'] ?? 'N/A'),
+              _buildOrderDetailRow('Quantity', '${order['quantity'] ?? 1}'),
+              _buildOrderDetailRow('Price', '₱${order['price'] ?? 0}'),
+              _buildOrderDetailRow('Total', '₱${((order['price'] ?? 0) * (order['quantity'] ?? 1)).toStringAsFixed(2)}'),
+              _buildOrderDetailRow('Buyer', order['buyerName'] ?? 'N/A'),
+              _buildOrderDetailRow('Payment Method', _getPaymentMethodDisplayName(order['paymentMethod'] ?? 'N/A')),
+              _buildOrderDetailRow('Status', ((order['status'] == null || order['status'] == 'placed') ? 'pending' : order['status']).toUpperCase()),
+              if (order['note'] != null)
+                _buildOrderDetailRow('Note', order['note']),
+              if (order['createdAt'] != null)
+                _buildOrderDetailRow('Created', DateFormat('MMM dd, yyyy - HH:mm').format((order['createdAt'] as Timestamp).toDate())),
+              
+              // Rating and Feedback Section
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Customer Rating & Feedback',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6CA04A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('product_ratings')
+                    .where('productId', isEqualTo: order['productId'])
+                    .snapshots(),
+                builder: (context, ratingSnapshot) {
+                  if (ratingSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  if (!ratingSnapshot.hasData || ratingSnapshot.data!.docs.isEmpty) {
+                    return const Text('No rating available');
+                  }
+                  
+                  // Find rating from the specific buyer for this order
+                  final ratings = ratingSnapshot.data!.docs;
+                  final buyerId = order['buyerId'];
+                  final buyerRating = ratings.where((doc) => 
+                    doc['buyerId'] == buyerId
+                  ).toList();
+                  
+                  if (buyerRating.isEmpty) {
+                    return const Text('No rating available');
+                  }
+                  
+                  final ratingDoc = buyerRating.first;
+                  final ratingData = ratingDoc.data() as Map<String, dynamic>;
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Star Rating Display
+                      Row(
+                        children: [
+                          Text(
+                            'Rating: ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          StarRatingDisplay(
+                            rating: (ratingData['rating'] ?? 0).toDouble(),
+                            size: 20.0,
+                            activeColor: Color(0xFFFFD700),
+                            inactiveColor: Colors.grey[300]!,
+                            showRatingText: true,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Feedback
+                      if (ratingData['feedback'] != null && ratingData['feedback'].toString().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () => _showFeedbackModal(context, ratingData),
+                          icon: Icon(Icons.message, size: 16),
+                          label: Text('View Customer Feedback'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF6CA04A),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                              SizedBox(width: 8),
+                              Text(
+                                'No written feedback provided',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -492,11 +779,14 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       children: [
                         Row(
                           children: [
-                            Text(
-                              'Order #${orderId.substring(0, 8)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            Flexible(
+                              child: Text(
+                                'Order #${orderId.substring(0, 8)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (order['hasRating'] == true) ...[
@@ -542,7 +832,9 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       ],
                     ),
                   ),
+                  SizedBox(width: 8),
                   _buildStatusChip(status),
+                  SizedBox(width: 4),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     onSelected: (value) => _handleOrderAction(orderId, value, order),
@@ -589,21 +881,25 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                           productName,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Qty: $quantity x ₱${price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
-                        Text(
-                          'Qty: $quantity × ₱${price.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
+                        const SizedBox(height: 4),
                         Text(
                           'Buyer: $buyerName',
                           style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -619,14 +915,14 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: Colors.green,
+                          color: Color(0xFF6CA04A),
                         ),
                       ),
-                      Text(
+                      const Text(
                         'Total',
                         style: TextStyle(
+                          fontSize: 12,
                           color: Colors.grey,
-                          fontSize: 10,
                         ),
                       ),
                     ],
@@ -657,7 +953,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         ),
       ),
       ),
-  );}
+    );
+  }
 
   Widget _buildStatusChip(String status) {
     // Normalize for display
@@ -773,303 +1070,19 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     return actions;
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.shopping_cart_outlined,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No orders found',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Orders will appear here when customers place them',
-            style: TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _getPaymentMethodDisplayName(String method) {
     switch (method) {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
-      case 'paypal_sandbox':
-        return 'PayPal Sandbox';
+      case 'paypal':
+        return 'PayPal';
+      case 'gcash':
+        return 'GCash';
+      case 'bank_transfer':
+        return 'Bank Transfer';
       default:
         return method.toUpperCase();
     }
-  }
-
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
-  }
-
-  bool _isThisWeek(DateTime date) {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final endOfWeek = startOfWeek.add(const Duration(days: 6));
-    return date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
-           date.isBefore(endOfWeek.add(const Duration(days: 1)));
-  }
-
-  bool _isThisMonth(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year && date.month == now.month;
-  }
-
-  bool _isLastMonth(DateTime date) {
-    final now = DateTime.now();
-    final lastMonth = now.month == 1 ? 12 : now.month - 1;
-    final lastMonthYear = now.month == 1 ? now.year - 1 : now.year;
-    return date.year == lastMonthYear && date.month == lastMonth;
-  }
-
-  void _handleOrderAction(String orderId, String action, Map<String, dynamic> order) {
-    switch (action) {
-      case 'view':
-        _showOrderDetails(order, orderId);
-        break;
-      case 'process':
-        _updateOrderStatus(orderId, 'processing');
-        break;
-      case 'pickup':
-        _updateOrderStatus(orderId, 'picked_up');
-        break;
-      case 'cancel':
-        _showCancelOrderDialog(orderId);
-        break;
-      case 'message':
-        _openChatWithBuyer(order['buyerId'], order['buyerName']);
-        break;
-    }
-  }
-
-  Future<void> _updateOrderStatus(String orderId, String newStatus) async {
-    try {
-      // Get order data before updating
-      final orderDoc = await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .get();
-      
-      if (!orderDoc.exists) {
-        throw Exception('Order not found');
-      }
-      
-      final orderData = orderDoc.data() as Map<String, dynamic>;
-      final buyerId = orderData['buyerId'] as String?;
-      final buyerName = orderData['buyerName'] as String?;
-      
-      // Update order status
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .update({
-        'status': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Send notification to customer
-      if (buyerId != null) {
-        final notificationService = NotificationService();
-        await notificationService.sendFCMNotification(
-          recipientId: buyerId,
-          title: 'Order Update',
-          body: 'Your order #$orderId status has been updated to ${newStatus.toUpperCase()}',
-          type: 'order_update',
-          data: {
-            'orderId': orderId,
-            'status': newStatus,
-            'screen': 'order_details',
-          },
-        );
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Order status updated to ${newStatus.toUpperCase()}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating order: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<String> _resolveBuyerName(String? buyerId, String? fallback) async {
-    if (fallback != null && fallback.trim().isNotEmpty) return fallback;
-    if (buyerId == null) return 'Unknown Buyer';
-    try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(buyerId).get();
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        final name = (data['name'] ?? '').toString().trim();
-        if (name.isNotEmpty) return name;
-      }
-    } catch (_) {}
-    return 'Unknown Buyer';
-  }
-
-  void _showOrderDetails(Map<String, dynamic> order, String orderId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Order Details - #${orderId.substring(0, 8)}'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildOrderDetailRow('Product', order['productName'] ?? 'N/A'),
-              _buildOrderDetailRow('Quantity', '${order['quantity'] ?? 1}'),
-              _buildOrderDetailRow('Price', '₱${order['price'] ?? 0}'),
-              _buildOrderDetailRow('Total', '₱${((order['price'] ?? 0) * (order['quantity'] ?? 1)).toStringAsFixed(2)}'),
-              _buildOrderDetailRow('Buyer', order['buyerName'] ?? 'N/A'),
-              _buildOrderDetailRow('Payment Method', _getPaymentMethodDisplayName(order['paymentMethod'] ?? 'N/A')),
-              _buildOrderDetailRow('Status', ((order['status'] == null || order['status'] == 'placed') ? 'pending' : order['status']).toUpperCase()),
-              if (order['note'] != null)
-                _buildOrderDetailRow('Note', order['note']),
-              if (order['createdAt'] != null)
-                _buildOrderDetailRow('Created', DateFormat('MMM dd, yyyy - HH:mm').format((order['createdAt'] as Timestamp).toDate())),
-              
-              // Rating and Feedback Section
-              if (order['hasRating'] == true) ...[
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
-                Text(
-                  'Customer Rating & Feedback',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6CA04A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('order_ratings')
-                      .where('orderId', isEqualTo: orderId)
-                      .snapshots(),
-                  builder: (context, ratingSnapshot) {
-                    if (ratingSnapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    
-                    if (!ratingSnapshot.hasData || ratingSnapshot.data!.docs.isEmpty) {
-                      return const Text('No rating available');
-                    }
-                    
-                    final ratingDoc = ratingSnapshot.data!.docs.first;
-                    final ratingData = ratingDoc.data() as Map<String, dynamic>;
-                    
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Star Rating Display
-                        Row(
-                          children: [
-                            Text(
-                              'Rating: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            StarRatingDisplay(
-                              rating: (ratingData['rating'] ?? 0).toDouble(),
-                              size: 20.0,
-                              activeColor: Color(0xFFFFD700),
-                              inactiveColor: Colors.grey[300]!,
-                              showRatingText: true,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Feedback Button
-                        if (ratingData['feedback'] != null && ratingData['feedback'].toString().isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          ElevatedButton.icon(
-                            onPressed: () => _showFeedbackModal(context, ratingData),
-                            icon: Icon(Icons.message, size: 16),
-                            label: Text('View Customer Feedback'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF6CA04A),
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-                                SizedBox(width: 8),
-                                Text(
-                                  'No written feedback provided',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildOrderDetailRow(String label, String value) {
@@ -1087,6 +1100,79 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           ),
           Expanded(
             child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFeedbackModal(BuildContext context, Map<String, dynamic> ratingData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.star, color: Color(0xFFFFD700), size: 20),
+            SizedBox(width: 8),
+            Text('Customer Feedback'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Rating
+            Row(
+              children: [
+                Text(
+                  'Rating: ',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                StarRatingDisplay(
+                  rating: (ratingData['rating'] ?? 0).toDouble(),
+                  size: 20.0,
+                  activeColor: Color(0xFFFFD700),
+                  inactiveColor: Colors.grey[300]!,
+                  showRatingText: true,
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            // Feedback
+            Text(
+              'Feedback:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Text(
+                ratingData['feedback'] ?? 'No feedback provided',
+                style: TextStyle(fontSize: 14),
+              ),
+            ),
+            if (ratingData['timestamp'] != null) ...[
+              SizedBox(height: 12),
+              Text(
+                'Submitted: ${DateFormat('MMM dd, yyyy - HH:mm').format((ratingData['timestamp'] as Timestamp).toDate())}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
           ),
         ],
       ),
@@ -1146,11 +1232,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             .get();
         if (buyerDoc.exists) {
           final buyerData = buyerDoc.data() as Map<String, dynamic>;
-          actualBuyerName = buyerData['name'] ?? buyerName ?? 'Unknown Buyer';
+          actualBuyerName = buyerData['name'] ?? actualBuyerName;
         }
       } catch (e) {
-        // Use fallback name if Firestore fetch fails
-        actualBuyerName = buyerName ?? 'Unknown Buyer';
+        print('Error fetching buyer name: $e');
       }
 
       // Fetch supplier's real name from Firestore
@@ -1161,14 +1246,13 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             .get();
         if (supplierDoc.exists) {
           final supplierData = supplierDoc.data() as Map<String, dynamic>;
-          actualSupplierName = supplierData['name'] ?? 'Supplier';
+          actualSupplierName = supplierData['name'] ?? actualSupplierName;
         }
       } catch (e) {
-        // Use fallback name if Firestore fetch fails
-        actualSupplierName = 'Supplier';
+        print('Error fetching supplier name: $e');
       }
 
-      // Get or create conversation
+      // Create or get chat room
       final chatService = ChatService();
       final conversationId = await chatService.getOrCreateConversation(
         buyerId: buyerId,
@@ -1177,7 +1261,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         supplierName: actualSupplierName,
       );
 
-      // Navigate to chat page
       if (mounted) {
         Navigator.push(
           context,
@@ -1198,168 +1281,4 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       }
     }
   }
-
-
-  void _showFeedbackModal(BuildContext context, Map<String, dynamic> ratingData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Color(0xFF6CA04A).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.message, color: Color(0xFF6CA04A), size: 20),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Customer Feedback',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6CA04A),
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Customer Info
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Color(0xFF6CA04A).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFF6CA04A).withOpacity(0.2)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF6CA04A).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(Icons.person, color: Color(0xFF6CA04A), size: 20),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Customer',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6CA04A).withOpacity(0.8),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            ratingData['buyerName'] ?? 'Anonymous',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF6CA04A),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 16),
-              
-              // Rating Display
-              Row(
-                children: [
-                  Text(
-                    'Rating: ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  StarRatingDisplay(
-                    rating: (ratingData['rating'] ?? 0).toDouble(),
-                    size: 24.0,
-                    activeColor: Color(0xFFFFD700),
-                    inactiveColor: Colors.grey[300]!,
-                    showRatingText: true,
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              
-              // Feedback Text
-              Text(
-                'Customer Feedback:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF6CA04A),
-                ),
-              ),
-              SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Text(
-                  ratingData['feedback'] ?? 'No feedback provided',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ),
-              
-              // Date
-              if (ratingData['timestamp'] != null) ...[
-                SizedBox(height: 12),
-                Text(
-                  'Submitted: ${DateFormat('MMM dd, yyyy - HH:mm').format((ratingData['timestamp'] as Timestamp).toDate())}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF6CA04A),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-} 
+}

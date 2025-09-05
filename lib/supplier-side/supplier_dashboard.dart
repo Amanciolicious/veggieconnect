@@ -659,11 +659,16 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                 stream: FirebaseFirestore.instance
                     .collection('orders')
                     .where('sellerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-                    .where('status', isNotEqualTo: 'completed')
                     .snapshots(),
                 builder: (context, snapshot) {
-                  final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return _buildStatCard(cardRadius, 'Active Orders', '$count', Icons.shopping_cart, Colors.green);
+                  if (!snapshot.hasData) return _buildStatCard(cardRadius, 'Active Orders', '0', Icons.shopping_cart, Colors.green);
+                  
+                  final activeOrders = snapshot.data!.docs.where((doc) {
+                    final status = doc['status'] as String?;
+                    return status != 'completed' && status != 'cancelled';
+                  }).length;
+                  
+                  return _buildStatCard(cardRadius, 'Active Orders', '$activeOrders', Icons.shopping_cart, Colors.green);
                 },
               ),
               // Revenue
