@@ -748,7 +748,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               
               // Sort by popularity on the client to avoid Firestore composite index errors
               final sortedDocs = snapshot.data!.docs
-                  .where((d) => ((d.data() as Map<String, dynamic>)['popularity'] ?? 0) > 0)
+                  .where((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final popularity = data['popularity'] ?? 0;
+                    // Only show products with popularity > 0 and ensure it's a valid number
+                    return popularity is num && popularity > 0;
+                  })
                   .toList()
                 ..sort((a, b) {
                   final ap = (a.data() as Map<String, dynamic>)['popularity'] ?? 0;
@@ -925,6 +930,29 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 },
               );
             },
+          ),
+        ),
+        
+        // Test Notification Button (for development/testing)
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await NotificationService().sendTestNotification();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Test notification sent!'),
+                  backgroundColor: Color(0xFF4CAF50),
+                ),
+              );
+            },
+            icon: const Icon(Icons.notifications_active),
+            label: const Text('Send Test Notification'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
           ),
         ),
         
@@ -1197,11 +1225,29 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         if (productDoc.exists) {
           final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
           final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
-          transaction.update(productRef, {'popularity': nextValue});
+          transaction.update(productRef, {
+            'popularity': nextValue,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
         }
       });
     } catch (e) {
       debugPrint('Failed to update product popularity: $e');
+      // If transaction fails, try a direct update as fallback
+      try {
+        final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
+        final productDoc = await productRef.get();
+        if (productDoc.exists) {
+          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
+          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          await productRef.update({
+            'popularity': nextValue,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (fallbackError) {
+        debugPrint('Fallback popularity update also failed: $fallbackError');
+      }
     }
   }
 }

@@ -33,6 +33,50 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
     _loadLocations();
   }
 
+  Future<void> _refreshCurrentLocation() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      // Get current location with address
+      final data = await _mapService.getCurrentLocationWithAddress();
+      if (data != null) {
+        final location = data['location'] as LatLng?;
+        final address = data['address'] as String?;
+        
+        if (location != null) {
+          _currentLocation = location;
+          
+          // Recalculate distances
+          _calculateDistances();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Location updated: ${address != null && address!.length > 40 ? address!.substring(0, 40) + '...' : address ?? 'Current location'}'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to get current location'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error getting location: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _loadLocations() async {
     try {
       setState(() => _isLoading = true);
@@ -522,6 +566,13 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
             ],
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _refreshCurrentLocation,
+        backgroundColor: const Color(0xFF4CAF50),
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.my_location),
+        tooltip: 'Use Current Location',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

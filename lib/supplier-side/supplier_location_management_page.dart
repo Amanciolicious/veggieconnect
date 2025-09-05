@@ -152,8 +152,17 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
               _lngController.text = location.longitude.toStringAsFixed(6);
             }
           });
+          
           // Center map and show pin
           _mapController.move(location, 16.0);
+          
+          // Auto-save the location if supplier doesn't have one yet
+          if (_currentLocation == null) {
+            await _autoSaveCurrentLocation(location, address);
+          } else {
+            // Show confirmation dialog for updating existing location
+            _showLocationUpdateConfirmation(location, address);
+          }
         } else {
           setState(() {
             _errorMessage = 'Failed to get location details';
@@ -170,6 +179,132 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
       setState(() {
         _errorMessage = 'Failed to get current location: $e';
         _isGettingCurrentLocation = false;
+      });
+    }
+  }
+
+  Future<void> _autoSaveCurrentLocation(LatLng location, String address) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate a default location name based on address
+      String locationName = 'My Location';
+      if (address.isNotEmpty) {
+        // Extract the first part of the address as location name
+        final addressParts = address.split(',');
+        if (addressParts.isNotEmpty) {
+          locationName = addressParts.first.trim();
+        }
+      }
+
+      await _supplierLocationService.createOrUpdateSupplierLocation(
+        supplierId: user.uid,
+        supplierName: user.displayName ?? user.email ?? 'Unknown Supplier',
+        locationName: locationName,
+        description: 'Auto-detected location',
+        location: location,
+        address: address,
+      );
+
+      // Reload the current location
+      await _loadCurrentLocation();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location automatically saved!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to auto-save location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLocationUpdateConfirmation(LatLng location, String address) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update Location'),
+        content: const Text(
+          'You already have a location set. Do you want to update it to your current location?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _updateToCurrentLocation(location, address);
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateToCurrentLocation(LatLng location, String address) async {
+    try {
+      setState(() {
+        _isUpdating = true;
+        _errorMessage = null;
+      });
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate a default location name based on address
+      String locationName = 'My Location';
+      if (address.isNotEmpty) {
+        final addressParts = address.split(',');
+        if (addressParts.isNotEmpty) {
+          locationName = addressParts.first.trim();
+        }
+      }
+
+      await _supplierLocationService.createOrUpdateSupplierLocation(
+        supplierId: user.uid,
+        supplierName: user.displayName ?? user.email ?? 'Unknown Supplier',
+        locationName: locationName,
+        description: 'Auto-detected location',
+        location: location,
+        address: address,
+      );
+
+      // Reload the current location
+      await _loadCurrentLocation();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to update location: $e';
+      });
+    } finally {
+      setState(() {
+        _isUpdating = false;
       });
     }
   }
@@ -690,7 +825,7 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                             ),
                           )
                         : Icon(Icons.my_location),
-                    label: Text('Use Current Location'),
+                    label: Text(_currentLocation == null ? 'Pin Current Location' : 'Update to Current Location'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[600],
                       foregroundColor: Colors.white,

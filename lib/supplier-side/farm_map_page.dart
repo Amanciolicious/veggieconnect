@@ -158,6 +158,182 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     );
   }
 
+  Future<void> _getCurrentLocationAndPin() async {
+    try {
+      final locationData = await _mapService.getCurrentLocationWithAddress();
+      if (locationData != null) {
+        final location = locationData['location'] as LatLng?;
+        final address = locationData['address'] as String?;
+
+        if (location != null && address != null) {
+          // Check if location is within Bogo City boundary
+          const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
+          double distance = _mapService.calculateDistance(bogoCityCenter, location);
+          
+          if (distance > 5.0) { // 5km radius
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Your current location is outside Bogo City boundaries'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+
+          // Move map to current location
+          _mapController.move(location, 16.0);
+          
+          // Set the selected location
+          setState(() {
+            _selectedLocation = location;
+          });
+
+          // Auto-save if supplier doesn't have a location yet
+          if (_supplierLocation == null) {
+            await _autoSaveCurrentLocation(location, address);
+          } else {
+            // Show confirmation dialog for updating existing location
+            _showLocationUpdateConfirmation(location, address);
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to get location details'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to get current location'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error getting current location: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _autoSaveCurrentLocation(LatLng location, String address) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate a default location name based on address
+      String locationName = 'My Location';
+      if (address.isNotEmpty) {
+        final addressParts = address.split(',');
+        if (addressParts.isNotEmpty) {
+          locationName = addressParts.first.trim();
+        }
+      }
+
+      await _supplierLocationService.createOrUpdateSupplierLocation(
+        supplierId: user.uid,
+        supplierName: user.displayName ?? user.email ?? 'Unknown Supplier',
+        locationName: locationName,
+        description: 'Auto-detected location',
+        location: location,
+        address: address,
+      );
+
+      // Reload the data
+      await _loadData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location automatically pinned and saved!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to auto-save location: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showLocationUpdateConfirmation(LatLng location, String address) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update Location'),
+        content: const Text(
+          'You already have a location set. Do you want to update it to your current location?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _updateToCurrentLocation(location, address);
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateToCurrentLocation(LatLng location, String address) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate a default location name based on address
+      String locationName = 'My Location';
+      if (address.isNotEmpty) {
+        final addressParts = address.split(',');
+        if (addressParts.isNotEmpty) {
+          locationName = addressParts.first.trim();
+        }
+      }
+
+      await _supplierLocationService.createOrUpdateSupplierLocation(
+        supplierId: user.uid,
+        supplierName: user.displayName ?? user.email ?? 'Unknown Supplier',
+        locationName: locationName,
+        description: 'Auto-detected location',
+        location: location,
+        address: address,
+      );
+
+      // Reload the data
+      await _loadData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update location: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _cancelPinAdditionMode() {
     setState(() {
       _isAddingPin = false;
@@ -1389,22 +1565,38 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                   ),
               ],
             ),
-      floatingActionButton: _supplierLocation == null
-          ? FloatingActionButton.extended(
-        heroTag: "add_location_fab",
-        onPressed: _isAddingPin ? _cancelPinAdditionMode : _enablePinAdditionMode,
-        backgroundColor: _isAddingPin ? Colors.red : Colors.blue,
-        foregroundColor: Colors.white,
-        icon: Icon(_isAddingPin ? Icons.close : Icons.add_location),
-              label: Text(_isAddingPin ? 'Cancel' : 'Add Location'),
-            )
-          : FloatingActionButton.extended(
-              heroTag: "edit_location_fab",
-              onPressed: _isEditingPin ? _cancelPinAdditionMode : _enablePinEditingMode,
-              backgroundColor: _isEditingPin ? Colors.red : Colors.blue,
-              foregroundColor: Colors.white,
-              icon: Icon(_isEditingPin ? Icons.close : Icons.edit_location),
-              label: Text(_isEditingPin ? 'Cancel' : 'Move Location'),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Use Current Location Button
+          FloatingActionButton(
+            heroTag: "current_location_fab",
+            onPressed: _getCurrentLocationAndPin,
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            child: Icon(Icons.my_location),
+            tooltip: 'Use Current Location',
+          ),
+          SizedBox(height: 16),
+          // Main Action Button
+          _supplierLocation == null
+              ? FloatingActionButton.extended(
+            heroTag: "add_location_fab",
+            onPressed: _isAddingPin ? _cancelPinAdditionMode : _enablePinAdditionMode,
+            backgroundColor: _isAddingPin ? Colors.red : Colors.blue,
+            foregroundColor: Colors.white,
+            icon: Icon(_isAddingPin ? Icons.close : Icons.add_location),
+                  label: Text(_isAddingPin ? 'Cancel' : 'Add Location'),
+                )
+              : FloatingActionButton.extended(
+                  heroTag: "edit_location_fab",
+                  onPressed: _isEditingPin ? _cancelPinAdditionMode : _enablePinEditingMode,
+                  backgroundColor: _isEditingPin ? Colors.red : Colors.blue,
+                  foregroundColor: Colors.white,
+                  icon: Icon(_isEditingPin ? Icons.close : Icons.edit_location),
+                  label: Text(_isEditingPin ? 'Cancel' : 'Move Location'),
+              ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );

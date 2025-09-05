@@ -3,13 +3,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 import 'buyer_order_history_page.dart';
 
-class DigitalReceiptPage extends StatelessWidget {
+class DigitalReceiptPage extends StatefulWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems;
   final double total;
   final String paymentMethod;
   final String orderId;
+  final double? discountAmount;
+  final double? originalAmount;
+  final bool? hasPromoApplied;
+  final String? promoType;
   
   const DigitalReceiptPage({
     super.key, 
@@ -17,39 +26,123 @@ class DigitalReceiptPage extends StatelessWidget {
     required this.total,
     required this.paymentMethod,
     required this.orderId,
+    this.discountAmount,
+    this.originalAmount,
+    this.hasPromoApplied,
+    this.promoType,
   });
 
+  @override
+  State<DigitalReceiptPage> createState() => _DigitalReceiptPageState();
+}
+
+class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
+  final ScreenshotController _screenshotController = ScreenshotController();
+
   String _generateOrderNumber() {
-    return orderId;
+    return widget.orderId;
   }
 
   String _getPaymentMethodDisplayName() {
-    switch (paymentMethod) {
+    switch (widget.paymentMethod) {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
-      case 'gcash':
-        return 'GCash';
-      case 'paymaya':
-        return 'PayMaya';
-      case 'credit_card':
-        return 'Credit Card';
+      case 'paypal_sandbox':
+        return 'PayPal Sandbox';
       default:
         return 'Unknown Payment Method';
     }
   }
 
   String _getPaymentMethodIcon() {
-    switch (paymentMethod) {
+    switch (widget.paymentMethod) {
       case 'cash_on_pickup':
         return '💵';
-      case 'gcash':
-        return '📱';
-      case 'paymaya':
-        return '💳';
-      case 'credit_card':
+      case 'paypal_sandbox':
         return '💳';
       default:
         return '❓';
+    }
+  }
+
+  Future<void> _downloadReceipt() async {
+    try {
+      // Request storage permission
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Storage permission is required to save the receipt'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Capture screenshot
+      final image = await _screenshotController.capture();
+      if (image == null) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to capture receipt'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Get downloads directory
+      final directory = await getDownloadsDirectory();
+      if (directory == null) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to access downloads directory'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Generate filename
+      final now = DateTime.now();
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
+      final filename = 'VeggieConnect_Receipt_${widget.orderId.substring(0, 8)}_$timestamp.png';
+      final filePath = path.join(directory.path, filename);
+
+      // Save file
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Receipt saved to Downloads: $filename'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save receipt: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -61,7 +154,7 @@ class DigitalReceiptPage extends StatelessWidget {
     final dateStr = DateFormat('yyyy-MM-dd – kk:mm').format(now);
     final paymentMethodDisplay = _getPaymentMethodDisplayName();
     final paymentIcon = _getPaymentMethodIcon();
-    final subtotal = total;
+    final subtotal = widget.total;
     final shipping = 0.0;
     final orderStatus = 'Order Placed';
     
@@ -80,10 +173,12 @@ class DigitalReceiptPage extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: Color(0xFFF8FAF5),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
-          child: Column(
+      body: Screenshot(
+        controller: _screenshotController,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Success Header
@@ -193,7 +288,7 @@ class DigitalReceiptPage extends StatelessWidget {
                     ),
                     SizedBox(height: screenWidth * 0.04),
                     
-                    ...cartItems.map((item) {
+                    ...widget.cartItems.map((item) {
                       final data = item.data();
                       return Container(
                         padding: EdgeInsets.symmetric(vertical: screenWidth * 0.02),
@@ -287,10 +382,13 @@ class DigitalReceiptPage extends StatelessWidget {
                     ),
                     SizedBox(height: screenWidth * 0.04),
                     
-                    _buildSummaryRow('Subtotal', '₱${subtotal.toStringAsFixed(2)}', screenWidth),
+                    _buildSummaryRow('Subtotal', '₱${(widget.originalAmount ?? widget.total).toStringAsFixed(2)}', screenWidth),
+                    if (widget.hasPromoApplied == true && widget.discountAmount != null && widget.discountAmount! > 0) ...[
+                      _buildSummaryRow('Discount (${widget.promoType ?? "Promo"})', '-₱${widget.discountAmount!.toStringAsFixed(2)}', screenWidth, valueColor: Colors.red),
+                    ],
                     _buildSummaryRow('Shipping', shipping == 0 ? 'Free' : '₱${shipping.toStringAsFixed(2)}', screenWidth),
                     Divider(color: Color(0xFF8D9773).withOpacity(0.2)),
-                    _buildSummaryRow('Total', '₱${total.toStringAsFixed(2)}', screenWidth, isTotal: true),
+                    _buildSummaryRow('Total', '₱${widget.total.toStringAsFixed(2)}', screenWidth, isTotal: true),
                   ],
                 ),
               ),
@@ -298,60 +396,92 @@ class DigitalReceiptPage extends StatelessWidget {
               SizedBox(height: screenWidth * 0.06),
               
               // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        side: BorderSide(color: Color(0xFF6CA04A), width: 2),
-                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => BuyerOrderHistoryPage()),
-                        );
-                      },
-                      child: Text(
-                        'View Orders',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6CA04A),
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: Color(0xFF6CA04A), width: 2),
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.04),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF6CA04A),
-                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      },
-                      child: Text(
-                        'Continue Shopping',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => BuyerOrderHistoryPage()),
+                    );
+                  },
+                  child: Text(
+                    'View Orders',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6CA04A),
+                      fontFamily: 'Poppins',
                     ),
                   ),
-                ],
+                ),
+              ),
+              
+              SizedBox(height: screenWidth * 0.04),
+              
+              // Download Receipt Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: _downloadReceipt,
+                  icon: Icon(
+                    Icons.download,
+                    color: Colors.white,
+                    size: screenWidth * 0.045,
+                  ),
+                  label: Text(
+                    'Download Receipt',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
+              ),
+              
+              SizedBox(height: screenWidth * 0.04),
+              
+              // Continue Shopping Button - appears after receipt generation
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF6CA04A),
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                  child: Text(
+                    'Continue Shopping',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
               ),
               
               SizedBox(height: screenWidth * 0.04),
@@ -359,6 +489,7 @@ class DigitalReceiptPage extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -390,7 +521,7 @@ class DigitalReceiptPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, double screenWidth, {bool isTotal = false}) {
+  Widget _buildSummaryRow(String label, String value, double screenWidth, {bool isTotal = false, Color? valueColor}) {
     return Padding(
       padding: EdgeInsets.only(bottom: screenWidth * 0.02),
       child: Row(
@@ -410,7 +541,7 @@ class DigitalReceiptPage extends StatelessWidget {
             style: TextStyle(
               fontSize: isTotal ? screenWidth * 0.045 : screenWidth * 0.04,
               fontWeight: FontWeight.bold,
-              color: isTotal ? Color(0xFF6CA04A) : Colors.black87,
+              color: valueColor ?? (isTotal ? Color(0xFF6CA04A) : Colors.black87),
               fontFamily: 'Poppins',
             ),
           ),

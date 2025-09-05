@@ -34,6 +34,8 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
   void initState() {
     super.initState();
     _checkLocationPermission();
+    // Auto-detect current location on page load
+    _autoDetectCurrentLocation();
   }
 
   @override
@@ -67,6 +69,19 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
       setState(() {
         _useCurrentLocation = true;
       });
+    }
+  }
+
+  Future<void> _autoDetectCurrentLocation() async {
+    // Wait a bit for the UI to load
+    await Future.delayed(Duration(milliseconds: 500));
+    
+    // Check if we have permission first
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.whileInUse || 
+        permission == LocationPermission.always) {
+      // Auto-get current location
+      await _getCurrentLocation();
     }
   }
 

@@ -349,16 +349,83 @@ class _FavoritePageState extends State<FavoritePage> {
       final favorites = List<String>.from(userData.data()?['favorites'] ?? []);
       
       if (favorites.contains(productId)) {
+        // Remove from favorites
         favorites.remove(productId);
+        await userDoc.update({
+          'favorites': favorites,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        await _updateProductPopularity(productId, -1);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removed from favorites'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } else {
+        // Add to favorites
         favorites.add(productId);
+        await userDoc.update({
+          'favorites': favorites,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        await _updateProductPopularity(productId, 1);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to favorites'),
+              backgroundColor: Color(0xFF6CA04A),
+            ),
+          );
+        }
       }
-      
-      await userDoc.update({'favorites': favorites});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating favorites: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating favorites: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateProductPopularity(String productId, int change) async {
+    try {
+      final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final productDoc = await transaction.get(productRef);
+        if (productDoc.exists) {
+          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
+          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          transaction.update(productRef, {
+            'popularity': nextValue,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Failed to update product popularity: $e');
+      // If transaction fails, try a direct update as fallback
+      try {
+        final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
+        final productDoc = await productRef.get();
+        if (productDoc.exists) {
+          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
+          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          await productRef.update({
+            'popularity': nextValue,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (fallbackError) {
+        debugPrint('Fallback popularity update also failed: $fallbackError');
+      }
     }
   }
 }

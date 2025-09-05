@@ -1330,15 +1330,23 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
             markers: [
               Marker(
                 point: _userLocation!,
-                width: isSmallScreen ? screenWidth * 0.07 : screenWidth * 0.08,
-                height: isSmallScreen ? screenWidth * 0.07 : screenWidth * 0.08,
+                width: isSmallScreen ? screenWidth * 0.08 : screenWidth * 0.09,
+                height: isSmallScreen ? screenWidth * 0.08 : screenWidth * 0.09,
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.blue,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.3),
+                        spreadRadius: 2,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Icon(Icons.my_location, color: Colors.white, size: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.05),
+                  child: Icon(Icons.person, color: Colors.white, size: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.06),
                 ),
               ),
             ],
@@ -1589,15 +1597,43 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
         );
         return;
       }
+      
+      // Check if location is within reasonable distance from Bogo City
+      const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
+      double distance = _mapService.calculateDistance(bogoCityCenter, loc);
+      
+      if (distance > 50.0) { // 50km radius - more lenient for customers
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Your location seems far from Bogo City. Suppliers may be limited.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      
       setState(() {
         _userLocation = loc;
         _userAddress = address;
       });
+      
       // Center map and reload suppliers
       _mapController.move(loc, 15.0);
       await _loadSupplierLocations();
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Current location set'), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text('Location set to: ${address.length > 50 ? address.substring(0, 50) + '...' : address}'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error getting location: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() { _isGettingLocation = false; });

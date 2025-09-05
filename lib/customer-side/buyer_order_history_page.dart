@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'rating_dialog.dart';
 import 'package:veggieconnect/services/supplier_report_service.dart';
 import 'package:veggieconnect/services/ban_service.dart';
+import 'package:veggieconnect/services/rating_service.dart';
 
 class BuyerOrderHistoryPage extends StatefulWidget {
   const BuyerOrderHistoryPage({super.key});
@@ -233,58 +234,135 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                             SizedBox(height: screenWidth * 0.03),
                             Row(
                               children: [
-                                // Rate Button
+                                // Rate Button/Status
                                 Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: order['hasRating'] == true 
-                                          ? Colors.grey 
-                                          : Color(0xFF6CA04A),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                                    ),
-                                    onPressed: order['hasRating'] == true 
-                                        ? null 
-                                        : () => _showRatingDialog(context, orders[index].id, order),
-                                    child: Text(
-                                      order['hasRating'] == true ? 'Already Rated' : 'Rate Order',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.035,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Poppins',
-                                      ),
-                                    ),
+                                  child: FutureBuilder<bool>(
+                                    future: RatingService.hasUserRatedOrder(order['orderId'] ?? orders[index].id),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                        return Container(
+                                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      
+                                      final hasRated = snapshot.data ?? false;
+                                      
+                                      return hasRated
+                                          ? Container(
+                                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.shade100,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(color: Colors.green.shade300),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.check_circle,
+                                                    color: Colors.green.shade700,
+                                                    size: 16,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    'Rated',
+                                                    style: TextStyle(
+                                                      color: Colors.green.shade700,
+                                                      fontSize: screenWidth * 0.035,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontFamily: 'Poppins',
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                          : ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Color(0xFF6CA04A),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                              ),
+                                              onPressed: () => _showRatingDialog(context, orders[index].id, order),
+                                              child: Text(
+                                                'Rate Order',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: screenWidth * 0.035,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontFamily: 'Poppins',
+                                                ),
+                                              ),
+                                            );
+                                    },
                                   ),
                                 ),
                                 SizedBox(width: screenWidth * 0.03),
-                                // Report Button
+                                // Report Button/Status
                                 Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: order['hasReport'] == true 
-                                          ? Colors.grey 
-                                          : Colors.red,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                                    ),
-                                    onPressed: order['hasReport'] == true 
-                                        ? null 
-                                        : () => _showReportDialog(context, orders[index].id, order),
-                                    child: Text(
-                                      order['hasReport'] == true ? 'Already Reported' : 'Report Supplier',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.035,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Poppins',
-                                      ),
-                                    ),
-                                  ),
+                                  child: order['hasReport'] == true
+                                      ? Container(
+                                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade100,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Colors.red.shade300),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.flag,
+                                                color: Colors.red.shade700,
+                                                size: 16,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'Reported',
+                                                style: TextStyle(
+                                                  color: Colors.red.shade700,
+                                                  fontSize: screenWidth * 0.035,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontFamily: 'Poppins',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                          ),
+                                          onPressed: () => _showReportDialog(context, orders[index].id, order),
+                                          child: Text(
+                                            'Report Supplier',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: screenWidth * 0.035,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                        ),
                                 ),
                               ],
                             ),
@@ -312,7 +390,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
     }
   }
 
-  void _showRatingDialog(BuildContext context, String orderId, Map<String, dynamic> order) {
+  void _showRatingDialog(BuildContext context, String documentId, Map<String, dynamic> order) {
+    // Use the actual orderId field from the order document, not the document ID
+    final actualOrderId = order['orderId'] ?? documentId;
+    
     final products = order['items'] ?? [
       {
         'productId': order['productId'] ?? '',
@@ -324,7 +405,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
     showDialog(
       context: context,
       builder: (context) => RatingDialog(
-        orderId: orderId,
+        orderId: actualOrderId,
         supplierId: order['sellerId'] ?? '',
         supplierName: order['supplierName'] ?? 'Unknown Supplier',
         products: List<Map<String, dynamic>>.from(products),

@@ -808,10 +808,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     switch (method) {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
-      case 'gcash':
-        return 'GCash';
-      case 'paymaya':
-        return 'PayMaya';
+      case 'paypal_sandbox':
+        return 'PayPal Sandbox';
       default:
         return method.toUpperCase();
     }

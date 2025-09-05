@@ -156,6 +156,16 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
             fontFamily: 'Poppins',
           ),
         ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: isSmallScreen ? 22 : 24,
+          ),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
         elevation: 0,
       ),
       body: Padding(
@@ -435,7 +445,12 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                       
                       // Only show products with popularity > 0 for Popular logic
                       final products = (productSnapshot.data ?? [])
-                          .where((d) => (((d.data() as Map<String, dynamic>)['popularity']) ?? 0) > 0)
+                          .where((d) {
+                            final data = d.data() as Map<String, dynamic>;
+                            final popularity = data['popularity'] ?? 0;
+                            // Only show products with popularity > 0 and ensure it's a valid number
+                            return popularity is num && popularity > 0;
+                          })
                           .toList();
                       
                       // Sort by popularity
@@ -1040,11 +1055,29 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
         if (productDoc.exists) {
           final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
           final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
-          transaction.update(productRef, {'popularity': nextValue});
+          transaction.update(productRef, {
+            'popularity': nextValue,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
         }
       });
     } catch (e) {
       debugPrint('Failed to update product popularity: $e');
+      // If transaction fails, try a direct update as fallback
+      try {
+        final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
+        final productDoc = await productRef.get();
+        if (productDoc.exists) {
+          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
+          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          await productRef.update({
+            'popularity': nextValue,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (fallbackError) {
+        debugPrint('Fallback popularity update also failed: $fallbackError');
+      }
     }
   }
 }

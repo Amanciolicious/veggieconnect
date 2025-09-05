@@ -5,6 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/customer-side/buyer_products_page.dart';
 import 'package:veggieconnect/customer-side/checkout_summary_page.dart'; // Added import for CheckoutSummaryPage
+import 'package:veggieconnect/customer-side/payment_processing_page.dart';
+import 'package:veggieconnect/customer-side/digital_receipt_page.dart';
+import 'package:veggieconnect/customer-side/paypal_test_accounts_page.dart';
+import 'package:veggieconnect/widgets/payment_method_selector.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -19,7 +23,7 @@ class _CartPageState extends State<CartPage> {
   late CollectionReference<Map<String, dynamic>> _cartRef;
   bool _isProcessing = false;
   String _selectedPaymentMethod = 'cash_on_pickup';
-  String _selectedOnlineMethod = 'gcash'; // Default online payment method
+  final String _selectedOnlineMethod = 'paypal_sandbox'; // Default online payment method
 
   @override
   void initState() {
@@ -134,22 +138,12 @@ class _CartPageState extends State<CartPage> {
                         ),
                         items: [
                           DropdownMenuItem(
-                            value: 'gcash',
-                            child: Row(
-                              children: [
-                                Text('📱', style: const TextStyle(fontSize: 16)),
-                                const SizedBox(width: 8),
-                                const Text('GCash'),
-                              ],
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'paymaya',
+                            value: 'paypal_sandbox',
                             child: Row(
                               children: [
                                 Text('💳', style: const TextStyle(fontSize: 16)),
                                 const SizedBox(width: 8),
-                                const Text('PayMaya'),
+                                const Text('PayPal Sandbox'),
                               ],
                             ),
                           ),
@@ -188,96 +182,21 @@ class _CartPageState extends State<CartPage> {
     if (cartItems.isEmpty || _isProcessing) return;
     final paymentMethod = await _showPaymentMethodDialog();
     if (paymentMethod == null) return;
-    setState(() {
-      _isProcessing = true;
-      _selectedPaymentMethod = paymentMethod;
-      // Update the online method if it's an online payment
-      if (paymentMethod == 'gcash' || paymentMethod == 'paymaya') {
-        _selectedOnlineMethod = paymentMethod;
-      }
-    });
-    // Confirm before placing order to avoid misclicks
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Place Order?'),
-        content: const Text('Do you want to place the order for all items in your cart?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes, Place Order')),
-        ],
+    
+    // Generate order ID
+    final orderId = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Navigate to payment processing page
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PaymentProcessingPage(
+          cartItems: cartItems,
+          total: _calculateTotal(cartItems),
+          paymentMethod: paymentMethod,
+          orderId: orderId,
+        ),
       ),
     );
-    if (confirm != true) return;
-
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-      // Resolve buyer name for supplier views
-      String buyerName = user!.displayName ?? '';
-      try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
-        if (userDoc.exists) {
-          buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
-        }
-      } catch (_) {}
-      final ordersRef = FirebaseFirestore.instance.collection('orders');
-      for (final doc in cartItems) {
-        final data = doc.data();
-        batch.set(ordersRef.doc(), {
-          'buyerId': user!.uid,
-          'buyerName': buyerName,
-          'productId': data['productId'],
-          'sellerId': data['sellerId'],
-          'productName': data['name'],
-          'quantity': data['quantity'],
-          'unit': data['unit'],
-          'price': data['price'],
-          'status': 'pending',
-          'createdAt': FieldValue.serverTimestamp(),
-          'paymentMethod': paymentMethod,
-          'paymentStatus': paymentMethod == 'cash_on_pickup' ? 'pending' : 'unpaid',
-        });
-        batch.delete(_cartRef.doc(doc.id));
-      }
-      await batch.commit();
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Order placed!'),
-            content: Text('Payment method: ${_getPaymentMethodDisplayName(paymentMethod)}'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  // Stay on cart
-                },
-                child: const Text('OK'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => BuyerProductsPage()),
-                    (route) => false,
-                  );
-                },
-                child: const Text('Continue Shopping'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Checkout failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
   }
 
   String _getPaymentMethodDisplayName(String method) {
@@ -311,6 +230,23 @@ class _CartPageState extends State<CartPage> {
           ),
         ),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.info_outline,
+              color: Colors.white,
+              size: screenWidth * 0.05,
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => PayPalTestAccountsPage(),
+                ),
+              );
+            },
+            tooltip: 'PayPal Test Accounts',
+          ),
+        ],
       ),
       body: user == null
           ? Center(

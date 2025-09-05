@@ -709,6 +709,27 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           ),
           const SizedBox(height: 10),
           _buildStockOverview(),
+          
+          // Test Notification Button (for development/testing)
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await NotificationService().sendTestNotification();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Test notification sent!'),
+                  backgroundColor: Color(0xFF4CAF50),
+                ),
+              );
+            },
+            icon: const Icon(Icons.notifications_active),
+            label: const Text('Send Test Notification'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
         ],
       ),
     );
@@ -1108,7 +1129,6 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           mainAxisSpacing: 12,
           childAspectRatio: 1.2,
           children: [
-            _buildStatCard(BorderRadius.circular(20), 'Total Products', '$totalProducts', Icons.inventory, Colors.blue),
             _buildStatCard(BorderRadius.circular(20), 'Low Stock', '$lowStockProducts', Icons.warning, Colors.orange),
             _buildStatCard(BorderRadius.circular(20), 'Out of Stock', '$outOfStockProducts', Icons.remove_shopping_cart, Colors.red),
             _buildStatCard(BorderRadius.circular(20), 'Total Value', '₱${totalValue.toStringAsFixed(2)}', Icons.attach_money, Colors.green),

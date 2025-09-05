@@ -7,6 +7,8 @@ import 'package:veggieconnect/customer-side/buyer_products_page.dart';
 import 'package:veggieconnect/models/promo_model.dart';
 import '../services/payment_service.dart';
 import 'cart_page.dart';
+import 'payment_processing_page.dart';
+import 'digital_receipt_page.dart';
 import '../services/promo_service.dart';
 import '../services/notification_service.dart';
 // Added for debugPrint
@@ -22,7 +24,7 @@ class CheckoutSummaryPage extends StatefulWidget {
 class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
   bool isProcessing = false;
   String selectedPaymentMethod = 'cash_on_pickup';
-  String selectedOnlineMethod = 'gcash'; // Default online payment method
+  String selectedOnlineMethod = 'paypal_sandbox'; // Default online payment method
   final PaymentService _paymentService = PaymentService();
   Map<String, String> availablePaymentMethods = {};
   bool _hasAvailablePromo = false;
@@ -274,6 +276,17 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       final total = _calculateTotal();
       final orderId = DateTime.now().millisecondsSinceEpoch.toString();
 
+      // Calculate discount if promo is applied
+      double finalAmount = total;
+      double discountAmount = 0;
+      if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
+        final promoDiscount = PromoService.calculateFirstTimeDiscount(total, true);
+        if (promoDiscount != null) {
+          finalAmount = promoDiscount.finalAmount;
+          discountAmount = promoDiscount.discountAmount;
+        }
+      }
+
       // Create orders in Firestore
       final batch = FirebaseFirestore.instance.batch();
       final ordersRef = FirebaseFirestore.instance.collection('orders');
@@ -282,17 +295,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         final data = doc.data();
         final orderDoc = ordersRef.doc();
         final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
-        
-        // Calculate discount if promo is applied
-        double finalAmount = total;
-        double discountAmount = 0;
-        if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
-          final promoDiscount = PromoService.calculateFirstTimeDiscount(total, true);
-          if (promoDiscount != null) {
-            finalAmount = promoDiscount.finalAmount;
-            discountAmount = promoDiscount.discountAmount;
-          }
-        }
 
         batch.set(orderDoc, {
           'buyerId': user.uid,
@@ -353,21 +355,24 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       }
 
       // Handle payment based on method
-      if (selectedPaymentMethod == 'gcash' || selectedPaymentMethod == 'paymaya') {
-        // Open sandbox checkout URL in external browser
-        final launched = selectedPaymentMethod == 'gcash'
-            ? await _paymentService.launchGcashCheckout()
-            : await _paymentService.launchPayMayaCheckout();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(launched
-                  ? 'Opened ${_getPaymentMethodDisplayName(selectedPaymentMethod)} to complete payment. Returning to cart.'
-                  : 'Could not open ${_getPaymentMethodDisplayName(selectedPaymentMethod)}. Returning to cart.'),
+      if (selectedPaymentMethod == 'paypal_sandbox') {
+        // For PayPal sandbox, navigate to payment processing page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentProcessingPage(
+              cartItems: widget.cartItems,
+              total: finalAmount,
+              paymentMethod: selectedPaymentMethod,
+              orderId: orderId,
+              discountAmount: discountAmount,
+              originalAmount: total,
+              hasPromoApplied: _applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo,
+              promoType: (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) ? 'First Time Customer' : null,
             ),
-          );
-        }
+          ),
+        );
+        return;
       }
 
       // For all methods, finalize: mark promo used, clear cart, and go back to cart page
@@ -422,34 +427,20 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         await cartBatch.commit();
 
         if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Order placed!'),
-              content: const Text('Your order has been placed successfully.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const CartPage()),
-                      (route) => false,
-                    );
-                  },
-                  child: const Text('View Cart'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => BuyerProductsPage()),
-                      (route) => false,
-                    );
-                  },
-                  child: const Text('Continue Shopping'),
-                ),
-              ],
+          // Navigate to digital receipt page instead of showing modal
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DigitalReceiptPage(
+                cartItems: widget.cartItems,
+                total: finalAmount,
+                paymentMethod: selectedPaymentMethod,
+                orderId: orderId,
+                discountAmount: discountAmount,
+                originalAmount: total,
+                hasPromoApplied: _applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo,
+                promoType: (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) ? 'First Time Customer' : null,
+              ),
             ),
           );
         }
