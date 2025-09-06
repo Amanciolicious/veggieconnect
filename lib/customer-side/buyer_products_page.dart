@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/product_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'buyer_chat_page.dart';
@@ -134,8 +135,6 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     
     // Responsive sizing for Infinix Smart 8 (720x1612)
     final isSmallScreen = screenWidth <= 720;
@@ -149,11 +148,10 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           _getAppBarTitle(),
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: responsiveFontSize,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         leading: IconButton(
@@ -206,14 +204,14 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: isSmallScreen ? screenWidth * 0.035 : 16,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Search products...', 
                         border: InputBorder.none,
-                        hintStyle: TextStyle(
-                          fontFamily: 'Poppins',
+                        hintStyle: GoogleFonts.quicksand(
+                          fontWeight: FontWeight.w400,
                           fontSize: isSmallScreen ? screenWidth * 0.035 : 16,
                         ),
                       ),
@@ -269,10 +267,9 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                     Expanded(
                       child: Text(
                         'Showing products in: $_selectedCategory',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           color: Color(0xFF6CA04A),
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                           fontSize: isSmallScreen ? screenWidth * 0.035 : 16,
                         ),
                         maxLines: 1,
@@ -342,10 +339,9 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                             ),
                             child: Text(
                               category,
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 color: isSelected ? Colors.white : Color(0xFF757575),
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                                 fontSize: isSmallScreen ? screenWidth * 0.032 : 16,
                               ),
                             ),
@@ -374,18 +370,18 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                           SizedBox(height: isSmallScreen ? 12 : 16),
                           Text(
                             'Error loading products', 
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               color: Colors.red, 
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                               fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                             )
                           ),
                           SizedBox(height: isSmallScreen ? 6 : 8),
                           Text(
                             '${snapshot.error}', 
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: isSmallScreen ? screenWidth * 0.03 : 12, 
-                              fontFamily: 'Poppins'
+                              fontWeight: FontWeight.w400
                             )
                           ),
                         ],
@@ -396,8 +392,8 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                     return Center(
                       child: Text(
                         'No products found.', 
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
+                        style: GoogleFonts.quicksand(
+                          fontWeight: FontWeight.w400,
                           fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                         )
                       )
@@ -464,8 +460,8 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                         return Center(
                           child: Text(
                             'No products found.', 
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
+                            style: GoogleFonts.quicksand(
+                              fontWeight: FontWeight.w400,
                               fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                             )
                           )
@@ -536,10 +532,9 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                       SizedBox(height: isSmallScreen ? screenWidth * 0.02 : screenWidth * 0.025),
                                       Text(
                                         product['name'] ?? '', 
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045, 
-                                          fontWeight: FontWeight.bold, 
-                                          fontFamily: 'Poppins'
+                                          fontWeight: FontWeight.w400
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -547,18 +542,18 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                       SizedBox(height: isSmallScreen ? screenWidth * 0.008 : screenWidth * 0.01),
                                       Text(
                                         '\u20b1${product['price']?.toStringAsFixed(2) ?? '0.00'}', 
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: isSmallScreen ? screenWidth * 0.038 : screenWidth * 0.042, 
-                                          fontFamily: 'Poppins'
+                                          fontWeight: FontWeight.w400
                                         )
                                       ),
                                       SizedBox(height: isSmallScreen ? screenWidth * 0.008 : screenWidth * 0.01),
                                       Text(
                                         'Stock: ${product['quantity'] ?? 0} ${product['unit'] ?? ''}', 
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.032, 
                                           color: Color(0xFF757575), 
-                                          fontFamily: 'Poppins'
+                                          fontWeight: FontWeight.w400
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -590,11 +585,10 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                       ),
                                                       child: Text(
                                                         'In Basket', 
-                                                        style: TextStyle(
+                                                        style: GoogleFonts.quicksand(
                                                           color: Color(0xFF6CA04A), 
-                                                          fontWeight: FontWeight.bold, 
                                                           fontSize: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.032, 
-                                                          fontFamily: 'Poppins'
+                                                          fontWeight: FontWeight.w400
                                                         )
                                                       ),
                                                     )
@@ -613,11 +607,10 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                               ),
                                               child: Text(
                                                 'Popular', 
-                                                style: TextStyle(
-                                                  color: Colors.orange, 
-                                                  fontWeight: FontWeight.bold, 
+                                                style: GoogleFonts.quicksand(
+                                                  color: Colors.orange,  
                                                   fontSize: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.032, 
-                                                  fontFamily: 'Poppins'
+                                                  fontWeight: FontWeight.w400
                                                 )
                                               ),
                                             ),
@@ -719,7 +712,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                               return AlertDialog(
                                                 title: Text(
                                                   'Add to Cart',
-                                                  style: TextStyle(
+                                                  style: GoogleFonts.quicksand(
                                                     fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
                                                   ),
                                                 ),
@@ -728,7 +721,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                   children: [
                                                     Text(
                                                       'How many would you like to add to cart?',
-                                                      style: TextStyle(
+                                                      style: GoogleFonts.quicksand(
                                                         fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                                                       ),
                                                     ),
@@ -759,7 +752,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                           ),
                                                           child: Text(
                                                             '$quantity',
-                                                            style: TextStyle(
+                                                            style: GoogleFonts.quicksand(
                                                               fontSize: isSmallScreen ? screenWidth * 0.04 : 18,
                                                               fontWeight: FontWeight.bold,
                                                             ),
@@ -782,7 +775,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                     SizedBox(height: isSmallScreen ? 6 : 8),
                                                     Text(
                                                       'Available: $maxQty ${product['unit'] ?? 'units'}',
-                                                      style: TextStyle(
+                                                      style: GoogleFonts.quicksand(
                                                         color: Colors.grey,
                                                         fontSize: isSmallScreen ? screenWidth * 0.03 : 12,
                                                       ),
@@ -794,7 +787,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                     onPressed: () => Navigator.pop(context),
                                                     child: Text(
                                                       'Cancel',
-                                                      style: TextStyle(
+                                                      style: GoogleFonts.quicksand(
                                                         fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                                                       ),
                                                     ),
@@ -803,7 +796,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                     onPressed: () => Navigator.pop(context, quantity),
                                                     child: Text(
                                                       'Add',
-                                                      style: TextStyle(
+                                                      style: GoogleFonts.quicksand(
                                                         fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                                                       ),
                                                     ),

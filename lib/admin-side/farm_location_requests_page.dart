@@ -238,7 +238,6 @@ class _FarmLocationRequestsPageState extends State<FarmLocationRequestsPage> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
           ),
         ),
         backgroundColor: Color(0xFF6CA04A),

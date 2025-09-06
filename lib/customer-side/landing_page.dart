@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'customer_home_page.dart';
 
 class LandingPage extends StatelessWidget {
@@ -38,10 +39,10 @@ class LandingPage extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'Welcome to VegieConnect!',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
+                color: Colors.black,
               ),
               textAlign: TextAlign.center,
             ),
@@ -50,10 +51,10 @@ class LandingPage extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 32.0),
               child: Text(
                 'Your one-stop shop for fresh vegetables. Get started and enjoy healthy living!',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 16,
                   color: Color(0xFF757575),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -79,11 +80,10 @@ class LandingPage extends StatelessWidget {
                   },
                   child: Text(
                     'Get Started',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -113,9 +114,8 @@ class PayPalSandboxService {
             SizedBox(width: 8),
             Text(
               'PayPal Payment',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
@@ -125,8 +125,8 @@ class PayPalSandboxService {
           children: [
             Text(
               'Complete your payment in the browser window that opened.',
-              style: TextStyle(
-                fontFamily: 'Poppins',
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
             ),
@@ -142,9 +142,8 @@ class PayPalSandboxService {
                 children: [
                   Text(
                     'Order Details',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                    style: GoogleFonts.quicksand(
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   SizedBox(height: 8),
@@ -157,9 +156,8 @@ class PayPalSandboxService {
             SizedBox(height: 16),
             Text(
               'Did you complete the payment?',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
@@ -174,9 +172,9 @@ class PayPalSandboxService {
             },
             child: Text(
               'Cancel Payment',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 color: Colors.red,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -195,9 +193,8 @@ class PayPalSandboxService {
             ),
             child: Text(
               'Payment Complete',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -218,8 +215,8 @@ class PayPalSandboxService {
           SizedBox(height: 16),
           Text(
             message,
-            style: TextStyle(
-              fontFamily: 'Poppins',
+            style: GoogleFonts.quicksand(
+              fontWeight: FontWeight.w400,
               fontSize: 16,
             ),
           ),

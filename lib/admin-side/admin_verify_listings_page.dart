@@ -56,7 +56,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                   fontSize: screenWidth * 0.055,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  fontFamily: 'Poppins',
                 ),
               ),
             ),
@@ -113,7 +112,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                       fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.bold,
                       color: _getFilterColor(),
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ],
@@ -167,7 +165,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                                 fontSize: screenWidth * 0.06,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF6CA04A),
-                                fontFamily: 'Poppins',
                               ),
                             ),
                             SizedBox(height: screenWidth * 0.02),
@@ -176,7 +173,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                               style: TextStyle(
                                 fontSize: screenWidth * 0.04,
                                 color: Color(0xFF757575),
-                                fontFamily: 'Poppins',
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -390,7 +386,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         fontSize: screenWidth * 0.03,
                         fontWeight: FontWeight.bold,
                         color: Colors.red,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ],
@@ -415,7 +410,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         fontSize: screenWidth * 0.03,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ],
@@ -465,7 +459,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         style: TextStyle(
                           fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                       SizedBox(height: screenWidth * 0.01),
@@ -474,7 +467,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         style: TextStyle(
                           fontSize: screenWidth * 0.04,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                       SizedBox(height: screenWidth * 0.01),
@@ -483,7 +475,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         style: TextStyle(
                           fontSize: screenWidth * 0.035,
                           color: Color(0xFF757575),
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ],
@@ -513,7 +504,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         color: Color(0xFF6CA04A),
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
@@ -531,7 +521,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   SizedBox(height: screenWidth * 0.01),
@@ -540,7 +529,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
                       color: Color(0xFF757575),
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   SizedBox(height: screenWidth * 0.03),
@@ -564,7 +552,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         fontSize: screenWidth * 0.035,
                         fontWeight: FontWeight.bold,
                         color: Colors.red,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.01),
@@ -580,7 +567,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.03,
                                     color: Colors.red,
-                                    fontFamily: 'Poppins',
                                   ),
                                 ),
                               ),
@@ -620,7 +606,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             color: Colors.white,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -640,7 +625,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             color: Colors.white,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -675,7 +659,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                         fontSize: screenWidth * 0.035,
                         fontWeight: FontWeight.bold,
                         color: product['status'] == 'approved' ? Colors.green : Colors.red,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ],

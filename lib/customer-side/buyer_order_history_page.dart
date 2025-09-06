@@ -1,8 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'rating_dialog.dart';
 import 'package:veggieconnect/services/supplier_report_service.dart';
 import 'package:veggieconnect/services/ban_service.dart';
@@ -46,11 +47,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Order History',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         bottom: TabBar(
@@ -80,10 +80,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                   return Center(
                     child: Text(
                       'No orders yet.',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: 16,
                         color: Color(0xFF757575),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   );
@@ -98,10 +98,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                   return Center(
                     child: Text(
                       'No orders in this category.',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: 16,
                         color: Color(0xFF757575),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   );
@@ -152,10 +152,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                             children: [
                               Text(
                                 'Order #${orders[index].id.substring(0, 8)}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.04,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               Container(
@@ -166,11 +165,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                 ),
                                 child: Text(
                                   status.toUpperCase(),
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     color: statusColor,
                                     fontSize: screenWidth * 0.03,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),
@@ -179,40 +177,38 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                           SizedBox(height: screenWidth * 0.02),
                           Text(
                             'Total: ₱${order['totalAmount']?.toStringAsFixed(2) ?? '0.00'}',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.045,
-                              fontWeight: FontWeight.bold,
                               color: Color(0xFF6CA04A),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: screenWidth * 0.01),
                           Text(
                             'Date: ${_formatDate(order['createdAt'])}',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.035,
                               color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (order['items'] != null && order['items'].isNotEmpty) ...[
                             SizedBox(height: screenWidth * 0.02),
                             Text(
                               'Items:',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.035,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                             ...((order['items'] as List).take(3).map((item) => Padding(
                               padding: EdgeInsets.only(left: screenWidth * 0.02, top: 2),
                               child: Text(
                                 '• ${item['name']} (${item['quantity']} ${item['unit']})',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.032,
                                   color: Color(0xFF757575),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ))),
@@ -221,11 +217,11 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                 padding: EdgeInsets.only(left: screenWidth * 0.02, top: 2),
                                 child: Text(
                                   '... and ${(order['items'] as List).length - 3} more items',
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     fontSize: screenWidth * 0.032,
                                     color: Color(0xFF757575),
                                     fontStyle: FontStyle.italic,
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),
@@ -280,11 +276,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                                   SizedBox(width: 4),
                                                   Text(
                                                     'Rated',
-                                                    style: TextStyle(
+                                                    style: GoogleFonts.quicksand(
                                                       color: Colors.green.shade700,
                                                       fontSize: screenWidth * 0.035,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight.w400,
                                                     ),
                                                   ),
                                                 ],
@@ -301,11 +296,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                               onPressed: () => _showRatingDialog(context, orders[index].id, order),
                                               child: Text(
                                                 'Rate Order',
-                                                style: TextStyle(
+                                                style: GoogleFonts.quicksand(
                                                   color: Colors.white,
                                                   fontSize: screenWidth * 0.035,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontFamily: 'Poppins',
+                                                  fontWeight: FontWeight.w400,
                                                 ),
                                               ),
                                             );
@@ -334,11 +328,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                               SizedBox(width: 4),
                                               Text(
                                                 'Reported',
-                                                style: TextStyle(
+                                                style: GoogleFonts.quicksand(
                                                   color: Colors.red.shade700,
                                                   fontSize: screenWidth * 0.035,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontFamily: 'Poppins',
+                                                  fontWeight: FontWeight.w400,
                                                 ),
                                               ),
                                             ],
@@ -355,11 +348,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                           onPressed: () => _showReportDialog(context, orders[index].id, order),
                                           child: Text(
                                             'Report Supplier',
-                                            style: TextStyle(
+                                            style: GoogleFonts.quicksand(
                                               color: Colors.white,
                                               fontSize: screenWidth * 0.035,
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w400,
                                             ),
                                           ),
                                         ),
@@ -425,10 +417,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
         return AlertDialog(
           title: Text(
             'Report Supplier', 
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 18, 
-              fontWeight: FontWeight.bold, 
-              fontFamily: 'Poppins'
+              fontWeight: FontWeight.w400
             )
           ),
           content: Column(
@@ -436,10 +427,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
             children: [
               Text(
                 'Please provide a reason for reporting this supplier:', 
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14, 
                   color: Color(0xFF757575), 
-                  fontFamily: 'Poppins'
+                  fontWeight: FontWeight.w400
                 )
               ),
               const SizedBox(height: 16),
@@ -458,9 +449,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel', 
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 12, 
-                  fontFamily: 'Poppins', 
+                  fontWeight: FontWeight.w400, 
                   color: Colors.grey
                 )
               ),
@@ -528,10 +519,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: Text(
                 'Submit Report', 
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 12, 
                   color: Colors.white, 
-                  fontFamily: 'Poppins'
+                  fontWeight: FontWeight.w400
                 )
               ),
             ),

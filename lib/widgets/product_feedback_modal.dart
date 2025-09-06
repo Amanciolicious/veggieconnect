@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'star_rating_widget.dart';
 
 class ProductFeedbackModal extends StatefulWidget {
@@ -57,11 +58,10 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                   Expanded(
                     child: Text(
                       'Customer Reviews',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -91,11 +91,10 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                   Expanded(
                     child: Text(
                       widget.productName,
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.045,
-                        fontWeight: FontWeight.w600,
                         color: Color(0xFF333333),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -140,20 +139,19 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                             SizedBox(height: 16),
                             Text(
                               'No reviews yet',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.045,
-                                fontWeight: FontWeight.w600,
                                 color: Colors.grey[600],
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                             SizedBox(height: 8),
                             Text(
                               'Be the first to review this product!',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.035,
                                 color: Colors.grey[500],
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -200,11 +198,10 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                                   backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
                                   child: Text(
                                     buyerName.isNotEmpty ? buyerName[0].toUpperCase() : 'A',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.04,
-                                      fontWeight: FontWeight.bold,
                                       color: Color(0xFF6CA04A),
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
@@ -215,19 +212,18 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                                     children: [
                                       Text(
                                         buyerName,
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: screenWidth * 0.04,
-                                          fontWeight: FontWeight.w600,
                                           color: Color(0xFF333333),
-                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                       Text(
                                         dateStr,
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: screenWidth * 0.032,
                                           color: Colors.grey[600],
-                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ],
@@ -266,10 +262,10 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                                 ),
                                 child: Text(
                                   feedback,
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     fontSize: screenWidth * 0.035,
                                     color: Color(0xFF555555),
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                     height: 1.4,
                                   ),
                                 ),

@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'supplier_chat_page.dart';
 
@@ -22,7 +23,6 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     
     if (user == null) {
       return const Scaffold(body: Center(child: Text('Not logged in')));
@@ -37,11 +37,10 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           _isSelectionMode ? '${_selectedConversations.length} selected' : 'Messages',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             color: Colors.white,
             fontSize: screenWidth * 0.045,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         elevation: 0,
@@ -71,9 +70,9 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
             return Center(
               child: Text(
                 'Error: ${snapshot.error}',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.red,
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             );
@@ -102,19 +101,18 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                   SizedBox(height: 16),
                   Text(
                     'No conversations yet',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
                       color: Colors.grey,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Start chatting with your customers!',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       color: Colors.grey,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -186,26 +184,24 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                       backgroundColor: Color(0xFF6CA04A),
                       child: Text(
                         (conversation['buyerName'] ?? 'U')[0].toUpperCase(),
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
                     title: Text(
                       conversation['buyerName'] ?? 'Unknown',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.quicksand(
                         color: Color(0xFF222222),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     subtitle: Text(
                       conversation['lastMessage'] ?? 'No messages yet',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         color: Colors.grey,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -216,10 +212,10 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                         if (conversation['lastMessageTime'] != null)
                           Text(
                             _formatTime(conversation['lastMessageTime']),
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               color: Colors.grey,
                               fontSize: 12,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         if (conversation['lastMessageSenderId'] != null && conversation['lastMessageSenderId'] != user.uid && (conversation['lastMessage']?.toString().isNotEmpty ?? false))
@@ -232,11 +228,10 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                             ),
                             child: Text(
                               'NEW',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 color: Colors.white,
                                 fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),
@@ -273,19 +268,19 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Delete Conversations', style: TextStyle(fontFamily: 'Poppins')),
+        title: Text('Delete Conversations', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
         content: Text(
           'Are you sure you want to delete ${_selectedConversations.length} conversation(s)?',
-          style: TextStyle(fontFamily: 'Poppins'),
+          style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey, fontFamily: 'Poppins')),
+            child: Text('Cancel', style: GoogleFonts.quicksand(color: Colors.grey, fontWeight: FontWeight.w400)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Delete', style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
+            child: Text('Delete', style: GoogleFonts.quicksand(color: Colors.red, fontWeight: FontWeight.w400)),
           ),
         ],
       ),
@@ -350,17 +345,17 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Conversation', style: TextStyle(fontFamily: 'Poppins')),
-        content: Text('Are you sure you want to delete this conversation? This action cannot be undone.', style: TextStyle(fontFamily: 'Poppins')),
+        title: Text('Delete Conversation', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
+        content: Text('Are you sure you want to delete this conversation? This action cannot be undone.', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey, fontFamily: 'Poppins')),
+            child: Text('Cancel', style: GoogleFonts.quicksand(color: Colors.grey, fontWeight: FontWeight.w400)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Delete', style: TextStyle(fontFamily: 'Poppins')),
+            child: Text('Delete', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
           ),
         ],
       ),

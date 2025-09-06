@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
 import '../services/cloudinary_service.dart';
 import '../services/content_filter_service.dart';
@@ -242,7 +243,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     SizedBox(height: 4),
                     Text(
                       'Please check your internet connection and try again',
-                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                      style: GoogleFonts.quicksand(fontSize: 12, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -529,10 +530,9 @@ class _AddProductPageState extends State<AddProductPage> {
         elevation: 0,
         title: Text(
           widget.product != null ? 'Edit Product' : 'Add Product',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.quicksand(
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
       ),
@@ -547,10 +547,10 @@ class _AddProductPageState extends State<AddProductPage> {
                   SizedBox(height: 16),
                   Text(
                     'Uploading product...',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 16,
                       color: Color(0xFF222222),
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -678,11 +678,10 @@ class _AddProductPageState extends State<AddProductPage> {
                                   children: [
                                     Text(
                                       'Price Breakdown:',
-                                      style: TextStyle(
+                                      style: GoogleFonts.quicksand(
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w600,
                                         color: Color(0xFF6CA04A),
-                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                     SizedBox(height: 4),
@@ -691,19 +690,18 @@ class _AddProductPageState extends State<AddProductPage> {
                                       children: [
                                         Text(
                                           'Your Price:',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: 11,
                                             color: Color(0xFF666666),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                         Text(
                                           TaxService.formatCurrency(double.tryParse(_priceController.text) ?? 0),
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: 11,
-                                            fontWeight: FontWeight.w500,
                                             color: Color(0xFF222222),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                       ],
@@ -713,19 +711,18 @@ class _AddProductPageState extends State<AddProductPage> {
                                       children: [
                                         Text(
                                           'Listing Fee:',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: 11,
                                             color: Color(0xFF666666),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                         Text(
                                           '-${TaxService.formatCurrency(TaxService.getTaxAmount())}',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: 11,
-                                            fontWeight: FontWeight.w500,
                                             color: Colors.red,
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                       ],
@@ -736,11 +733,10 @@ class _AddProductPageState extends State<AddProductPage> {
                                       children: [
                                         Text(
                                           'Final Price:',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: 12,
-                                            fontWeight: FontWeight.bold,
                                             color: Color(0xFF6CA04A),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                         Text(
@@ -749,11 +745,10 @@ class _AddProductPageState extends State<AddProductPage> {
                                                 ? TaxService.calculateNetPrice(double.tryParse(_priceController.text) ?? 0)
                                                 : 0
                                           ),
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: 12,
-                                            fontWeight: FontWeight.bold,
                                             color: Color(0xFF6CA04A),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                       ],
@@ -912,11 +907,10 @@ class _AddProductPageState extends State<AddProductPage> {
                         children: [
                           Text(
                             'Product Active',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
                               color: Color(0xFF222222),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           Switch(
@@ -947,10 +941,9 @@ class _AddProductPageState extends State<AddProductPage> {
                       ),
                       child: Text(
                         widget.product != null ? 'Update Product' : 'Add Product',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),

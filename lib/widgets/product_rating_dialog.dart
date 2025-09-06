@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'star_rating_widget.dart';
 import '../services/product_rating_service.dart';
@@ -170,7 +169,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                         fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
@@ -207,7 +205,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                             fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF333333),
-                            fontFamily: 'Poppins',
                           ),
                         ),
                         Text(
@@ -215,7 +212,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.035,
                             color: Colors.grey[600],
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ],
@@ -239,7 +235,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                       fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF333333),
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   SizedBox(height: screenWidth * 0.03),
@@ -263,7 +258,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                       fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF333333),
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   SizedBox(height: screenWidth * 0.02),
@@ -274,7 +268,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                       hintText: 'Tell others about your experience with this product...',
                       hintStyle: TextStyle(
                         color: Colors.grey[500],
-                        fontFamily: 'Poppins',
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -288,7 +281,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                     ),
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ],
@@ -316,7 +308,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                           fontSize: screenWidth * 0.04,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey[600],
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ),
@@ -347,7 +338,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                                 fontSize: screenWidth * 0.04,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
-                                fontFamily: 'Poppins',
                               ),
                             ),
                     ),

@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'admin_dashboard.dart';
 
 class AdminReportsPage extends StatelessWidget {
@@ -24,11 +25,10 @@ class AdminReportsPage extends StatelessWidget {
         ),
         title: Text(
           'Reports',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             color: Colors.white,
             fontSize: screenWidth * 0.055,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         elevation: 0,
@@ -48,13 +48,13 @@ class AdminReportsPage extends StatelessWidget {
                   Tab(
                     child: Text(
                       'Supplier Reports',
-                      style: TextStyle(fontFamily: 'Poppins'),
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
                     ),
                   ),
                   Tab(
                     child: Text(
                       'System Reports',
-                      style: TextStyle(fontFamily: 'Poppins'),
+                      style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
                     ),
                   ),
                 ],
@@ -85,9 +85,9 @@ class AdminReportsPage extends StatelessWidget {
           return Center(
             child: Text(
               'Error: ${snapshot.error}',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 color: Colors.red,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
             ),
           );
@@ -116,11 +116,10 @@ class AdminReportsPage extends StatelessWidget {
                 SizedBox(height: 16),
                 Text(
                   'No reports yet',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
                     color: Colors.grey,
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -151,10 +150,9 @@ class AdminReportsPage extends StatelessWidget {
                 contentPadding: EdgeInsets.all(16),
                 title: Text(
                   report['supplierName'] ?? 'Unknown Supplier',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.quicksand(
                     color: Color(0xFF222222),
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 subtitle: Column(
@@ -163,18 +161,17 @@ class AdminReportsPage extends StatelessWidget {
                     SizedBox(height: 4),
                     Text(
                       report['reason'] ?? 'No reason provided',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         color: Colors.grey,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Status: ${report['status'] ?? 'pending'}',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         color: Color(0xFF6CA04A),
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -204,19 +201,18 @@ class AdminReportsPage extends StatelessWidget {
           SizedBox(height: 16),
           Text(
             'System Reports',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
               color: Colors.grey,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
           SizedBox(height: 8),
           Text(
             'Coming Soon',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               color: Colors.grey,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -231,9 +227,8 @@ class AdminReportsPage extends StatelessWidget {
         backgroundColor: Colors.white,
         title: Text(
           'Report Details',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
+          style: GoogleFonts.quicksand(
+            fontWeight: FontWeight.w400,
           ),
         ),
         content: Column(
@@ -242,23 +237,23 @@ class AdminReportsPage extends StatelessWidget {
           children: [
             Text(
               'Supplier: ${report['supplierName'] ?? 'Unknown'}',
-              style: TextStyle(fontFamily: 'Poppins'),
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
             ),
             SizedBox(height: 8),
             Text(
               'Reason: ${report['reason'] ?? 'No reason provided'}',
-              style: TextStyle(fontFamily: 'Poppins'),
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
             ),
             SizedBox(height: 8),
             Text(
               'Status: ${report['status'] ?? 'pending'}',
-              style: TextStyle(fontFamily: 'Poppins'),
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
             ),
             if (report['description'] != null) ...[
               SizedBox(height: 8),
               Text(
                 'Description: ${report['description']}',
-                style: TextStyle(fontFamily: 'Poppins'),
+                style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
               ),
             ],
           ],
@@ -268,9 +263,9 @@ class AdminReportsPage extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Close',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 color: Color(0xFF6CA04A),
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),

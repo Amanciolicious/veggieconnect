@@ -67,10 +67,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           children: [
             Text(
               'Update Profile Picture',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
               ),
             ),
             const SizedBox(height: 20),
@@ -130,9 +129,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -243,14 +242,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     
     // Responsive sizing for Infinix Smart 8 (720x1612)
     final isSmallScreen = screenWidth <= 720;
     final responsiveFontSize = isSmallScreen ? screenWidth * 0.045 : 18.0;
-    final responsivePadding = isSmallScreen ? screenWidth * 0.03 : 20.0;
-    final responsiveMargin = isSmallScreen ? screenWidth * 0.025 : 15.0;
     
     return Scaffold(
       key: _scaffoldKey,
@@ -259,10 +254,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       appBar: ModernAppBar(
         title: Text(
           'VeggieConnect',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: responsiveFontSize,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
             color: Colors.black,
           ),
         ),
@@ -315,7 +309,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         ),
                         child: Text(
                           unreadCount > 99 ? '99+' : '$unreadCount',
-                          style: const TextStyle(
+                          style: GoogleFonts.quicksand(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -581,10 +575,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     children: [
                       Text(
                         'Get 40% discount on your first order from app.',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -592,11 +585,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       SizedBox(height: isSmallScreen ? 3 : 5),
                       Text(
                         'Shop Now',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           color: const Color(0xFF4CAF50),
                           fontWeight: FontWeight.w500,
                           fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ],
@@ -617,10 +609,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
           child: Text(
             'Categories', 
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -684,10 +675,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
           child: Text(
             'Popular Products', 
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -725,19 +715,19 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       SizedBox(height: isSmallScreen ? 10 : 12),
                       Text(
                         'No products available yet.',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
                           color: Colors.grey[600],
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                       SizedBox(height: isSmallScreen ? 6 : 8),
                       Text(
                         'Check back later for fresh produce!',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
                           color: Colors.grey[500],
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -834,10 +824,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 children: [
                                   Text(
                                     data['name'] ?? 'Unknown Product',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: isSmallScreen ? screenWidth * 0.032 : 14.0,
                                       fontWeight: FontWeight.w600,
-                                      fontFamily: 'Poppins',
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -848,11 +837,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                       Expanded(
                                         child: Text(
                                           '₱${(data['price'] ?? 0).toStringAsFixed(2)}/${data['unit'] ?? 'kg'}',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: isSmallScreen ? screenWidth * 0.03 : 13.0,
                                             fontWeight: FontWeight.bold,
                                             color: const Color(0xFF4CAF50),
-                                            fontFamily: 'Poppins',
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -868,11 +856,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                           ),
                                           child: Text(
                                             'Popular',
-                                            style: TextStyle(
+                                            style: GoogleFonts.quicksand(
                                               color: Colors.orange,
                                               fontWeight: FontWeight.bold,
                                               fontSize: isSmallScreen ? screenWidth * 0.03 : 12,
-                                              fontFamily: 'Poppins',
                                             ),
                                           ),
                                         ),
@@ -979,10 +966,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             SizedBox(height: isSmallScreen ? 10 : 12),
             Text(
               title,
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: responsiveFontSize,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
@@ -1066,10 +1052,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   children: [
                     Text(
                       name,
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: responsiveFontSize,
                         fontWeight: FontWeight.w600,
-                        fontFamily: 'Poppins',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1080,11 +1065,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         Expanded(
                           child: Text(
                             '₱$price/$unit',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: responsivePriceFontSize,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF4CAF50),
-                              fontFamily: 'Poppins',
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1247,7 +1231,7 @@ class _VeggieCard extends StatelessWidget {
         children: [
           Icon(image, color: const Color(0xFF4CAF50), size: 24),
           const SizedBox(height: 10),
-          Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
+          Text(name, style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Icon(Icons.favorite_border, color: Colors.black26),
         ],

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:veggieconnect/services/cloudinary_service.dart';
@@ -175,7 +176,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF6CA04A)),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Save', style: TextStyle(color: Colors.white)),
+              child: Text('Save', style: GoogleFonts.quicksand(color: Colors.white)),
             ),
           ],
         );
@@ -300,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Navigator.pop(context);
                     setState(() {});
                   },
-                  child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text('Save Changes', style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -318,20 +319,19 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(width: screenWidth * 0.02),
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.035,
-            fontWeight: FontWeight.w600,
             color: Color(0xFF757575),
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         Spacer(),
         Text(
           value,
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.035,
             color: valueColor ?? Color(0xFF757575),
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -349,10 +349,10 @@ class _ProfilePageState extends State<ProfilePage> {
         body: Center(
           child: Text(
             'Please log in to view your profile.',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 16,
               color: Color(0xFF757575),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -365,11 +365,10 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Profile',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         actions: const [],
@@ -417,10 +416,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Text(
                         'Profile',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: screenWidth * 0.05,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                       SizedBox(height: screenWidth * 0.04),
@@ -468,19 +466,18 @@ class _ProfilePageState extends State<ProfilePage> {
                               children: [
                                 Text(
                                   userData['name'] ?? user.displayName ?? 'User',
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     fontSize: screenWidth * 0.045,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
                                   userData['email'] ?? user.email ?? '',
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     fontSize: screenWidth * 0.035,
                                     color: Color(0xFF757575),
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                                 SizedBox(height: 8),
@@ -492,11 +489,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   child: Text(
                                     'Role: ${userData['role']?.toString().toUpperCase() ?? 'CUSTOMER'}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.03,
-                                      fontWeight: FontWeight.bold,
                                       color: Color(0xFF6CA04A),
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
@@ -535,10 +531,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Text(
                         'Personal Information',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: screenWidth * 0.05,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                       SizedBox(height: screenWidth * 0.04),
@@ -593,10 +588,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Text(
                         'Order History',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: screenWidth * 0.05,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                       SizedBox(height: screenWidth * 0.04),
@@ -641,19 +635,19 @@ class _ProfilePageState extends State<ProfilePage> {
                                     SizedBox(height: 12),
                                     Text(
                                       'No orders yet',
-                                      style: TextStyle(
+                                      style: GoogleFonts.quicksand(
                                         fontSize: screenWidth * 0.04,
                                         color: Colors.grey[600],
-                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                     SizedBox(height: 6),
                                     Text(
                                       'Start shopping to see your order history here',
-                                      style: TextStyle(
+                                      style: GoogleFonts.quicksand(
                                         fontSize: screenWidth * 0.035,
                                         color: Colors.grey[500],
-                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -728,19 +722,18 @@ class _ProfilePageState extends State<ProfilePage> {
                                         children: [
                                           Text(
                                             'Order #${orderId.substring(0, 8)}...',
-                                            style: TextStyle(
+                                            style: GoogleFonts.quicksand(
                                               fontSize: screenWidth * 0.04,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w400,
                                             ),
                                           ),
                                           SizedBox(height: 4),
                                           Text(
                                             dateStr,
-                                            style: TextStyle(
+                                            style: GoogleFonts.quicksand(
                                               fontSize: screenWidth * 0.035,
                                               color: Color(0xFF757575),
-                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w400,
                                             ),
                                           ),
                                         ],
@@ -751,11 +744,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                       children: [
                                         Text(
                                           '₱${total.toStringAsFixed(2)}',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: screenWidth * 0.04,
-                                            fontWeight: FontWeight.bold,
                                             color: Color(0xFF6CA04A),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                         SizedBox(height: 4),
@@ -767,11 +759,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                           ),
                                           child: Text(
                                             status.toUpperCase(),
-                                            style: TextStyle(
+                                            style: GoogleFonts.quicksand(
                                               fontSize: screenWidth * 0.03,
-                                              fontWeight: FontWeight.bold,
                                               color: statusColor,
-                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w400,
                                             ),
                                           ),
                                         ),
@@ -804,11 +795,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           },
                           child: Text(
                             'View All Orders',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.045,
-                              fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:veggieconnect/supplier-side/supplier_orders_page.dart';
 import '../authentication/login_page.dart';
@@ -61,11 +62,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           children: [
             Text(
               'Update Profile Picture',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
                 color: Color(0xFF222222),
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
             ),
             const SizedBox(height: 20),
@@ -118,10 +118,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: Color(0xFF222222),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -259,11 +259,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
       appBar: AppBar(
         title: Text(
           'Supplier Dashboard',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         backgroundColor: Color(0xFF6CA04A),
@@ -309,7 +308,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                         ),
                         child: Text(
                           unreadCount > 99 ? '99+' : '$unreadCount',
-                          style: const TextStyle(
+                          style:  GoogleFonts.quicksand(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -394,11 +393,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                         const SizedBox(height: 12),
                         Text(
                           displayName,
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -406,7 +404,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                         const SizedBox(height: 4),
                         Text(
                           email,
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -420,10 +418,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.dashboard),
               title: Text(
                 'Overview',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               selected: _selectedIndex == 0,
@@ -438,10 +436,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.inventory),
               title: Text(
                 'Manage Products',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               selected: _selectedIndex == 1,
@@ -456,10 +454,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.inventory_2),
               title: Text(
                 'Stock Management',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               selected: _selectedIndex == 2,
@@ -474,10 +472,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.shopping_cart),
               title: Text(
                 'Orders Management',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               onTap: () {
@@ -492,10 +490,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.person),
               title: Text(
                 'Profile',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               selected: _selectedIndex == 4,
@@ -510,10 +508,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.person_pin),
               title: Text(
                 'Supplier Location',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               onTap: () {
@@ -528,10 +526,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.location_on),
               title: Text(
                 'Manage Location',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               onTap: () {
@@ -547,10 +545,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.message),
               title: Text(
                 'Messages',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               onTap: () {
@@ -565,10 +563,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               leading: const Icon(Icons.logout),
               title: Text(
                 'Logout',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               onTap: () async {
@@ -627,11 +625,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         children: [
           Text(
             'Business Overview',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
               color: Color(0xFF222222),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
           SizedBox(height: 10),
@@ -705,11 +702,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           const SizedBox(height: 20),
           Text(
             'Stock Management',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
               color: Color(0xFF222222),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
           const SizedBox(height: 10),
@@ -762,10 +758,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     fontSize: titleSize,
                     color: Color(0xFF757575),
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 SizedBox(height: (w * 0.02).clamp(2, 4)),
@@ -774,11 +770,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     value,
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: valueSize,
                       color: color,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -804,11 +799,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               Expanded(
                 child: Text(
                   'My Products',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
                     color: Color(0xFF222222),
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
@@ -829,7 +823,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                 ),
                 child: Text(
                   'Add',
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.quicksand(fontSize: 16),
                 ),
               ),
             ],
@@ -857,7 +851,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           selected: selected,
           onSelected: (_) => setState(() => _productStatusFilter = s),
           selectedColor: const Color(0xFF6CA04A),
-          labelStyle: TextStyle(color: selected ? Colors.white : const Color(0xFF222222)),
+          labelStyle: GoogleFonts.quicksand(color: selected ? Colors.white : const Color(0xFF222222)),
         );
       }).toList(),
     );
@@ -881,7 +875,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           return Center(
             child: Text(
               'No products yet',
-              style: TextStyle(fontSize: 16),
+              style: GoogleFonts.quicksand(fontSize: 16),
             ),
           );
         }
@@ -969,24 +963,23 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                             children: [
                               Text(
                                 product['name'] ?? 'Product',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold,
                                   color: Color(0xFF222222),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               SizedBox(height: 5),
                               Text(
                                 'Price: ₱${product['price'] ?? 0}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 14,
                                   color: Color(0xFF6CA04A),
                                 ),
                               ),
                               Text(
                                 'Stock: ${product['quantity'] ?? 0}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 14,
                                   color: Colors.grey[600],
                                 ),
@@ -1007,7 +1000,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                               ),
                               child: Text(
                                 (product['status'] ?? 'pending').toString().toUpperCase(),
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: _getStatusColor(product['status']),
@@ -1074,10 +1067,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           return Center(
             child: Text(
               'Error loading data',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 color: Colors.red,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
             ),
           );
@@ -1128,7 +1121,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     final user = FirebaseAuth.instance.currentUser;
     
     if (user == null) {
-      return Center(child: Text('Not logged in.', style: TextStyle(fontSize: 16)));
+      return Center(child: Text('Not logged in.', style: GoogleFonts.quicksand(fontSize: 16)));
     }
     
     return StreamBuilder<QuerySnapshot>(
@@ -1142,10 +1135,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           return Center(child: CircularProgressIndicator(strokeWidth: 2));
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(fontSize: 14)));
+          return Center(child: Text('Error: ${snapshot.error}', style: GoogleFonts.quicksand(fontSize: 14)));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text('No products yet.', style: TextStyle(fontSize: 16)));
+          return Center(child: Text('No products yet.', style: GoogleFonts.quicksand(fontSize: 16)));
         }
         
         final products = snapshot.data!.docs;
@@ -1196,21 +1189,19 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                         children: [
                           Text(
                             product['name'] ?? 'Unknown Product',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
                               color: Color(0xFF222222),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: 5),
                           Text(
                             '₱${price.toStringAsFixed(2)}',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: 14,
-                              fontWeight: FontWeight.bold,
                               color: Color(0xFF6CA04A),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: 5),
@@ -1224,11 +1215,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                               SizedBox(width: 10),
                               Text(
                                 '$quantity ${product['unit'] ?? ''}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 14,
                                   color: stockColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -1390,10 +1380,9 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   children: [
                     Text(
                       'Profile',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -1442,19 +1431,18 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                             children: [
                               Text(
                                 data['name'] ?? 'Supplier Name',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               SizedBox(height: 4),
                               Text(
                                 data['email'] ?? user.email ?? '',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.035,
                                   color: Color(0xFF757575),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               SizedBox(height: 8),
@@ -1466,11 +1454,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                                 ),
                                 child: Text(
                                   'Role: ${data['role']?.toString().toUpperCase() ?? 'SUPPLIER'}',
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     fontSize: screenWidth * 0.03,
-                                    fontWeight: FontWeight.bold,
                                     color: Color(0xFF6CA04A),
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),
@@ -1509,10 +1496,9 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   children: [
                     Text(
                       'Personal Information',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -1601,11 +1587,10 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   children: [
                     Text(
                       'Business Statistics',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
                         color: Color(0xFF222222),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: 20),
@@ -1670,20 +1655,19 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         SizedBox(width: screenWidth * 0.02),
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.035,
-            fontWeight: FontWeight.w600,
             color: Color(0xFF757575),
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         Spacer(),
         Text(
           value,
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.035,
             color: valueColor ?? Color(0xFF757575),
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -1695,11 +1679,11 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
       children: [
         Text(
           value,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: GoogleFonts.quicksand(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 14, color: Colors.grey),
+          style: GoogleFonts.quicksand(fontSize: 14, color: Colors.grey),
         ),
       ],
     );
@@ -1718,20 +1702,19 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           SizedBox(height: 16),
           Text(
             'Notifications',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
               color: Color(0xFF1A1A1A),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
           SizedBox(height: 8),
           Text(
             'Stay updated with latest alerts',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: Color(0xFF757575),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/star_rating_widget.dart';
 
 class RatingDialog extends StatefulWidget {
@@ -146,10 +147,9 @@ class _RatingDialogState extends State<RatingDialog> {
       ),
       title: Text(
         'Rate Your Experience',
-        style: TextStyle(
+        style: GoogleFonts.quicksand(
           fontSize: screenWidth * 0.05,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Poppins',
+          fontWeight: FontWeight.w400,
           color: Color(0xFF2E2E2E),
         ),
         textAlign: TextAlign.center,
@@ -176,10 +176,9 @@ class _RatingDialogState extends State<RatingDialog> {
                   Expanded(
                     child: Text(
                       widget.supplierName,
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                         color: Color(0xFF6CA04A),
                       ),
                     ),
@@ -193,9 +192,9 @@ class _RatingDialogState extends State<RatingDialog> {
             // Rating stars
             Text(
               'How was your experience?',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: screenWidth * 0.04,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
                 color: Color(0xFF757575),
               ),
             ),
@@ -219,9 +218,9 @@ class _RatingDialogState extends State<RatingDialog> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Share your feedback (optional)',
-                hintStyle: TextStyle(
+                hintStyle: GoogleFonts.quicksand(
                   color: Color(0xFF757575),
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -233,8 +232,8 @@ class _RatingDialogState extends State<RatingDialog> {
                 ),
                 contentPadding: EdgeInsets.all(16),
               ),
-              style: TextStyle(
-                fontFamily: 'Poppins',
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w400,
                 fontSize: screenWidth * 0.04,
               ),
             ),
@@ -245,10 +244,9 @@ class _RatingDialogState extends State<RatingDialog> {
             if (widget.products.isNotEmpty) ...[
               Text(
                 'Products ordered:',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: screenWidth * 0.04,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
               SizedBox(height: screenWidth * 0.02),
@@ -256,9 +254,9 @@ class _RatingDialogState extends State<RatingDialog> {
                 padding: EdgeInsets.symmetric(vertical: 2),
                 child: Text(
                   '• ${product['name']} (${product['quantity']}x)',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     fontSize: screenWidth * 0.035,
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                     color: Color(0xFF757575),
                   ),
                 ),
@@ -272,11 +270,10 @@ class _RatingDialogState extends State<RatingDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             'Cancel',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: screenWidth * 0.04,
-              fontWeight: FontWeight.w600,
               color: Color(0xFF757575),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -303,11 +300,10 @@ class _RatingDialogState extends State<RatingDialog> {
                 )
               : Text(
                   'Submit Rating',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     fontSize: screenWidth * 0.04,
-                    fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
         ),

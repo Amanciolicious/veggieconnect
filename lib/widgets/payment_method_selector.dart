@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
   final String? selectedMethod;
@@ -35,10 +36,9 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       children: [
         Text(
           'Payment Method',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
             color: Colors.black87,
           ),
         ),
@@ -128,20 +128,19 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                       color: isSelected ? color : Colors.black87,
                     ),
                   ),
                   SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
                       color: Colors.grey[600],
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],

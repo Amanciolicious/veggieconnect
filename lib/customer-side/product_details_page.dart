@@ -2,11 +2,9 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import '../widgets/product_image_widget.dart';
-import '../widgets/star_rating_widget.dart';
-import '../widgets/product_feedback_modal.dart';
-import '../widgets/product_rating_dialog.dart';
-import '../services/product_rating_service.dart';
 import 'package:flutter/material.dart';
 import 'buyer_chat_page.dart';
 import 'customer_home_page.dart';
@@ -118,11 +116,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         elevation: 0,
         title: Text(
           'Product Details',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.055,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
       ),
@@ -169,10 +166,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         children: [
                           Text(
                             product['name'] ?? 'Unknown Product',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.06,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: screenWidth * 0.015),
@@ -182,72 +178,44 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               SizedBox(width: screenWidth * 0.02),
                               Text(
                                 product['supplierName'] ?? 'Unknown Supplier',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.04,
                                   color: Color(0xFF757575),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              SizedBox(width: screenWidth * 0.02),
-                              StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance
-                                    .collection('product_ratings')
-                                    .where('productId', isEqualTo: widget.productId)
-                                    .snapshots(),
-                                builder: (context, snapshot) {
-                                  if (!snapshot.hasData) {
-                                    return Row(
-                                      children: [
-                                        StarRatingDisplay(rating: 0, size: screenWidth * 0.035),
-                                        SizedBox(width: screenWidth * 0.01),
-                                        Text(
-                                          '(0)',
-                                          style: TextStyle(
-                                            fontSize: screenWidth * 0.032,
-                                            color: Color(0xFF757575),
-                                            fontFamily: 'Poppins',
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }
-                                  final docs = snapshot.data!.docs;
-                                  if (docs.isEmpty) {
-                                    return Row(
-                                      children: [
-                                        StarRatingDisplay(rating: 0, size: screenWidth * 0.035),
-                                        SizedBox(width: screenWidth * 0.01),
-                                        Text(
-                                          '(0)',
-                                          style: TextStyle(
-                                            fontSize: screenWidth * 0.032,
-                                            color: Color(0xFF757575),
-                                            fontFamily: 'Poppins',
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }
-                                  final totalRating = docs.fold<double>(0, (sum, d) => sum + ((d['rating'] ?? 0) as num).toDouble());
-                                  final average = totalRating / docs.length;
-                                  return Row(
-                                    children: [
-                                      StarRatingDisplay(rating: average, size: screenWidth * 0.035),
-                                      SizedBox(width: screenWidth * 0.01),
-                                      Text(
-                                        '(${docs.length})',
-                                        style: TextStyle(
-                                          fontSize: screenWidth * 0.032,
-                                          color: Color(0xFF757575),
-                                          fontFamily: 'Poppins',
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                              // Report functionality removed - customers can only report after completing orders
                             ],
+                          ),
+                          SizedBox(height: screenWidth * 0.01),
+                          // Product rating indicator (text only) below supplier name
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('product_ratings')
+                                .where('productId', isEqualTo: widget.productId)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                return Text(
+                                  'No ratings yet',
+                                  style: GoogleFonts.quicksand(
+                                    fontSize: screenWidth * 0.032,
+                                    color: Color(0xFF9E9E9E),
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                );
+                              }
+                              final docs = snapshot.data!.docs;
+                              final totalRating = docs.fold<double>(0, (sum, d) => sum + ((d['rating'] ?? 0) as num).toDouble());
+                              final average = totalRating / docs.length;
+                              return Text(
+                                'Rated ${average.toStringAsFixed(1)} (${docs.length})',
+                                style: GoogleFonts.quicksand(
+                                  fontSize: screenWidth * 0.032,
+                                  color: Color(0xFF757575),
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              );
+                            },
                           ),
                           
                           // Real-time Rating Percentage Display
@@ -273,10 +241,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                       SizedBox(width: 4),
                                       Text(
                                         'No ratings yet',
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: screenWidth * 0.032,
                                           color: Colors.grey[600],
-                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ],
@@ -315,11 +283,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     SizedBox(width: 4),
                                     Text(
                                       '${percentage.toStringAsFixed(0)}% Satisfaction',
-                                      style: TextStyle(
+                                      style: GoogleFonts.quicksand(
                                         fontSize: screenWidth * 0.032,
                                         color: Color(0xFF6CA04A),
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                     SizedBox(width: 8),
@@ -331,11 +298,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                       ),
                                       child: Text(
                                         '${highRatingPercentage.toStringAsFixed(0)}% 4-5★',
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: screenWidth * 0.028,
                                           color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ),
@@ -369,7 +335,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   padding: EdgeInsets.symmetric(vertical: screenWidth * 0.005),
                                   child: Row(
                                     children: [
-                                      Text('$stars★', style: TextStyle(fontSize: screenWidth * 0.032, fontFamily: 'Poppins', color: Color(0xFF757575))),
+                                      Text('$stars★', style: GoogleFonts.quicksand(fontSize: screenWidth * 0.032, fontWeight: FontWeight.w400, color: Color(0xFF757575))),
                                       SizedBox(width: screenWidth * 0.02),
                                       Expanded(
                                         child: Stack(
@@ -389,7 +355,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                         ),
                                       ),
                                       SizedBox(width: screenWidth * 0.02),
-                                      Text('${pct.toStringAsFixed(0)}% ($count)', style: TextStyle(fontSize: screenWidth * 0.03, fontFamily: 'Poppins', color: Color(0xFF757575))),
+                                      Text('${pct.toStringAsFixed(0)}% ($count)', style: GoogleFonts.quicksand(fontSize: screenWidth * 0.03, fontWeight: FontWeight.w400, color: Color(0xFF757575))),
                                     ],
                                   ),
                                 );
@@ -432,11 +398,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     SizedBox(width: screenWidth * 0.02),
                                     Text(
                                       'Customer Reviews',
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.045,
-                                        fontWeight: FontWeight.bold,
+                                      style: GoogleFonts.quicksand(
+                                        fontSize: screenWidth * 0.04,
+                                        fontWeight: FontWeight.w600,
                                         color: Color(0xFF333333),
-                                        fontFamily: 'Poppins',
                                       ),
                                     ),
                                     Spacer(),
@@ -447,62 +412,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                           .snapshots(),
                                       builder: (context, snapshot) {
                                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                                          return Row(
-                                            children: [
-                                              Text(
-                                                'No reviews yet',
-                                                style: TextStyle(
-                                                  fontSize: screenWidth * 0.035,
-                                                  color: Colors.grey[600],
-                                                  fontFamily: 'Poppins',
-                                                ),
-                                              ),
-                                              SizedBox(width: screenWidth * 0.02),
-                                              if (user != null && product['sellerId'] != user?.uid)
-                                                GestureDetector(
-                                                  onTap: () {
-                                                    showDialog(
-                                                      context: context,
-                                                      builder: (context) => ProductRatingDialog(
-                                                        productId: widget.productId,
-                                                        supplierId: product['sellerId'] ?? '',
-                                                        productName: product['name'] ?? 'Product',
-                                                        supplierName: product['supplierName'] ?? 'Supplier',
-                                                      ),
-                                                    );
-                                                  },
-                                                  child: Container(
-                                                    padding: EdgeInsets.symmetric(
-                                                      horizontal: screenWidth * 0.03,
-                                                      vertical: screenWidth * 0.015,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: Color(0xFF6CA04A),
-                                                      borderRadius: BorderRadius.circular(20),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.star,
-                                                          color: Colors.white,
-                                                          size: screenWidth * 0.035,
-                                                        ),
-                                                        SizedBox(width: screenWidth * 0.015),
-                                                        Text(
-                                                          'Rate Product',
-                                                          style: TextStyle(
-                                                            fontSize: screenWidth * 0.032,
-                                                            color: Colors.white,
-                                                            fontWeight: FontWeight.w600,
-                                                            fontFamily: 'Poppins',
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
+                                          return Text(
+                                            'No reviews yet',
+                                            style: GoogleFonts.quicksand(
+                                              fontSize: screenWidth * 0.033,
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w400,
+                                            ),
                                           );
                                         }
                                         
@@ -515,107 +431,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                           children: [
                                             StarRatingDisplay(
                                               rating: average,
-                                              size: screenWidth * 0.04,
+                                              size: screenWidth * 0.038,
                                               showRatingText: true,
                                             ),
                                             SizedBox(width: screenWidth * 0.02),
                                             Text(
                                               '(${reviews.length})',
-                                              style: TextStyle(
-                                                fontSize: screenWidth * 0.035,
+                                              style: GoogleFonts.quicksand(
+                                                fontSize: screenWidth * 0.033,
                                                 color: Color(0xFF757575),
-                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.w400,
                                               ),
                                             ),
-                                            SizedBox(width: screenWidth * 0.02),
-                                            GestureDetector(
-                                              onTap: () {
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (context) => ProductFeedbackModal(
-                                                    productId: widget.productId,
-                                                    supplierId: product['sellerId'] ?? '',
-                                                    productName: product['name'] ?? 'Product',
-                                                  ),
-                                                );
-                                              },
-                                              child: Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: screenWidth * 0.03,
-                                                  vertical: screenWidth * 0.015,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Color(0xFF6CA04A),
-                                                  borderRadius: BorderRadius.circular(20),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.rate_review,
-                                                      color: Colors.white,
-                                                      size: screenWidth * 0.035,
-                                                    ),
-                                                    SizedBox(width: screenWidth * 0.015),
-                                                    Text(
-                                                      'View Reviews',
-                                                      style: TextStyle(
-                                                        fontSize: screenWidth * 0.032,
-                                                        color: Colors.white,
-                                                        fontWeight: FontWeight.w600,
-                                                        fontFamily: 'Poppins',
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            if (user != null && product['sellerId'] != user?.uid) ...[
-                                              SizedBox(width: screenWidth * 0.02),
-                                              GestureDetector(
-                                                onTap: () {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (context) => ProductRatingDialog(
-                                                      productId: widget.productId,
-                                                      supplierId: product['sellerId'] ?? '',
-                                                      productName: product['name'] ?? 'Product',
-                                                      supplierName: product['supplierName'] ?? 'Supplier',
-                                                    ),
-                                                  );
-                                                },
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.03,
-                                                    vertical: screenWidth * 0.015,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.orange,
-                                                    borderRadius: BorderRadius.circular(20),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.star,
-                                                        color: Colors.white,
-                                                        size: screenWidth * 0.035,
-                                                      ),
-                                                      SizedBox(width: screenWidth * 0.015),
-                                                      Text(
-                                                        'Rate',
-                                                        style: TextStyle(
-                                                          fontSize: screenWidth * 0.032,
-                                                          color: Colors.white,
-                                                          fontWeight: FontWeight.w600,
-                                                          fontFamily: 'Poppins',
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
                                           ],
                                         );
                                       },
@@ -631,11 +458,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             children: [
                               Text(
                                 '\u20b1${product['price']?.toStringAsFixed(2) ?? '0.00'}/${product['unit'] ?? 'unit'}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.055,
-                                  fontWeight: FontWeight.bold,
                                   color: Color(0xFF6CA04A),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               const Spacer(),
@@ -658,10 +484,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                       ),
                                       Text(
                                         '$_qty ${product['unit'] ?? 'unit'}',
-                                        style: TextStyle(
+                                        style: GoogleFonts.quicksand(
                                           fontSize: screenWidth * 0.045,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                       IconButton(
@@ -680,10 +505,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               SizedBox(width: screenWidth * 0.02),
                               Text(
                                 'Stock: ${product['quantity'] ?? 0} ${product['unit'] ?? 'units'}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.04,
                                   color: Color(0xFF757575),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -691,19 +516,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           SizedBox(height: screenWidth * 0.04),
                           Text(
                             'Description',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.05,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: screenWidth * 0.02),
                           Text(
                             showReadMore && !_readMore ? '${desc.substring(0, 90)}...' : desc,
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.04,
                               color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (showReadMore)
@@ -711,10 +535,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               onTap: () => setState(() => _readMore = !_readMore),
                               child: Text(
                                 _readMore ? 'Read Less' : 'Read More',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   color: Color(0xFF6CA04A),
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ),
@@ -787,11 +610,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             SizedBox(width: screenWidth * 0.02),
                             Text(
                               'Chat',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.04,
-                                fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
@@ -818,11 +640,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             SizedBox(width: screenWidth * 0.02),
                             Text(
                               'Add to Cart',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.04,
-                                fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],

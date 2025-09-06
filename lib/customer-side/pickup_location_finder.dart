@@ -51,7 +51,7 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Location updated: ${address != null && address!.length > 40 ? address!.substring(0, 40) + '...' : address ?? 'Current location'}'),
+              content: Text('Location updated: ${address != null && address.length > 40 ? '${address!.substring(0, 40)}...' : address ?? 'Current location'}'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
@@ -571,8 +571,8 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
         onPressed: _refreshCurrentLocation,
         backgroundColor: const Color(0xFF4CAF50),
         foregroundColor: Colors.white,
-        child: const Icon(Icons.my_location),
         tooltip: 'Use Current Location',
+        child: const Icon(Icons.my_location),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

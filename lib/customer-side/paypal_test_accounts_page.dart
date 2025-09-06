@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/paypal_sandbox_service.dart';
 
 class PayPalTestAccountsPage extends StatelessWidget {
@@ -19,11 +20,10 @@ class PayPalTestAccountsPage extends StatelessWidget {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'PayPal Test Accounts',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -48,11 +48,10 @@ class PayPalTestAccountsPage extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Use these PayPal Sandbox test accounts to simulate payments',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                        fontWeight: FontWeight.bold,
                         color: Colors.blue[800],
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -65,10 +64,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
             // Test Account Information
             Text(
               'Test Account Credentials',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.055,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
                 color: Colors.black87,
               ),
             ),
@@ -120,10 +118,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
                       SizedBox(width: screenWidth * 0.02),
                       Text(
                         'How to Test Payments',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                           color: Colors.grey[700],
                         ),
                       ),
@@ -183,10 +180,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
                       SizedBox(width: screenWidth * 0.02),
                       Text(
                         'Demo Balance',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                           color: Colors.green[800],
                         ),
                       ),
@@ -195,9 +191,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
                   SizedBox(height: screenWidth * 0.02),
                   Text(
                     'Both test accounts have unlimited demo balance for testing purposes. No real money is involved in sandbox transactions.',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                       color: Colors.green[700],
                     ),
                   ),
@@ -244,10 +240,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
               SizedBox(width: screenWidth * 0.03),
               Text(
                 title,
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                   color: color,
                 ),
               ),
@@ -287,10 +282,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
           flex: 2,
           child: Text(
             '$label:',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
               color: Colors.grey[700],
             ),
           ),
@@ -309,10 +303,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
             ),
             child: Text(
               value,
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -367,11 +360,10 @@ class PayPalTestAccountsPage extends StatelessWidget {
             child: Center(
               child: Text(
                 stepNumber,
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.white,
                   fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
@@ -380,9 +372,9 @@ class PayPalTestAccountsPage extends StatelessWidget {
           Expanded(
             child: Text(
               instruction,
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
                 color: Colors.grey[700],
               ),
             ),

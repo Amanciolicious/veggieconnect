@@ -126,7 +126,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF222222),
-                fontFamily: 'Poppins',
               ),
             ),
             const SizedBox(height: 20),
@@ -182,7 +181,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             style: TextStyle(
               fontSize: 14,
               color: Color(0xFF222222),
-              fontFamily: 'Poppins',
             ),
           ),
         ],
@@ -1274,7 +1272,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       style: TextStyle(
                         fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -1326,7 +1323,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.045,
                                   fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
                               SizedBox(height: 4),
@@ -1335,7 +1331,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
                                   color: Color(0xFF757575),
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
                               SizedBox(height: 8),
@@ -1351,7 +1346,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                     fontSize: screenWidth * 0.03,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF4CAF50),
-                                    fontFamily: 'Poppins',
                                   ),
                                 ),
                               ),
@@ -1393,7 +1387,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       style: TextStyle(
                         fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -1536,7 +1529,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             fontSize: screenWidth * 0.035,
             fontWeight: FontWeight.w600,
             color: Color(0xFF757575),
-            fontFamily: 'Poppins',
           ),
         ),
         Spacer(),
@@ -1545,7 +1537,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           style: TextStyle(
             fontSize: screenWidth * 0.035,
             color: valueColor ?? Color(0xFF757575),
-            fontFamily: 'Poppins',
           ),
         ),
       ],

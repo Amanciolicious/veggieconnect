@@ -118,7 +118,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
           ),
         ),
         elevation: 0,
@@ -156,7 +155,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -210,7 +208,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -296,7 +293,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
                     _errorMessage!,
                     style: TextStyle(
                       color: Colors.red,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),
@@ -314,7 +310,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
                     _successMessage!,
                     style: TextStyle(
                       color: Color(0xFF6CA04A),
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),
@@ -345,7 +340,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
                             fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                 ),
@@ -362,7 +356,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
                       color: Color(0xFF757575),
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),
@@ -392,7 +385,6 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
             fontSize: screenWidth * 0.04,
             fontWeight: FontWeight.w600,
             color: Color(0xFF757575),
-            fontFamily: 'Poppins',
           ),
         ),
         SizedBox(height: 8),
@@ -416,11 +408,9 @@ class _ContactInfoPageState extends State<ContactInfoPage> {
               hintText: hint,
               hintStyle: TextStyle(
                 color: Color(0xFF757575),
-                fontFamily: 'Poppins',
               ),
             ),
             style: TextStyle(
-              fontFamily: 'Poppins',
               fontSize: screenWidth * 0.04,
             ),
           ),

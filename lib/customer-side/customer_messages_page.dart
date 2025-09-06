@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'buyer_chat_page.dart';
 
@@ -30,9 +31,9 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
         body: Center(
           child: Text(
             'Please log in to view messages',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: screenWidth * 0.04,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -47,11 +48,10 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           _isSelectionMode ? '${_selectedConversations.length} selected' : 'My Messages',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.045,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         elevation: 2,
@@ -85,9 +85,9 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                   SizedBox(height: 16),
                   Text(
                     'Loading conversations...',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 16,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -104,18 +104,18 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                   SizedBox(height: 16),
                   Text(
                     'Error loading messages',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 16,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   SizedBox(height: 8),
                   Text(
                     '${snapshot.error}',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 12,
                       color: Color(0xFF757575),
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -157,21 +157,20 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                     SizedBox(height: screenWidth * 0.04),
                     Text(
                       'No conversations yet',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.06,
-                        fontWeight: FontWeight.bold,
                         color: Color(0xFF6CA04A),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: screenWidth * 0.02),
                     Text(
                       'Start chatting with suppliers by visiting product details!',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.04,
                         color: Color(0xFF757575),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -219,19 +218,17 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                     backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
                     child: Text(
                       supplierName.isNotEmpty ? supplierName[0].toUpperCase() : 'S',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         color: Color(0xFF6CA04A),
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
                   title: Text(
                     supplierName,
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   subtitle: Column(
@@ -240,10 +237,10 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                       SizedBox(height: 4),
                       Text(
                         lastMessage.isNotEmpty ? lastMessage : 'No messages yet',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: screenWidth * 0.035,
                           color: Color(0xFF757575),
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -252,10 +249,10 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                         SizedBox(height: 4),
                         Text(
                           _formatTimestamp(lastMessageTime),
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.03,
                             color: Color(0xFF757575),
-                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
@@ -272,10 +269,10 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                             if (lastMessageTime != null)
                               Text(
                                 _formatTimestamp(lastMessageTime),
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.03,
                                   color: Color(0xFF757575),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             if (showUnread)
@@ -288,11 +285,10 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                                 ),
                                 child: Text(
                                   'NEW',
-                                  style: TextStyle(
+                                  style: GoogleFonts.quicksand(
                                     color: Colors.white,
                                     fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),
@@ -362,19 +358,19 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Delete Conversations', style: TextStyle(fontFamily: 'Poppins')),
+        title: Text('Delete Conversations', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
         content: Text(
           'Are you sure you want to delete ${_selectedConversations.length} conversation(s)?',
-          style: TextStyle(fontFamily: 'Poppins'),
+          style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: Color(0xFF757575), fontFamily: 'Poppins')),
+            child: Text('Cancel', style: GoogleFonts.quicksand(color: Color(0xFF757575), fontWeight: FontWeight.w400)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Delete', style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
+            child: Text('Delete', style: GoogleFonts.quicksand(color: Colors.red, fontWeight: FontWeight.w400)),
           ),
         ],
       ),
@@ -428,17 +424,17 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Conversation', style: TextStyle(fontFamily: 'Poppins')),
-        content: Text('Are you sure you want to delete this conversation? This action cannot be undone.', style: TextStyle(fontFamily: 'Poppins')),
+        title: Text('Delete Conversation', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
+        content: Text('Are you sure you want to delete this conversation? This action cannot be undone.', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(fontFamily: 'Poppins')),
+            child: Text('Cancel', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Delete', style: TextStyle(fontFamily: 'Poppins')),
+            child: Text('Delete', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
           ),
         ],
       ),

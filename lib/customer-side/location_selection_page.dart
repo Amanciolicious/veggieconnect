@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../services/map_service.dart';
@@ -279,7 +280,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             SizedBox(height: 12),
             Text(
               'To use your current location:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
             Text('1. Go to your device Settings'),
@@ -295,7 +296,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
               ),
               child: Text(
                 'Alternative: You can enter coordinates manually below.',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.blue[700],
                   fontStyle: FontStyle.italic,
                 ),
@@ -316,7 +317,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF6CA04A),
             ),
-            child: const Text('Try Again', style: TextStyle(color: Colors.white)),
+            child:  Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
           ),
         ],
       ),
@@ -348,7 +349,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
               ),
               child: Text(
                 'You can still enter coordinates manually below.',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.blue[700],
                   fontStyle: FontStyle.italic,
                 ),
@@ -369,7 +370,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF6CA04A),
             ),
-            child: const Text('Try Again', style: TextStyle(color: Colors.white)),
+            child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
           ),
         ],
       ),
@@ -395,7 +396,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             SizedBox(height: 12),
             Text(
               'To enable location access:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
             Text('1. Go to your device Settings'),
@@ -412,7 +413,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
               ),
               child: Text(
                 'Alternative: You can enter coordinates manually below.',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.blue[700],
                   fontStyle: FontStyle.italic,
                 ),
@@ -449,7 +450,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             SizedBox(height: 8),
             Text(
               'Error details: $error',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: 12,
                 color: Colors.grey[600],
                 fontStyle: FontStyle.italic,
@@ -467,7 +468,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                 children: [
                   Text(
                     'Troubleshooting tips:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 4),
                   Text('• Make sure you\'re not indoors'),
@@ -492,7 +493,7 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF6CA04A),
             ),
-            child: const Text('Try Again', style: TextStyle(color: Colors.white)),
+            child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
           ),
         ],
       ),
@@ -509,11 +510,10 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Select Location',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -526,10 +526,9 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
             // Header
             Text(
               'Choose your location to find nearby suppliers',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: screenWidth * 0.045,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
             ),
             SizedBox(height: screenWidth * 0.06),
@@ -578,19 +577,18 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                         children: [
                           Text(
                             'Use Current Location',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.04,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (_currentAddress.isNotEmpty)
                             Text(
                               _currentAddress,
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.035,
                                 color: Color(0xFF757575),
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                         ],
@@ -659,10 +657,9 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                       SizedBox(width: screenWidth * 0.04),
                       Text(
                         'Enter Coordinates Manually',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
@@ -675,9 +672,9 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                           controller: _latitudeController,
                           decoration: InputDecoration(
                             hintText: 'Latitude',
-                            hintStyle: TextStyle(
+                            hintStyle: GoogleFonts.quicksand(
                               color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -692,8 +689,8 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                               vertical: 12,
                             ),
                           ),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
+                          style: GoogleFonts.quicksand(
+                            fontWeight: FontWeight.w400,
                             fontSize: screenWidth * 0.04,
                           ),
                           keyboardType: TextInputType.number,
@@ -705,9 +702,9 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                           controller: _longitudeController,
                           decoration: InputDecoration(
                             hintText: 'Longitude',
-                            hintStyle: TextStyle(
+                            hintStyle: GoogleFonts.quicksand(
                               color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -722,8 +719,8 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                               vertical: 12,
                             ),
                           ),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
+                          style: GoogleFonts.quicksand(
+                            fontWeight: FontWeight.w400,
                             fontSize: screenWidth * 0.04,
                           ),
                           keyboardType: TextInputType.number,
@@ -743,11 +740,10 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                     ),
                     child: Text(
                       'Get Location',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.04,
-                        fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -775,11 +771,10 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
                     : null,
                 child: Text(
                   'Confirm Location',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     fontSize: screenWidth * 0.045,
-                    fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),

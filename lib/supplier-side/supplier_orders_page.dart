@@ -23,7 +23,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   String _searchQuery = '';
   String _statusFilter = 'all';
   String _dateFilter = 'all';
-  bool _showOnlyPending = false;
+  final bool _showOnlyPending = false;
 
   final List<String> _statusOptions = [
     'all',

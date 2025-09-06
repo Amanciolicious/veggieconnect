@@ -1,12 +1,11 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_print
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:veggieconnect/customer-side/buyer_products_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/models/promo_model.dart';
 import '../services/payment_service.dart';
-import 'cart_page.dart';
 import 'payment_processing_page.dart';
 import 'digital_receipt_page.dart';
 import '../services/promo_service.dart';
@@ -128,14 +127,14 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('', style: const TextStyle(fontSize: 20)),
+                    Text('', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
                     const Text('Cash on Pickup'),
                   ],
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Pay on Pickup',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     color: Colors.green,
                     fontSize: 12,
                   ),
@@ -149,14 +148,14 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('', style: const TextStyle(fontSize: 20)),
+                    Text('', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
                     const Text('Online Payment'),
                   ],
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Secure Online Payment',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,
                   ),
@@ -176,9 +175,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                       Text(
                         'Select Online Payment Method:',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -195,7 +194,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                             value: 'gcash',
                             child: Row(
                               children: [
-                                Text('', style: const TextStyle(fontSize: 16)),
+                                Text('', style: GoogleFonts.quicksand(fontSize: 16)),
                                 const SizedBox(width: 8),
                                 const Text('GCash'),
                               ],
@@ -205,7 +204,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                             value: 'paymaya',
                             child: Row(
                               children: [
-                                Text('', style: const TextStyle(fontSize: 16)),
+                                Text('', style: GoogleFonts.quicksand(fontSize: 16)),
                                 const SizedBox(width: 8),
                                 const Text('PayMaya'),
                               ],
@@ -469,11 +468,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Order Summary',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.055,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         elevation: 0,
@@ -509,10 +507,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                   children: [
                     Text(
                       'Order Items',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.03),
@@ -564,19 +561,18 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                                 children: [
                                   Text(
                                     data['name'] ?? 'Unknown Product',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.04,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                   SizedBox(height: screenWidth * 0.01),
                                   Text(
                                     '₱${data['price']?.toStringAsFixed(2) ?? '0.00'} × ${data['quantity'] ?? 1}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.035,
                                       color: Color(0xFF757575),
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ],
@@ -584,11 +580,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                             ),
                             Text(
                               '₱${itemTotal.toStringAsFixed(2)}',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.04,
-                                fontWeight: FontWeight.bold,
                                 color: Color(0xFF6CA04A),
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
@@ -641,21 +636,20 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                                 _customerPromo!.hasUsedFirstTimePromo 
                                   ? 'First Time User Discount - Used'
                                   : 'First Time User Discount',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.04,
-                                  fontWeight: FontWeight.bold,
                                   color: _customerPromo!.hasUsedFirstTimePromo ? Colors.grey : Colors.orange,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               Text(
                                 _customerPromo!.hasUsedFirstTimePromo 
                                   ? 'Promo Used'
                                   : 'Get 40% off your first order!',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.035,
                                   color: _customerPromo!.hasUsedFirstTimePromo ? Colors.grey : Colors.orange,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -683,11 +677,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                             ),
                             child: Text(
                               'Used',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.03,
                                 color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ),
@@ -724,10 +717,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                   children: [
                     Text(
                       'Payment Method',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.03),
@@ -754,7 +746,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                           children: [
                             Text(
                               _getPaymentMethodIcon(selectedPaymentMethod == 'online_payment' ? selectedOnlineMethod : selectedPaymentMethod),
-                              style: TextStyle(fontSize: screenWidth * 0.06),
+                              style: GoogleFonts.quicksand(fontSize: screenWidth * 0.06),
                             ),
                             SizedBox(width: screenWidth * 0.03),
                             Expanded(
@@ -763,18 +755,17 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                                 children: [
                                   Text(
                                     _getPaymentMethodDisplayName(selectedPaymentMethod == 'online_payment' ? selectedOnlineMethod : selectedPaymentMethod),
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.04,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                   Text(
                                     _getPaymentMethodSubtitle(selectedPaymentMethod == 'online_payment' ? selectedOnlineMethod : selectedPaymentMethod),
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.035,
                                       color: Color(0xFF757575),
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ],
@@ -820,10 +811,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                   children: [
                     Text(
                       'Order Summary',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.03),
@@ -832,16 +822,16 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                       children: [
                         Text(
                           'Subtotal:',
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                         Text(
                           '₱${total.toStringAsFixed(2)}',
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
@@ -853,18 +843,18 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                         children: [
                           Text(
                             'Discount (40%):',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.04,
                               color: Colors.orange,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           Text(
                             '-₱${discount.toStringAsFixed(2)}',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.04,
                               color: Colors.orange,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
@@ -876,19 +866,17 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                       children: [
                         Text(
                           'Total:',
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.05,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                         Text(
                           '₱${finalTotal.toStringAsFixed(2)}',
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.05,
-                            fontWeight: FontWeight.bold,
                             color: Color(0xFF6CA04A),
-                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
@@ -935,11 +923,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                   )
                 : Text(
                     'Place Order',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
           ),

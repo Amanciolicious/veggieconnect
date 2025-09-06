@@ -1574,8 +1574,8 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
             onPressed: _getCurrentLocationAndPin,
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
-            child: Icon(Icons.my_location),
             tooltip: 'Use Current Location',
+            child: Icon(Icons.my_location),
           ),
           SizedBox(height: 16),
           // Main Action Button

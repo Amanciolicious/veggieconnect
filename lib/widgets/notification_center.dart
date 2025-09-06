@@ -48,7 +48,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
           ),
         ),
         backgroundColor: const Color(0xFF6CA04A),
@@ -97,7 +96,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
                       fontSize: screenWidth * 0.045,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey[600],
-                      fontFamily: 'Poppins',
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -106,7 +104,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
                       color: Colors.grey[500],
-                      fontFamily: 'Poppins',
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -158,7 +155,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
             fontSize: screenWidth * 0.04,
             fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w700,
             color: notification.isRead ? const Color(0xFF666666) : const Color(0xFF333333),
-            fontFamily: 'Poppins',
           ),
         ),
         subtitle: Column(
@@ -170,7 +166,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
               style: TextStyle(
                 fontSize: screenWidth * 0.035,
                 color: notification.isRead ? const Color(0xFF888888) : const Color(0xFF666666),
-                fontFamily: 'Poppins',
               ),
             ),
             const SizedBox(height: 8),
@@ -181,7 +176,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
                   style: TextStyle(
                     fontSize: screenWidth * 0.032,
                     color: Colors.grey[500],
-                    fontFamily: 'Poppins',
                   ),
                 ),
                 if (!notification.isRead) ...[
@@ -198,7 +192,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
                         fontSize: screenWidth * 0.025,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),

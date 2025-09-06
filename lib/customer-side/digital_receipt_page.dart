@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
@@ -191,11 +192,10 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Order Receipt',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -221,19 +221,18 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                     SizedBox(height: screenWidth * 0.02),
                     Text(
                       'Thank you for your purchase!', 
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.055,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.01),
                     Text(
                       'Your order has been placed successfully.', 
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.04,
                         color: Color(0xFF757575),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -266,10 +265,9 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                   children: [
                     Text(
                       'Order Details',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -308,10 +306,9 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                   children: [
                     Text(
                       'Order Items',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -337,19 +334,18 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                                 children: [
                                   Text(
                                     data['name'] ?? '',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.04,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                   SizedBox(height: 2),
                                   Text(
                                     '${data['quantity']} ${data['unit']} × ₱${data['price']?.toStringAsFixed(2)}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.035,
                                       color: Color(0xFF757575),
-                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ],
@@ -359,11 +355,10 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                               flex: 1,
                               child: Text(
                                 '₱${((data['quantity'] ?? 0) * (data['price'] ?? 0)).toStringAsFixed(2)}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.04,
-                                  fontWeight: FontWeight.bold,
                                   color: Color(0xFF6CA04A),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                                 textAlign: TextAlign.right,
                               ),
@@ -402,10 +397,9 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                   children: [
                     Text(
                       'Order Summary',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.04),
@@ -443,11 +437,10 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                   },
                   child: Text(
                     'View Orders',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.04,
-                      fontWeight: FontWeight.bold,
                       color: Color(0xFF6CA04A),
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -474,11 +467,11 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                   ),
                   label: Text(
                     'Download Receipt',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.04,
-                      fontWeight: FontWeight.bold,
+
                       color: Colors.white,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -502,11 +495,11 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                   },
                   child: Text(
                     'Continue Shopping',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.04,
-                      fontWeight: FontWeight.bold,
+
                       color: Colors.white,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -529,19 +522,18 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: screenWidth * 0.04,
               color: Color(0xFF757575),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: screenWidth * 0.04,
-              fontWeight: FontWeight.w600,
               color: valueColor ?? Colors.black87,
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -557,20 +549,18 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: isTotal ? screenWidth * 0.045 : screenWidth * 0.04,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
               color: isTotal ? Colors.black87 : Color(0xFF757575),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: isTotal ? screenWidth * 0.045 : screenWidth * 0.04,
-              fontWeight: FontWeight.bold,
               color: valueColor ?? (isTotal ? Color(0xFF6CA04A) : Colors.black87),
-              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/paypal_sandbox_service.dart';
 import 'digital_receipt_page.dart';
 
@@ -135,11 +136,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Processing Payment',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -159,20 +159,20 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
               SizedBox(height: screenWidth * 0.06),
               Text(
                 'Processing your payment...',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
+
+                  fontWeight: FontWeight.w400,
                   color: Colors.black87,
                 ),
               ),
               SizedBox(height: screenWidth * 0.02),
               Text(
                 'Please wait while we process your ${_getPaymentMethodDisplayName()} payment.',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
                   color: Colors.grey[600],
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -186,20 +186,19 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
               SizedBox(height: screenWidth * 0.04),
               Text(
                 'Payment Failed',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.055,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                   color: Colors.red,
                 ),
               ),
               SizedBox(height: screenWidth * 0.02),
               Text(
                 _errorMessage!,
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
                   color: Colors.grey[600],
-                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -218,11 +217,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                       onPressed: _cancelPayment,
                       child: Text(
                         'Cancel',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                          fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
@@ -240,11 +238,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                       onPressed: _retryPayment,
                       child: Text(
                         'Retry',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                          fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),

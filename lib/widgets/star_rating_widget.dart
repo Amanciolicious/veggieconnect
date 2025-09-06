@@ -94,7 +94,6 @@ class StarRatingDisplay extends StatelessWidget {
             style: TextStyle(
               fontSize: size * 0.6,
               color: Color(0xFF757575),
-              fontFamily: 'Poppins',
             ),
           ),
         ],

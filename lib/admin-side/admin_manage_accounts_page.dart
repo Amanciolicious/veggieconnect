@@ -37,7 +37,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
             fontSize: screenWidth * 0.055,
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
           ),
         ),
         elevation: 0,
@@ -53,7 +52,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 fontSize: screenWidth * 0.06,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF222222),
-                fontFamily: 'Poppins',
               ),
             ),
             SizedBox(height: screenWidth * 0.04),
@@ -83,7 +81,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   hintStyle: TextStyle(
                     fontSize: screenWidth * 0.04,
                     color: Color(0xFF757575),
-                    fontFamily: 'Poppins',
                   ),
                   suffixIcon: Icon(Icons.search, size: screenWidth * 0.04),
                 ),
@@ -141,7 +138,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                                 fontSize: screenWidth * 0.06,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF6CA04A),
-                                fontFamily: 'Poppins',
                               ),
                             ),
                             SizedBox(height: screenWidth * 0.02),
@@ -150,7 +146,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                               style: TextStyle(
                                 fontSize: screenWidth * 0.04,
                                 color: Color(0xFF757575),
-                                fontFamily: 'Poppins',
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -223,7 +218,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
                   ),
                 ),
               ),
@@ -237,7 +231,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.045,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     Text(
@@ -245,7 +238,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         color: Color(0xFF757575),
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     if (isBanned) ...[
@@ -262,7 +254,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                             fontSize: screenWidth * 0.03,
                             color: Colors.red,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -282,7 +273,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     fontSize: screenWidth * 0.035,
                     color: _getRoleColor(user['role']),
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
                   ),
                 ),
               ),
@@ -334,7 +324,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                                   fontSize: screenWidth * 0.03,
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
                               if (warningText.isNotEmpty)
@@ -344,7 +333,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                                     fontSize: screenWidth * 0.025,
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontFamily: 'Poppins',
                                   ),
                                 ),
                             ],
@@ -376,7 +364,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         color: Color(0xFF6CA04A),
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ],
@@ -391,7 +378,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         color: Color(0xFF6CA04A),
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ],
@@ -407,7 +393,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                         style: TextStyle(
                           fontSize: screenWidth * 0.035,
                           color: Colors.red,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ],
@@ -433,7 +418,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: screenWidth * 0.04,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
@@ -453,7 +437,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         color: Color(0xFF6CA04A),
                         fontSize: screenWidth * 0.04,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
@@ -481,7 +464,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.05,
                   color: Colors.red,
-                  fontFamily: 'Poppins',
                 ),
               ),
               SizedBox(height: screenWidth * 0.04),
@@ -489,7 +471,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 'Choose ban type for ${user['fullName'] ?? 'this user'}:',
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
-                  fontFamily: 'Poppins',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -516,7 +497,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                         Text(
@@ -524,7 +504,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: screenWidth * 0.035,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ],
@@ -555,7 +534,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                         Text(
@@ -563,7 +541,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: screenWidth * 0.035,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ],
@@ -587,7 +564,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                       style: TextStyle(
                         color: Color(0xFF6CA04A),
                         fontSize: screenWidth * 0.04,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
@@ -618,7 +594,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.05,
                   color: Colors.orange,
-                  fontFamily: 'Poppins',
                 ),
               ),
               SizedBox(height: screenWidth * 0.04),
@@ -626,7 +601,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 'Ban ${user['fullName'] ?? 'this user'} temporarily:',
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
-                  fontFamily: 'Poppins',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -659,12 +633,10 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     hintStyle: TextStyle(
                       fontSize: screenWidth * 0.04,
                       color: Color(0xFF757575),
-                      fontFamily: 'Poppins',
                     ),
                     labelText: 'Ban Duration (Days)',
                     labelStyle: TextStyle(
                       fontSize: screenWidth * 0.035,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),
@@ -698,12 +670,10 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     hintStyle: TextStyle(
                       fontSize: screenWidth * 0.04,
                       color: Color(0xFF757575),
-                      fontFamily: 'Poppins',
                     ),
                     labelText: 'Ban Reason',
                     labelStyle: TextStyle(
                       fontSize: screenWidth * 0.035,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),
@@ -725,7 +695,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Color(0xFF6CA04A),
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -745,7 +714,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -777,7 +745,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.05,
                   color: Colors.red,
-                  fontFamily: 'Poppins',
                 ),
               ),
               SizedBox(height: screenWidth * 0.04),
@@ -785,7 +752,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 'Permanently ban ${user['fullName'] ?? 'this user'}?',
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
-                  fontFamily: 'Poppins',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -796,7 +762,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   fontSize: screenWidth * 0.035,
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -829,12 +794,10 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     hintStyle: TextStyle(
                       fontSize: screenWidth * 0.04,
                       color: Color(0xFF757575),
-                      fontFamily: 'Poppins',
                     ),
                     labelText: 'Ban Reason',
                     labelStyle: TextStyle(
                       fontSize: screenWidth * 0.035,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ),
@@ -856,7 +819,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Color(0xFF6CA04A),
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -876,7 +838,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.04,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -1003,7 +964,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF6CA04A),
                         fontSize: screenWidth * 0.05,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
@@ -1017,7 +977,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                         Text(
@@ -1025,7 +984,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.035,
                             color: const Color(0xFF757575),
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ],
@@ -1043,7 +1001,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
                     ),
                   ),
                 ],
@@ -1054,7 +1011,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   children: [
                     Icon(Icons.phone, size: screenWidth * 0.045, color: const Color(0xFF6CA04A)),
                     SizedBox(width: screenWidth * 0.02),
-                    Text(user['phone'], style: TextStyle(fontSize: screenWidth * 0.035, fontFamily: 'Poppins')),
+                    Text(user['phone'], style: TextStyle(fontSize: screenWidth * 0.035)),
                   ],
                 ),
               ],
@@ -1087,7 +1044,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           reportCount > 0 ? 'View Report Reasons ($reportCount)' : 'No Reports',
                           style: TextStyle(
                             color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD),
-                            fontFamily: 'Poppins',
                           ),
                         ),
                       ),
@@ -1126,7 +1082,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.045,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
                 ),
               ),
               SizedBox(height: screenWidth * 0.03),

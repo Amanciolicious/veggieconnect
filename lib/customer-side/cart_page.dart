@@ -2,13 +2,11 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
-import 'package:veggieconnect/customer-side/buyer_products_page.dart';
 import 'package:veggieconnect/customer-side/checkout_summary_page.dart'; // Added import for CheckoutSummaryPage
 import 'package:veggieconnect/customer-side/payment_processing_page.dart';
-import 'package:veggieconnect/customer-side/digital_receipt_page.dart';
 import 'package:veggieconnect/customer-side/paypal_test_accounts_page.dart';
-import 'package:veggieconnect/widgets/payment_method_selector.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -62,7 +60,7 @@ class _CartPageState extends State<CartPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Payment Method', style: TextStyle(fontSize: 12),),
+        title: Text('Select Payment Method', style: GoogleFonts.quicksand(fontSize: 12),),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -74,14 +72,14 @@ class _CartPageState extends State<CartPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('💵', style: const TextStyle(fontSize: 20)),
+                    Text('💵', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
                     const Text('Cash on Pickup'),
                   ],
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Pay on Pickup',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     color: Colors.green,
                     fontSize: 12,
                   ),
@@ -95,14 +93,14 @@ class _CartPageState extends State<CartPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('💳', style: const TextStyle(fontSize: 20)),
+                    Text('💳', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
                     const Text('Online Payment'),
                   ],
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Secure Online Payment',
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,
                   ),
@@ -122,9 +120,9 @@ class _CartPageState extends State<CartPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                       Text(
                         'Select Online Payment Method:',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -141,7 +139,7 @@ class _CartPageState extends State<CartPage> {
                             value: 'paypal_sandbox',
                             child: Row(
                               children: [
-                                Text('💳', style: const TextStyle(fontSize: 16)),
+                                Text('💳', style: GoogleFonts.quicksand(fontSize: 16)),
                                 const SizedBox(width: 8),
                                 const Text('PayPal Sandbox'),
                               ],
@@ -222,11 +220,10 @@ class _CartPageState extends State<CartPage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'My Cart',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.055,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         elevation: 0,
@@ -279,20 +276,19 @@ class _CartPageState extends State<CartPage> {
                     SizedBox(height: screenWidth * 0.04),
                     Text(
                       'Please Login',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.06,
-                        fontWeight: FontWeight.bold,
                         color: Color(0xFF6CA04A),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     SizedBox(height: screenWidth * 0.02),
                     Text(
                       'You need to be logged in to view your cart',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.04,
                         color: Color(0xFF757575),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -342,20 +338,19 @@ class _CartPageState extends State<CartPage> {
                           SizedBox(height: screenWidth * 0.04),
                           Text(
                             'Your Cart is Empty',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.06,
-                              fontWeight: FontWeight.bold,
                               color: Color(0xFF6CA04A),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: screenWidth * 0.02),
                           Text(
                             'Add some products to get started',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: screenWidth * 0.04,
                               color: Color(0xFF757575),
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -438,10 +433,9 @@ class _CartPageState extends State<CartPage> {
                                       children: [
                                         Text(
                                           data['name'] ?? 'Unknown Product',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: screenWidth * 0.045,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
@@ -449,11 +443,10 @@ class _CartPageState extends State<CartPage> {
                                         SizedBox(height: screenWidth * 0.01),
                                         Text(
                                           '₱${data['price']?.toStringAsFixed(2) ?? '0.00'}',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: screenWidth * 0.04,
                                             color: Color(0xFF6CA04A),
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                         SizedBox(height: screenWidth * 0.02),
@@ -483,9 +476,8 @@ class _CartPageState extends State<CartPage> {
                                                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                                     child: Text(
                                                       '${data['quantity'] ?? 1}',
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontFamily: 'Poppins',
+                                                      style: GoogleFonts.quicksand(
+                                                        fontWeight: FontWeight.w400,
                                                       ),
                                                     ),
                                                   ),
@@ -525,11 +517,10 @@ class _CartPageState extends State<CartPage> {
                                         SizedBox(height: screenWidth * 0.01),
                                         Text(
                                           'Total: ₱${itemTotal.toStringAsFixed(2)}',
-                                          style: TextStyle(
+                                          style: GoogleFonts.quicksand(
                                             fontSize: screenWidth * 0.035,
-                                            fontWeight: FontWeight.bold,
                                             color: Color(0xFF6CA04A),
-                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
                                       ],
@@ -564,19 +555,17 @@ class _CartPageState extends State<CartPage> {
                             children: [
                               Text(
                                 'Total:',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.05,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               Text(
                                 '₱${total.toStringAsFixed(2)}',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: screenWidth * 0.05,
-                                  fontWeight: FontWeight.bold,
                                   color: Color(0xFF6CA04A),
-                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -625,11 +614,10 @@ class _CartPageState extends State<CartPage> {
                                     )
                                   : Text(
                                       'Proceed to Checkout',
-                                      style: TextStyle(
+                                      style: GoogleFonts.quicksand(
                                         fontSize: screenWidth * 0.045,
-                                        fontWeight: FontWeight.bold,
                                         color: Colors.white,
-                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                             ),

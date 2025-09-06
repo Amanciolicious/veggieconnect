@@ -76,7 +76,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
           ),
         ),
       ),
@@ -103,7 +102,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ],
@@ -146,7 +144,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF222222),
-                            fontFamily: 'Poppins',
                           ),
                         ),
                         subtitle: Column(
@@ -156,7 +153,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
                               'Supplier: ${product['supplierName'] ?? 'Unknown'}',
                               style: TextStyle(
                                 color: Color(0xFF6CA04A),
-                                fontFamily: 'Poppins',
                               ),
                             ),
                             if (scheduledDateTime != null) ...[
@@ -165,7 +161,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
                                 'Scheduled: ${scheduledDateTime.toString()}',
                                 style: TextStyle(
                                   color: Color(0xFF6CA04A),
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
                             ],
@@ -175,7 +170,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
                                 'Created: ${autoApprovalTime.toDate().toString()}',
                                 style: TextStyle(
                                   color: Color(0xFF6CA04A),
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
                             ],
@@ -186,7 +180,6 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
                                 style: TextStyle(
                                   color: Colors.red,
                                   fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
                             ],

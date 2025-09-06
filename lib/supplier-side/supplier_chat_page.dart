@@ -60,7 +60,6 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
           ),
         ),
       ),
@@ -76,7 +75,6 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
                       'Error: ${snapshot.error}',
                       style: TextStyle(
                         color: Colors.red,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   );
@@ -98,7 +96,6 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
                       'No messages yet. Start the conversation!',
                       style: TextStyle(
                         color: Colors.grey,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                   );
@@ -250,7 +247,6 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
               message['text'] ?? '',
               style: TextStyle(
                 color: isMe ? Colors.white : Color(0xFF222222),
-                fontFamily: 'Poppins',
                 fontSize: 14,
               ),
             ),
@@ -261,7 +257,6 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
                 style: TextStyle(
                   fontSize: 10,
                   color: isMe ? Colors.white.withOpacity(0.85) : Colors.grey,
-                  fontFamily: 'Poppins',
                 ),
               ),
             ],

@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/product_image_widget.dart';
 import 'product_details_page.dart';
 import 'package:flutter/material.dart';
@@ -25,11 +26,10 @@ class _FavoritePageState extends State<FavoritePage> {
         backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'My Favorites',
-          style: TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         elevation: 0,
@@ -66,11 +66,10 @@ class _FavoritePageState extends State<FavoritePage> {
                     SizedBox(height: screenWidth * 0.04),
                     Text(
                       'Please log in to view favorites',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.06,
-                        fontWeight: FontWeight.bold,
                         color: Color(0xFF6CA04A),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -122,10 +121,9 @@ class _FavoritePageState extends State<FavoritePage> {
                         children: [
                           Text(
                             'Your Favorite Products',
-                            style: TextStyle(
+                            style: GoogleFonts.quicksand(
                               fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: 20),
@@ -234,10 +232,9 @@ class _FavoritePageState extends State<FavoritePage> {
                                               children: [
                                                 Text(
                                                   product['name'] ?? 'Unknown Product',
-                                                  style: TextStyle(
+                                                  style: GoogleFonts.quicksand(
                                                     fontSize: screenWidth * 0.04,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,
@@ -245,10 +242,10 @@ class _FavoritePageState extends State<FavoritePage> {
                                                 SizedBox(height: 4),
                                                 Text(
                                                   product['supplierName'] ?? 'Unknown Supplier',
-                                                  style: TextStyle(
+                                                  style: GoogleFonts.quicksand(
                                                     fontSize: screenWidth * 0.032,
                                                     color: Color(0xFF757575),
-                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
@@ -256,11 +253,10 @@ class _FavoritePageState extends State<FavoritePage> {
                                                 Spacer(),
                                                 Text(
                                                   '₱${product['price']?.toStringAsFixed(2) ?? '0.00'}/${product['unit'] ?? 'unit'}',
-                                                  style: TextStyle(
+                                                  style: GoogleFonts.quicksand(
                                                     fontSize: screenWidth * 0.04,
-                                                    fontWeight: FontWeight.bold,
                                                     color: Color(0xFF6CA04A),
-                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w400,
                                                   ),
                                                 ),
                                               ],
@@ -316,21 +312,20 @@ class _FavoritePageState extends State<FavoritePage> {
             SizedBox(height: screenWidth * 0.04),
             Text(
               'No favorites yet',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: screenWidth * 0.06,
-                fontWeight: FontWeight.bold,
                 color: Color(0xFF6CA04A),
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: screenWidth * 0.02),
             Text(
               'Start browsing products and add them to your favorites!',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: screenWidth * 0.04,
                 color: Color(0xFF757575),
-                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400,
               ),
               textAlign: TextAlign.center,
             ),

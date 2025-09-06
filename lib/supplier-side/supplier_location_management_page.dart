@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/models/supplier_location.dart';
 import 'package:veggieconnect/models/farm_location_request.dart';
 import 'package:veggieconnect/services/supplier_location_service.dart';
@@ -490,10 +491,9 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
       appBar: AppBar(
         title: Text(
           'Manage Location',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.quicksand(
             color: Colors.white,
-            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w400,
           ),
         ),
         backgroundColor: Color(0xFF6CA04A),
@@ -519,10 +519,10 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                       SizedBox(height: 16),
                       Text(
                         'Error: $_errorMessage',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: 16,
                           color: Colors.red,
-                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w400,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -704,11 +704,10 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                             SizedBox(width: 8),
                             Text(
                               'Pending Farm Location Requests',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: 16,
-                                fontWeight: FontWeight.bold,
                                 color: Colors.orange[800],
-                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
@@ -727,7 +726,7 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                             children: [
                               Text(
                                 request.farmName,
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -737,7 +736,7 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                                 request.farmDescription.isNotEmpty 
                                     ? request.farmDescription 
                                     : 'No description',
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 12,
                                   color: Colors.grey[600],
                                 ),
@@ -745,7 +744,7 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                               SizedBox(height: 4),
                               Text(
                                 _formatCountdown(request),
-                                style: TextStyle(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 12,
                                   color: request.isAutoApprovalDue ? Colors.red : Colors.orange,
                                   fontWeight: FontWeight.bold,
@@ -772,10 +771,10 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                     ),
                     child: Text(
                       'Selected: $_currentAddress',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: 14,
                         color: Color(0xFF222222),
-                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -921,7 +920,7 @@ class _FarmRequestDialogState extends State<_FarmRequestDialog> {
           children: [
             Text(
               'Request Farm Location',
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),

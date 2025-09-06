@@ -144,7 +144,6 @@ class _SignUpPageState extends State<SignUpPage> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
           ),
         ),
         elevation: 0,
@@ -166,7 +165,6 @@ class _SignUpPageState extends State<SignUpPage> {
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF222222),
-                    fontFamily: 'Poppins',
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -176,7 +174,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
-                    fontFamily: 'Poppins',
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -194,11 +191,11 @@ class _SignUpPageState extends State<SignUpPage> {
                       RadioListTile<String>(
                         title: Text(
                           'Buyer',
-                          style: TextStyle(fontFamily: 'Poppins'),
+                          style: TextStyle(),
                         ),
                         subtitle: Text(
                           'Purchase fresh produce',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                          style: TextStyle( fontSize: 12),
                         ),
                         value: 'buyer',
                         groupValue: _selectedRole,
@@ -213,11 +210,11 @@ class _SignUpPageState extends State<SignUpPage> {
                       RadioListTile<String>(
                         title: Text(
                           'Supplier',
-                          style: TextStyle(fontFamily: 'Poppins'),
+                          style: TextStyle(),
                         ),
                         subtitle: Text(
                           'Sell your fresh produce',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                          style: TextStyle( fontSize: 12),
                         ),
                         value: 'supplier',
                         groupValue: _selectedRole,
@@ -373,7 +370,6 @@ class _SignUpPageState extends State<SignUpPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                 ),
@@ -387,7 +383,6 @@ class _SignUpPageState extends State<SignUpPage> {
                       'Already have an account? ',
                       style: TextStyle(
                         color: Colors.grey,
-                        fontFamily: 'Poppins',
                       ),
                     ),
                     GestureDetector(
@@ -397,7 +392,6 @@ class _SignUpPageState extends State<SignUpPage> {
                         style: TextStyle(
                           color: Color(0xFF6CA04A),
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                     ),

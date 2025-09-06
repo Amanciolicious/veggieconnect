@@ -71,7 +71,6 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
           ),
         ),
         elevation: 0,
@@ -212,7 +211,6 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
                               hintText: 'Type a message...',
                               hintStyle: TextStyle(
                                 color: Color(0xFF757575),
-                                fontFamily: 'Poppins',
                               ),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(
@@ -222,7 +220,6 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
                             ),
                             style: TextStyle(
                               fontSize: 16,
-                              fontFamily: 'Poppins',
                             ),
                             maxLines: null,
                             textInputAction: TextInputAction.send,
@@ -282,7 +279,6 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
           style: TextStyle(
             fontSize: 16,
             color: isMe ? Colors.white : Colors.black87,
-            fontFamily: 'Poppins',
           ),
         ),
         if (timeLabel.isNotEmpty) ...[
@@ -292,7 +288,6 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
             style: TextStyle(
               fontSize: 10,
               color: isMe ? Colors.white.withOpacity(0.85) : Colors.grey,
-              fontFamily: 'Poppins',
             ),
           ),
         ],

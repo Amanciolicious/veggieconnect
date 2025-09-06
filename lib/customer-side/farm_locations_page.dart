@@ -351,11 +351,11 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                       // Coordinates
                       Text(
                         'Latitude: ${supplier.latitude.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                        style: const TextStyle(fontSize: 12),
                       ),
                       Text(
                         'Longitude: ${supplier.longitude.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                        style: const TextStyle(fontSize: 12),
                       ),
                       
                       // Distance if user location available
@@ -1623,7 +1623,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Location set to: ${address.length > 50 ? address.substring(0, 50) + '...' : address}'),
+          content: Text('Location set to: ${address.length > 50 ? '${address.substring(0, 50)}...' : address}'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 3),
         ),
