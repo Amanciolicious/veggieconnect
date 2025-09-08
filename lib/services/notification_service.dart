@@ -680,37 +680,7 @@ class NotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      // Get recipient's FCM token
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(recipientId)
-          .get();
-      
-      if (!userDoc.exists) {
-        debugPrint('User $recipientId not found');
-        return;
-      }
-      
-      final userData = userDoc.data() as Map<String, dynamic>;
-      final fcmToken = userData['fcmToken'] as String?;
-      
-      if (fcmToken == null) {
-        debugPrint('No FCM token found for user $recipientId');
-        return;
-      }
-
-      // Send notification via FCM
-      await _sendFCMToToken(
-        token: fcmToken,
-        title: title,
-        body: body,
-        type: type,
-        data: data,
-      );
-      
-      debugPrint('FCM notification sent to $recipientId');
-
-      // Also persist to Firestore so it appears in in-app notification lists
+      // Persist to Firestore so it appears in in-app notification lists (drives badges)
       try {
         final notificationId = DateTime.now().millisecondsSinceEpoch.toString();
         await FirebaseFirestore.instance
@@ -731,6 +701,34 @@ class NotificationService {
         });
       } catch (e) {
         debugPrint('Error saving notification to Firestore: $e');
+      }
+
+      // Try to send the push notification via FCM if token exists
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(recipientId)
+            .get();
+        if (!userDoc.exists) {
+          debugPrint('User $recipientId not found');
+          return;
+        }
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final fcmToken = userData['fcmToken'] as String?;
+        if (fcmToken == null) {
+          debugPrint('No FCM token found for user $recipientId');
+          return;
+        }
+        await _sendFCMToToken(
+          token: fcmToken,
+          title: title,
+          body: body,
+          type: type,
+          data: data,
+        );
+        debugPrint('FCM notification sent to $recipientId');
+      } catch (e) {
+        debugPrint('Skipping FCM send due to error: $e');
       }
     } catch (e) {
       debugPrint('Error sending FCM notification: $e');

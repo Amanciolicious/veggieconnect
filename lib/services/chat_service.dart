@@ -204,6 +204,7 @@ class ChatService {
           data: {
             'conversationId': conversationId,
             'senderName': senderName,
+            'recipientId': recipientId,
             'screen': 'chat',
           },
         );

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:veggieconnect/customer-side/buyer_order_history_page.dart';
 import 'package:veggieconnect/services/cloudinary_service.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -789,10 +790,14 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          onPressed: () {
-                            // Navigate to full order history page
-                            // You can implement this navigation later
-                          },
+                         onPressed: () {
+      Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => BuyerOrderHistoryPage(),
+    ),
+  );
+},
                           child: Text(
                             'View All Orders',
                             style: GoogleFonts.quicksand(

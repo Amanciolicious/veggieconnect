@@ -31,6 +31,10 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
   final TextEditingController _latController = TextEditingController();
   final TextEditingController _lngController = TextEditingController();
   
+  // Bogo City, Cebu center and allowed radius
+  static const LatLng _bogoCityCenter = LatLng(11.0474, 124.0051);
+  static const double _bogoRadiusKm = 5.0;
+  
   SupplierLocation? _currentLocation;
   LatLng? _selectedLocation;
   String _currentAddress = '';
@@ -143,6 +147,22 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
         final address = locationData['address'] as String?;
 
         if (location != null && address != null) {
+          // Enforce Bogo City boundary
+          final double distanceKm = _mapService.calculateDistance(_bogoCityCenter, location);
+          if (distanceKm > _bogoRadiusKm) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Current location is outside Bogo City boundaries'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            setState(() {
+              _isGettingCurrentLocation = false;
+            });
+            return;
+          }
           setState(() {
             _selectedLocation = location;
             _currentAddress = address;
@@ -325,6 +345,15 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
       return;
     }
 
+    // Enforce Bogo City boundary before saving
+    final double distanceKm = _mapService.calculateDistance(_bogoCityCenter, _selectedLocation!);
+    if (distanceKm > _bogoRadiusKm) {
+      setState(() {
+        _errorMessage = 'Location must be within Bogo City boundaries';
+      });
+      return;
+    }
+
     try {
       setState(() {
         _isUpdating = true;
@@ -371,6 +400,17 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
     if (_locationInputMode != 'map') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Switch to "Pin on Map" to select by tapping the map.')),
+      );
+      return;
+    }
+    // Enforce Bogo City boundary for manual pinning
+    final double distanceKm = _mapService.calculateDistance(_bogoCityCenter, point);
+    if (distanceKm > _bogoRadiusKm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a location within Bogo City boundaries'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -423,6 +463,14 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
         return;
       }
       chosenLocation = LatLng(lat, lng);
+      // Enforce Bogo City boundary for manual coordinates
+      final double distanceKm = _mapService.calculateDistance(_bogoCityCenter, chosenLocation);
+      if (distanceKm > _bogoRadiusKm) {
+        setState(() {
+          _errorMessage = 'Chosen coordinates are outside Bogo City boundaries';
+        });
+        return;
+      }
       // Reverse geocode for display
       try {
         address = await _mapService.getAddressFromCoordinates(chosenLocation);
@@ -506,53 +554,72 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
               ),
             )
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Error: $_errorMessage',
-                        style: GoogleFonts.quicksand(
-                          fontSize: 16,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadCurrentLocation,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF6CA04A),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : StreamBuilder<List<FarmLocationRequest>>(
-                  stream: _farmLocationRequestService.streamCurrentUserRequests(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      _pendingRequests = snapshot.data!.where((req) => req.isPending).toList();
-                    }
-                    return _buildLocationManagement();
-                  },
-                ),
+          : StreamBuilder<List<FarmLocationRequest>>(
+              stream: _farmLocationRequestService.streamCurrentUserRequests(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  _pendingRequests = snapshot.data!.where((req) => req.isPending).toList();
+                }
+                return _buildLocationManagement();
+              },
+            ),
     );
   }
 
   Widget _buildLocationManagement() {
     return Column(
       children: [
+        if (_errorMessage != null)
+          Container(
+            width: double.infinity,
+            margin: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Error: $_errorMessage',
+                        style: GoogleFonts.quicksand(color: Colors.red, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: _loadCurrentLocation,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF6CA04A),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      child: Text('Retry'),
+                    ),
+                    SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _errorMessage = null; // Dismiss error and allow user to proceed
+                        });
+                      },
+                      child: Text('Skip for now'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         Expanded(
           flex: 3,
           child: Container(
@@ -574,8 +641,8 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
               child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
-                  initialCenter: _selectedLocation ?? LatLng(14.5995, 120.9842),
-                  initialZoom: 13.0,
+                  initialCenter: _selectedLocation ?? _bogoCityCenter,
+                  initialZoom: 12.0,
                   onTap: (tapPosition, point) {
                     _onMapTapped(point);
                   },
@@ -584,6 +651,18 @@ class _SupplierLocationManagementPageState extends State<SupplierLocationManagem
                   TileLayer(
                     urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.veggieconnect.app',
+                  ),
+                  // Visualize Bogo City boundary (5km radius)
+                  CircleLayer(
+                    circles: [
+                      CircleMarker(
+                        point: _bogoCityCenter,
+                        radius: 5000,
+                        color: Color(0xFF2196F3).withOpacity(0.10),
+                        borderColor: Color(0xFF2196F3),
+                        borderStrokeWidth: 2,
+                      ),
+                    ],
                   ),
                   if (_selectedLocation != null)
                     MarkerLayer(
