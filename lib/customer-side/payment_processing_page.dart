@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../services/paypal_sandbox_service.dart';
+import '../services/paymongo_gcash_service.dart';
 import 'digital_receipt_page.dart';
 
 class PaymentProcessingPage extends StatefulWidget {
@@ -39,7 +39,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
   @override
   void initState() {
     super.initState();
-    _processPayment();
+    // Defer until after first frame so BuildContext dependencies are available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processPayment();
+    });
   }
 
   Future<void> _processPayment() async {
@@ -49,55 +52,66 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       return;
     }
 
-    if (widget.paymentMethod == 'paypal_sandbox') {
+    if (widget.paymentMethod == 'gcash') {
       setState(() {
         _isProcessing = true;
         _errorMessage = null;
       });
 
       try {
-        final result = await PayPalSandboxService.processPayment(
+        // Use PayMongo GCash service
+        final result = await PayMongoGCashService.processPayment(
           context: context,
           amount: widget.total,
-          currency: 'PHP',
           orderId: widget.orderId,
-          description: 'VeggieConnect Order - PayPal Sandbox',
+          description: 'VeggieConnect Order #${widget.orderId}',
           cartItems: widget.cartItems,
         );
 
         if (result?.success == true) {
-          // Process successful order
-          await PayPalSandboxService.processSuccessfulOrder(
-            context: context,
-            orderId: widget.orderId,
-            transactionId: result!.transactionId!,
-            cartItems: widget.cartItems,
-            total: widget.total,
-            paymentMethod: widget.paymentMethod,
-          );
-          
-          // Navigate to success page
-          _navigateToSuccess();
+          // Payment initiated successfully - user redirected to PayMongo
+          _showPaymentSuccessMessage();
         } else {
           setState(() {
             _isProcessing = false;
-            _errorMessage = result?.error ?? 'Payment failed';
+            _errorMessage = result?.error ?? 'Payment failed. Please try again.';
           });
         }
       } catch (e) {
         setState(() {
           _isProcessing = false;
-          _errorMessage = e.toString();
+          _errorMessage = 'Payment error: $e';
         });
       }
       return;
     }
+  }
 
-    // Unsupported payment method
+  void _showPaymentSuccessMessage() {
     setState(() {
       _isProcessing = false;
-      _errorMessage = 'Unsupported payment method: ${widget.paymentMethod}';
     });
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment Initiated'),
+        content: const Text(
+          'Your GCash payment has been initiated. You will be redirected to GCash to complete the payment. '
+          'Your order will be processed once payment is confirmed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Go back to previous page
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _navigateToSuccess() {
@@ -121,148 +135,108 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
     _processPayment();
   }
 
-  void _cancelPayment() {
-    Navigator.of(context).pop();
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth <= 720;
 
-    return Scaffold(
-      backgroundColor: Color(0xFFF8FAF5),
+    return HeroMode(
+      enabled: false,
+      child: Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
         title: Text(
           'Processing Payment',
           style: GoogleFonts.quicksand(
-            fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
-            color: Colors.white,
             fontWeight: FontWeight.w400,
+            color: Colors.white,
           ),
         ),
+        backgroundColor: const Color(0xFF6CA04A),
         iconTheme: const IconThemeData(color: Colors.white),
-        automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.04),
+      body: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.08),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (_isProcessing) ...[
-              // Processing state
               CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
-                strokeWidth: 4,
+                valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF6CA04A)),
+                strokeWidth: 3,
               ),
-              SizedBox(height: screenWidth * 0.06),
+              SizedBox(height: screenWidth * 0.05),
               Text(
                 'Processing your payment...',
                 style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
-
                   fontWeight: FontWeight.w400,
                   color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: screenWidth * 0.02),
-              Text(
-                'Please wait while we process your ${_getPaymentMethodDisplayName()} payment.',
-                style: GoogleFonts.quicksand(
-                  fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
               ),
             ] else if (_errorMessage != null) ...[
-              // Error state
               Icon(
                 Icons.error_outline,
                 size: screenWidth * 0.15,
                 color: Colors.red,
               ),
-              SizedBox(height: screenWidth * 0.04),
+              SizedBox(height: screenWidth * 0.05),
               Text(
-                'Payment Failed',
+                'Payment Error',
                 style: GoogleFonts.quicksand(
-                  fontSize: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.055,
-                  fontWeight: FontWeight.w400,
+                  fontSize: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.06,
+                  fontWeight: FontWeight.w600,
                   color: Colors.red,
                 ),
               ),
-              SizedBox(height: screenWidth * 0.02),
+              SizedBox(height: screenWidth * 0.03),
               Text(
                 _errorMessage!,
                 style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w400,
+                  color: Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: screenWidth * 0.06),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[600],
-                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _cancelPayment,
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
+              SizedBox(height: screenWidth * 0.05),
+              ElevatedButton(
+                onPressed: _retryPayment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6CA04A),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.08,
+                    vertical: screenWidth * 0.03,
                   ),
-                  SizedBox(width: screenWidth * 0.03),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF6CA04A),
-                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _retryPayment,
-                      child: Text(
-                        'Retry',
-                        style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
+                ),
+                child: Text(
+                  'Retry Payment',
+                  style: GoogleFonts.quicksand(
+                    fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
+              ),
+            ] else ...[
+              Icon(
+                Icons.check_circle,
+                size: screenWidth * 0.15,
+                color: Colors.green,
+              ),
+              SizedBox(height: screenWidth * 0.05),
+              Text(
+                'Payment Successful',
+                style: GoogleFonts.quicksand(
+                  fontSize: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.06,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green,
+                ),
               ),
             ],
           ],
         ),
       ),
-    );
-  }
-
-  String _getPaymentMethodDisplayName() {
-    switch (widget.paymentMethod) {
-      case 'cash_on_pickup':
-        return 'Cash on Pickup';
-      case 'paypal_sandbox':
-        return 'PayPal Sandbox';
-      default:
-        return 'Payment';
-    }
+    ));
   }
 }

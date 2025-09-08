@@ -51,7 +51,7 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Location updated: ${address != null && address.length > 40 ? '${address!.substring(0, 40)}...' : address ?? 'Current location'}'),
+              content: Text('Location updated: ${address != null && address.length > 40 ? '${address.substring(0, 40)}...' : address ?? 'Current location'}'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),

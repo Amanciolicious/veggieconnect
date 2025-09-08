@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/product_image_widget.dart';
 import 'package:flutter/material.dart';
-import 'buyer_chat_page.dart';
 import 'product_details_page.dart'; // Import ProductDetailsPage
 
 class BuyerProductsPage extends StatefulWidget {
@@ -407,12 +406,6 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                     final name = (product['name'] ?? '').toString().trim();
                     final price = (product['price'] ?? 0);
                     final quantity = (product['quantity'] ?? 0);
-                    final status = product['status'] ?? 'pending';
-                    final isApproved = status == 'approved';
-                    final isActive = product['isActive'] ?? true;
-                    
-                    // Only show approved and active products to customers
-                    final isEligible = isApproved && isActive;
                     
                     // Filter by search query
                     final matchesSearch = _searchQuery.isEmpty || 
@@ -427,8 +420,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                            price > 0 && 
                            quantity > 0 && 
                            matchesSearch && 
-                           matchesCategory &&
-                           isEligible;
+                           matchesCategory;
                   }).toList();
                   
                   // Use FutureBuilder to handle async supplier ban checking
@@ -439,15 +431,8 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                         return const Center(child: CircularProgressIndicator());
                       }
                       
-                      // Only show products with popularity > 0 for Popular logic
-                      final products = (productSnapshot.data ?? [])
-                          .where((d) {
-                            final data = d.data() as Map<String, dynamic>;
-                            final popularity = data['popularity'] ?? 0;
-                            // Only show products with popularity > 0 and ensure it's a valid number
-                            return popularity is num && popularity > 0;
-                          })
-                          .toList();
+                      // Show all approved products (remove popularity filter)
+                      final products = productSnapshot.data ?? [];
                       
                       // Sort by popularity
                       products.sort((a, b) {
@@ -472,7 +457,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                           crossAxisCount: 2,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 0.74,
                         ),
                         itemCount: products.length,
                         itemBuilder: (context, index) {
@@ -490,9 +475,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                 ),
                               );
                             },
-                            child: Stack(
-                              children: [
-                                Container(
+                            child: Container(
                                   margin: EdgeInsets.symmetric(
                                     vertical: isSmallScreen ? screenWidth * 0.008 : screenWidth * 0.01, 
                                     horizontal: isSmallScreen ? screenWidth * 0.008 : screenWidth * 0.01
@@ -616,209 +599,52 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                             ),
                                         ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                // Favorite button
-                                Positioned(
-                                  top: isSmallScreen ? 6 : 8,
-                                  right: isSmallScreen ? 6 : 8,
-                                  child: StreamBuilder<DocumentSnapshot>(
-                                    stream: user != null 
-                                        ? FirebaseFirestore.instance
-                                            .collection('users')
-                                            .doc(user!.uid)
-                                            .snapshots()
-                                        : null,
-                                    builder: (context, snapshot) {
-                                      bool isFavorite = false;
-                                      if (snapshot.hasData && snapshot.data!.exists) {
-                                        final data = snapshot.data!.data() as Map<String, dynamic>;
-                                        final favs = (data['favorites'] as List?)?.cast<String>() ?? const <String>[];
-                                        isFavorite = favs.contains(productId);
-                                      }
-                                    
-                                      return GestureDetector(
-                                        onTap: () => _toggleFavorite(productId),
-                                        child: Container(
-                                          padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.012 : screenWidth * 0.015),
-                                          child: Icon(
-                                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                                            color: isFavorite ? Colors.red : Colors.red,
-                                            size: 20,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                // Chat button
-                                if (user == null || (product['sellerId'] ?? '') != user?.uid)
-                                  Positioned(
-                                    top: isSmallScreen ? 6 : 8,
-                                    left: isSmallScreen ? 6 : 8,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        final supplierId = product['sellerId'] as String?;
-                                        final supplierName = product['supplierName'] as String? ?? 'Supplier';
-                                        if (supplierId == null) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Supplier not found for this product.')),
-                                          );
-                                          return;
-                                        }
-                                        if (FirebaseAuth.instance.currentUser == null) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Please log in to start a chat.')),
-                                          );
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => BuyerChatPage(
-                                              supplierId: supplierId,
-                                              supplierName: supplierName,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Icon(
-                                        Icons.chat_bubble, 
-                                        color: Colors.blue, 
-                                        size: 20
-                                      ),
-                                    ),
-                                  ),
-                                // Add to cart button
-                                Positioned(
-                                  bottom: isSmallScreen ? 10 : 12,
-                                  right: isSmallScreen ? 10 : 12,
-                                  child: GestureDetector(
-                                    onTap: () async {
-                                      if (user == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('You must be logged in to add to cart.')),
-                                        );
-                                        return;
-                                      }
-                                      final maxQty = (product['quantity'] ?? 1) as int;
-                                      int quantity = 1; // Move quantity outside the builder
-                                      final result = await showDialog<int>(
-                                        context: context,
-                                        builder: (context) {
-                                          return StatefulBuilder(
-                                            builder: (context, setDialogState) {
-                                              return AlertDialog(
-                                                title: Text(
-                                                  'Add to Cart',
-                                                  style: GoogleFonts.quicksand(
-                                                    fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
-                                                  ),
-                                                ),
-                                                content: Column(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      'How many would you like to add to cart?',
-                                                      style: GoogleFonts.quicksand(
-                                                        fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: isSmallScreen ? 10 : 12),
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.center,
-                                                      children: [
-                                                        IconButton(
-                                                          icon: Icon(
-                                                            Icons.remove,
-                                                            size: isSmallScreen ? 20 : 24,
-                                                          ),
-                                                          onPressed: quantity > 1
-                                                              ? () {
-                                                                  quantity--;
-                                                                  setDialogState(() {});
-                                                                }
-                                                              : null,
-                                                        ),
-                                                        Container(
-                                                          padding: EdgeInsets.symmetric(
-                                                            horizontal: isSmallScreen ? 12 : 16, 
-                                                            vertical: isSmallScreen ? 6 : 8
-                                                          ),
-                                                          decoration: BoxDecoration(
-                                                            border: Border.all(color: Colors.grey),
-                                                            borderRadius: BorderRadius.circular(8),
-                                                          ),
-                                                          child: Text(
-                                                            '$quantity',
-                                                            style: GoogleFonts.quicksand(
-                                                              fontSize: isSmallScreen ? screenWidth * 0.04 : 18,
-                                                              fontWeight: FontWeight.bold,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        IconButton(
-                                                          icon: Icon(
-                                                            Icons.add,
-                                                            size: isSmallScreen ? 20 : 24,
-                                                          ),
-                                                          onPressed: quantity < maxQty
-                                                              ? () {
-                                                                  quantity++;
-                                                                  setDialogState(() {});
-                                                                }
-                                                              : null,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    SizedBox(height: isSmallScreen ? 6 : 8),
-                                                    Text(
-                                                      'Available: $maxQty ${product['unit'] ?? 'units'}',
-                                                      style: GoogleFonts.quicksand(
-                                                        color: Colors.grey,
-                                                        fontSize: isSmallScreen ? screenWidth * 0.03 : 12,
-                                                      ),
+                                      // Favorite button
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: StreamBuilder<DocumentSnapshot>(
+                                          stream: user != null 
+                                              ? FirebaseFirestore.instance
+                                                  .collection('users')
+                                                  .doc(user!.uid)
+                                                  .snapshots()
+                                              : null,
+                                          builder: (context, snapshot) {
+                                            bool isFavorite = false;
+                                            if (snapshot.hasData && snapshot.data!.exists) {
+                                              final data = snapshot.data!.data() as Map<String, dynamic>;
+                                              final favs = (data['favorites'] as List?)?.cast<String>() ?? const <String>[];
+                                              isFavorite = favs.contains(productId);
+                                            }
+                                          
+                                            return GestureDetector(
+                                              onTap: () => _toggleFavorite(productId),
+                                              child: Container(
+                                                padding: EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.grey.withOpacity(0.2),
+                                                      spreadRadius: 1,
+                                                      blurRadius: 3,
+                                                      offset: Offset(0, 1),
                                                     ),
                                                   ],
                                                 ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: Text(
-                                                      'Cancel',
-                                                      style: GoogleFonts.quicksand(
-                                                        fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  ElevatedButton(
-                                                    onPressed: () => Navigator.pop(context, quantity),
-                                                    child: Text(
-                                                      'Add',
-                                                      style: GoogleFonts.quicksand(
-                                                        fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        },
-                                      );
-                                      if (result != null) {
-                                        await _addToCart(productId, product, result);
-                                      }
-                                    },
-                                    child: Icon(
-                                      Icons.add, 
-                                      color: Colors.white, 
-                                      size: isSmallScreen ? 18 : 20
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                                child: Icon(
+                                                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                                                  color: isFavorite ? Colors.red : Colors.grey[600],
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -848,7 +674,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
     Query base = FirebaseFirestore.instance
         .collection('products')
         .where('isActive', isEqualTo: true)
-        .where('status', whereIn: ['approved', 'pending']); // Show approved and pending products
+        .where('status', isEqualTo: 'approved'); // Only show approved products to customers
     
     // Apply promo filter if specified
     if (widget.promoFilter == true) {

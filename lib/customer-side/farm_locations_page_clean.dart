@@ -258,7 +258,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
             children: [
               Icon(Icons.store, color: Colors.green),
               SizedBox(width: 8),
-              Expanded(child: Text(supplier.locationName ?? 'Unknown Location')),
+              Expanded(child: Text(supplier.locationName)),
             ],
           ),
           content: SingleChildScrollView(
@@ -278,7 +278,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Supplier: ${supplier.supplierName ?? 'Unknown Supplier'}',
+                        'Supplier: ${supplier.supplierName}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -335,14 +335,14 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                       
                       // Description
                       Text(
-                        'Description: ${supplier.description ?? 'No description available'}',
+                        'Description: ${supplier.description}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       SizedBox(height: 4),
                       
                       // Address
                       Text(
-                        'Address: ${supplier.address ?? 'Address not available'}',
+                        'Address: ${supplier.address}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       SizedBox(height: 4),

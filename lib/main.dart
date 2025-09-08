@@ -77,8 +77,8 @@ class MyApp extends StatelessWidget {
             fontWeight: FontWeight.w400,
           ),
         ),
-      ),
-      home: const LoginPage(),
-    );
+        ),
+        home: const LoginPage(),
+      );
+    }
   }
-}

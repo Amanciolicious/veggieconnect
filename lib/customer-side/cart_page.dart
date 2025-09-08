@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/customer-side/checkout_summary_page.dart'; // Added import for CheckoutSummaryPage
 import 'package:veggieconnect/customer-side/payment_processing_page.dart';
-import 'package:veggieconnect/customer-side/paypal_test_accounts_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -21,7 +20,6 @@ class _CartPageState extends State<CartPage> {
   late CollectionReference<Map<String, dynamic>> _cartRef;
   bool _isProcessing = false;
   String _selectedPaymentMethod = 'cash_on_pickup';
-  final String _selectedOnlineMethod = 'paypal_sandbox'; // Default online payment method
 
   @override
   void initState() {
@@ -55,7 +53,6 @@ class _CartPageState extends State<CartPage> {
 
   Future<String?> _showPaymentMethodDialog() async {
     String tempMethod = _selectedPaymentMethod;
-    String tempOnlineMethod = _selectedOnlineMethod;
     
     return showDialog<String>(
       context: context,
@@ -86,72 +83,26 @@ class _CartPageState extends State<CartPage> {
                 ),
               ),
               
-              // Online Payment Option
+              // GCash Option
               RadioListTile<String>(
-                value: 'online_payment',
+                value: 'gcash',
                 groupValue: tempMethod,
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
                     Text('💳', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
-                    const Text('Online Payment'),
+                    const Text('GCash'),
                   ],
                 ),
                 subtitle: Text(
-                  'Secure Online Payment',
+                  'Pay with GCash',
                   style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,
                   ),
                 ),
               ),
-              
-              // Online Payment Method Dropdown (only show if online payment is selected)
-              if (tempMethod == 'online_payment') ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                       Text(
-                        'Select Online Payment Method:',
-                        style: GoogleFonts.quicksand(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: tempOnlineMethod,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: 'paypal_sandbox',
-                            child: Row(
-                              children: [
-                                Text('💳', style: GoogleFonts.quicksand(fontSize: 16)),
-                                const SizedBox(width: 8),
-                                const Text('PayPal Sandbox'),
-                              ],
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => setState(() => tempOnlineMethod = value!),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -162,12 +113,7 @@ class _CartPageState extends State<CartPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              // Return the appropriate payment method
-              String finalMethod = tempMethod;
-              if (tempMethod == 'online_payment') {
-                finalMethod = tempOnlineMethod;
-              }
-              Navigator.pop(context, finalMethod);
+              Navigator.pop(context, tempMethod);
             },
             child: const Text('Continue'),
           ),
@@ -202,9 +148,7 @@ class _CartPageState extends State<CartPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
-        return 'Online Payment - GCash';
-      case 'paymaya':
-        return 'Online Payment - PayMaya';
+        return 'GCash';
       default:
         return 'Unknown Method';
     }
@@ -227,23 +171,7 @@ class _CartPageState extends State<CartPage> {
           ),
         ),
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.info_outline,
-              color: Colors.white,
-              size: screenWidth * 0.05,
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => PayPalTestAccountsPage(),
-                ),
-              );
-            },
-            tooltip: 'PayPal Test Accounts',
-          ),
-        ],
+        actions: [],
       ),
       body: user == null
           ? Center(
@@ -595,6 +523,7 @@ class _CartPageState extends State<CartPage> {
                                       MaterialPageRoute(
                                         builder: (context) => CheckoutSummaryPage(
                                           cartItems: cartItems,
+                                          selectedPaymentMethod: paymentMethod,
                                         ),
                                       ),
                                     );

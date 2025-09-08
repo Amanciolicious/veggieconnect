@@ -7,12 +7,12 @@ class PaymentService {
   // Supported payment methods
   static const Map<String, String> _paymentMethods = {
     'cash_on_pickup': 'Cash on Pickup',
-    'paypal_sandbox': 'PayPal Sandbox',
+    'gcash': 'GCash',
   };
 
   Map<String, String> getPaymentMethods() => Map.from(_paymentMethods);
 
-  bool requiresExternalBrowser(String method) => method == 'paypal_sandbox';
+  bool requiresExternalBrowser(String method) => method == 'gcash';
 
   String getPaymentMethodDisplayName(String method) => _paymentMethods[method] ?? method;
 }

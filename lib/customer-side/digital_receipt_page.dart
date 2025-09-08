@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -48,8 +48,8 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
     switch (widget.paymentMethod) {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
-      case 'paypal_sandbox':
-        return 'PayPal Sandbox';
+      case 'gcash':
+        return 'GCash';
       default:
         return 'Unknown Payment Method';
     }
@@ -59,7 +59,7 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
     switch (widget.paymentMethod) {
       case 'cash_on_pickup':
         return '💵';
-      case 'paypal_sandbox':
+      case 'gcash':
         return '💳';
       default:
         return '❓';

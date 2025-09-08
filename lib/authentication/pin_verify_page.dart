@@ -205,12 +205,12 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
+              // Header
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -226,11 +226,10 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                 ),
                 child: Column(
                   children: [
-                    Image.asset(
-                      'assets/logo/veggieconnectlogo.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
+                    Icon(
+                      Icons.security,
+                      size: 80,
+                      color: Color(0xFF6CA04A),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -243,7 +242,7 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please enter your 4-digit PIN to continue',
+                      'Please enter your 5-digit PIN to continue',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -253,7 +252,7 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
               // PIN Input
               Container(
                 padding: const EdgeInsets.all(20),
@@ -273,7 +272,7 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                     // PIN Display
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(4, (index) {
+                      children: List.generate(5, (index) {
                         return Container(
                           width: 50,
                           height: 50,
@@ -298,7 +297,7 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                         );
                       }),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                     // Number Pad
                     GridView.builder(
                       shrinkWrap: true,
@@ -322,12 +321,12 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                         }
                       },
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                     // Verify Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _pinController.text.length == 4 ? _verifyPin : null,
+                        onPressed: _pinController.text.length == 5 ? _verifyPin : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFF6CA04A),
                           foregroundColor: Colors.white,
@@ -340,13 +339,9 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: _isLoading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
+                              ? CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 )
                               : Text(
                                   'Verify PIN',
@@ -371,7 +366,11 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
 
   Widget _buildNumberButton(String number) {
     return GestureDetector(
-      onTap: () => _pinController.text += number,
+      onTap: () {
+        setState(() {
+          _pinController.text += number;
+        });
+      },
       child: Container(
         decoration: BoxDecoration(
           color: Color(0xFF6CA04A).withOpacity(0.1),
@@ -397,7 +396,13 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
 
   Widget _buildBackspaceButton() {
     return GestureDetector(
-      onTap: () => _pinController.text = _pinController.text.substring(0, _pinController.text.length - 1),
+      onTap: () {
+        setState(() {
+          if (_pinController.text.isNotEmpty) {
+            _pinController.text = _pinController.text.substring(0, _pinController.text.length - 1);
+          }
+        });
+      },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.red.withOpacity(0.1),

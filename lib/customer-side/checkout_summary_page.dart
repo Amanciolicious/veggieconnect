@@ -14,7 +14,8 @@ import '../services/notification_service.dart';
 
 class CheckoutSummaryPage extends StatefulWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems;
-  const CheckoutSummaryPage({super.key, required this.cartItems});
+  final String? selectedPaymentMethod;
+  const CheckoutSummaryPage({super.key, required this.cartItems, this.selectedPaymentMethod});
 
   @override
   State<CheckoutSummaryPage> createState() => _CheckoutSummaryPageState();
@@ -23,7 +24,6 @@ class CheckoutSummaryPage extends StatefulWidget {
 class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
   bool isProcessing = false;
   String selectedPaymentMethod = 'cash_on_pickup';
-  String selectedOnlineMethod = 'paypal_sandbox'; // Default online payment method
   final PaymentService _paymentService = PaymentService();
   Map<String, String> availablePaymentMethods = {};
   bool _hasAvailablePromo = false;
@@ -35,6 +35,11 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
     super.initState();
     availablePaymentMethods = _paymentService.getPaymentMethods();
     _checkPromoAvailability();
+    
+    // Set the selected payment method from the passed parameter
+    if (widget.selectedPaymentMethod != null) {
+      selectedPaymentMethod = widget.selectedPaymentMethod!;
+    }
   }
 
   Future<void> _checkPromoAvailability() async {
@@ -76,8 +81,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         return '';
       case 'gcash':
         return '';
-      case 'paymaya':
-        return '';
       default:
         return '';
     }
@@ -88,9 +91,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
-        return 'Online Payment - GCash';
-      case 'paymaya':
-        return 'Online Payment - PayMaya';
+        return 'GCash';
       default:
         return 'Unknown Method';
     }
@@ -101,7 +102,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Pay on Pickup';
       case 'gcash':
-      case 'paymaya':
         return 'Secure Online Payment';
       default:
         return 'Payment Method';
@@ -110,7 +110,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
 
   Future<String?> _showPaymentMethodDialog() async {
     String tempMethod = selectedPaymentMethod;
-    String tempOnlineMethod = selectedOnlineMethod;
     
     return showDialog<String>(
       context: context,
@@ -127,7 +126,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('', style: GoogleFonts.quicksand(fontSize: 20)),
+                    Text('💵', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
                     const Text('Cash on Pickup'),
                   ],
@@ -141,82 +140,26 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                 ),
               ),
               
-              // Online Payment Option
+              // GCash Option
               RadioListTile<String>(
-                value: 'online_payment',
+                value: 'gcash',
                 groupValue: tempMethod,
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('', style: GoogleFonts.quicksand(fontSize: 20)),
+                    Text('💳', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
-                    const Text('Online Payment'),
+                    const Text('GCash'),
                   ],
                 ),
                 subtitle: Text(
-                  'Secure Online Payment',
+                  'Pay with GCash',
                   style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,
                   ),
                 ),
               ),
-              
-              // Online Payment Method Dropdown (only show if online payment is selected)
-              if (tempMethod == 'online_payment') ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                       Text(
-                        'Select Online Payment Method:',
-                        style: GoogleFonts.quicksand(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: tempOnlineMethod,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: 'gcash',
-                            child: Row(
-                              children: [
-                                Text('', style: GoogleFonts.quicksand(fontSize: 16)),
-                                const SizedBox(width: 8),
-                                const Text('GCash'),
-                              ],
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'paymaya',
-                            child: Row(
-                              children: [
-                                Text('', style: GoogleFonts.quicksand(fontSize: 16)),
-                                const SizedBox(width: 8),
-                                const Text('PayMaya'),
-                              ],
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => setState(() => tempOnlineMethod = value!),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -227,12 +170,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              // Return the appropriate payment method
-              String finalMethod = tempMethod;
-              if (tempMethod == 'online_payment') {
-                finalMethod = tempOnlineMethod;
-              }
-              Navigator.pop(context, finalMethod);
+              Navigator.pop(context, tempMethod);
             },
             child: const Text('Continue'),
           ),
@@ -242,6 +180,12 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
   }
 
   Future<void> _processPayment() async {
+    // Debug entrypoint
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Processing order...')),
+      );
+    }
     // Confirm before placing order to avoid misclicks
     if (!mounted) return;
     final confirm = await showDialog<bool>(
@@ -286,6 +230,34 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         }
       }
 
+      // Handle payment based on method
+      if (selectedPaymentMethod == 'gcash') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Redirecting to GCash...')),
+          );
+        }
+        // For GCash, navigate to payment processing page WITHOUT creating orders yet
+        // Orders will be created by webhook after successful payment
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentProcessingPage(
+              cartItems: widget.cartItems,
+              total: finalAmount,
+              paymentMethod: selectedPaymentMethod,
+              orderId: orderId,
+              discountAmount: discountAmount,
+              originalAmount: total,
+              hasPromoApplied: _applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo,
+              promoType: (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) ? 'First Time Customer' : null,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // For cash_on_pickup, create orders immediately since no online payment is required
       // Create orders in Firestore
       final batch = FirebaseFirestore.instance.batch();
       final ordersRef = FirebaseFirestore.instance.collection('orders');
@@ -307,7 +279,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
           'status': 'pending',
           'createdAt': FieldValue.serverTimestamp(),
           'paymentMethod': selectedPaymentMethod,
-          'paymentStatus': selectedPaymentMethod == 'cash_on_pickup' ? 'pending' : 'unpaid',
+          'paymentStatus': 'pending', // Cash on pickup is always pending
           'paymentAmount': finalAmount,
           'originalAmount': total,
           'discountAmount': discountAmount,
@@ -321,8 +293,13 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         });
       }
 
-      // Commit the batch first to create all orders
+      // Commit the batch to create all orders
       await batch.commit();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order placed successfully')), 
+        );
+      }
 
       // Send notifications to suppliers about new orders
       final notificationService = NotificationService();
@@ -351,27 +328,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
             'screen': 'orders',
           },
         );
-      }
-
-      // Handle payment based on method
-      if (selectedPaymentMethod == 'paypal_sandbox') {
-        // For PayPal sandbox, navigate to payment processing page
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentProcessingPage(
-              cartItems: widget.cartItems,
-              total: finalAmount,
-              paymentMethod: selectedPaymentMethod,
-              orderId: orderId,
-              discountAmount: discountAmount,
-              originalAmount: total,
-              hasPromoApplied: _applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo,
-              promoType: (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) ? 'First Time Customer' : null,
-            ),
-          ),
-        );
-        return;
       }
 
       // For all methods, finalize: mark promo used, clear cart, and go back to cart page
@@ -462,7 +418,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
     final discount = _calculateDiscountAmount();
     final finalTotal = _calculateFinalTotal();
 
-    return Scaffold(
+    return HeroMode(
+      enabled: false,
+      child: Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
       appBar: AppBar(
         backgroundColor: Color(0xFF6CA04A),
@@ -745,7 +703,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                         child: Row(
                           children: [
                             Text(
-                              _getPaymentMethodIcon(selectedPaymentMethod == 'online_payment' ? selectedOnlineMethod : selectedPaymentMethod),
+                              _getPaymentMethodIcon(selectedPaymentMethod),
                               style: GoogleFonts.quicksand(fontSize: screenWidth * 0.06),
                             ),
                             SizedBox(width: screenWidth * 0.03),
@@ -754,14 +712,14 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _getPaymentMethodDisplayName(selectedPaymentMethod == 'online_payment' ? selectedOnlineMethod : selectedPaymentMethod),
+                                    _getPaymentMethodDisplayName(selectedPaymentMethod),
                                     style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.04,
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                   Text(
-                                    _getPaymentMethodSubtitle(selectedPaymentMethod == 'online_payment' ? selectedOnlineMethod : selectedPaymentMethod),
+                                    _getPaymentMethodSubtitle(selectedPaymentMethod),
                                     style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.035,
                                       color: Color(0xFF757575),
@@ -932,6 +890,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

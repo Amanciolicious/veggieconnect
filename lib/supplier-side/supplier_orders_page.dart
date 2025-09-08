@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_print
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
-import 'package:veggieconnect/supplier-side/supplier_dashboard.dart';
 import 'supplier_chat_page.dart';
 
 class SupplierOrdersPage extends StatefulWidget {
@@ -55,7 +54,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1074,8 +1072,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     switch (method) {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
-      case 'paypal':
-        return 'PayPal';
       case 'gcash':
         return 'GCash';
       case 'bank_transfer':

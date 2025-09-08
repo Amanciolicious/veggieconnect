@@ -16,6 +16,7 @@ import 'package:veggieconnect/customer-side/customer_messages_page.dart';
 import 'package:veggieconnect/customer-side/cart_page.dart';
 import 'package:veggieconnect/customer-side/favorite_page.dart';
 import 'package:veggieconnect/customer-side/profile_page.dart';
+import 'package:veggieconnect/customer-side/paymongo_test_page.dart';
 import 'buyer_order_history_page.dart';
 import 'farm_locations_page.dart';
 import '../widgets/modern_app_bar.dart';
@@ -690,7 +691,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             stream: FirebaseFirestore.instance
                 .collection('products')
                 .where('status', isEqualTo: 'approved')
-                .where('isVerified', isEqualTo: true)
+                .where('isActive', isEqualTo: true)
                 // Avoid composite index requirement; sort client-side by popularity
                 .limit(30)
                 .snapshots(),
@@ -736,18 +737,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 );
               }
               
-              // Sort by popularity on the client to avoid Firestore composite index errors
+              // Filter products with favorites and sort by popularity
               final sortedDocs = snapshot.data!.docs
-                  .where((d) {
-                    final data = d.data() as Map<String, dynamic>;
-                    final popularity = data['popularity'] ?? 0;
-                    // Only show products with popularity > 0 and ensure it's a valid number
-                    return popularity is num && popularity > 0;
+                  .where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final favoriteCount = data['favoriteCount'] ?? 0;
+                    return favoriteCount > 0;
                   })
                   .toList()
                 ..sort((a, b) {
-                  final ap = (a.data() as Map<String, dynamic>)['popularity'] ?? 0;
-                  final bp = (b.data() as Map<String, dynamic>)['popularity'] ?? 0;
+                  final ap = (a.data() as Map<String, dynamic>)['favoriteCount'] ?? 0;
+                  final bp = (b.data() as Map<String, dynamic>)['favoriteCount'] ?? 0;
                   return (bp as num).compareTo(ap as num);
                 });
 
@@ -782,7 +782,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           ),
                         ],
                       ),
-                      child: Stack(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,7 +848,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                         ),
                                       ),
                                       // Popular badge
-                                      if ((data['popularity'] ?? 0) > 5)
+                                      if ((data['favoriteCount'] ?? 0) > 0)
                                         Container(
                                           padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
@@ -869,9 +870,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               ),
                               ),
                           // Favorite button
-                          Positioned(
-                            top: 8,
-                            right: 8,
+                          Align(
+                            alignment: Alignment.centerRight,
                             child: StreamBuilder<DocumentSnapshot>(
                               stream: user != null 
                                 ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
@@ -887,10 +887,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 return GestureDetector(
                                   onTap: () => _toggleFavorite(productId),
                                   child: Container(
-                                    padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.012 : screenWidth * 0.015),
+                                    padding: EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      shape: BoxShape.circle,
+                                      borderRadius: BorderRadius.circular(20),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.grey.withOpacity(0.2),
@@ -903,7 +903,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                     child: Icon(
                                       isFavorite ? Icons.favorite : Icons.favorite_border,
                                       color: isFavorite ? Colors.red : Colors.grey[600],
-                                      size: isSmallScreen ? screenWidth * 0.04 : 18,
+                                      size: 20,
                                     ),
                                   ),
                                 );

@@ -57,13 +57,13 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         
         SizedBox(height: screenWidth * 0.02),
         
-        // PayPal Sandbox
+        // GCash
         _buildPaymentOption(
-          'paypal_sandbox',
-          'PayPal Sandbox',
-          'Pay using PayPal Sandbox for testing',
-          Icons.payment,
-          Colors.blue,
+          'gcash',
+          'GCash',
+          'Pay using GCash digital wallet',
+          Icons.account_balance_wallet,
+          Colors.green,
           screenWidth,
           isSmallScreen,
         ),

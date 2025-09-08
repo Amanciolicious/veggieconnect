@@ -1,5 +1,6 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const axios = require("axios");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -9,7 +10,8 @@ exports.sendNotification = functions.https.onCall(async (data, context) => {
   try {
     // Validate input
     if (!data.token || !data.title || !data.body) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+      throw new functions.https.HttpsError("invalid-argument",
+          "Missing required fields");
     }
 
     // Prepare the message for FCM V1 API
@@ -20,14 +22,14 @@ exports.sendNotification = functions.https.onCall(async (data, context) => {
         body: data.body,
       },
       data: {
-        type: data.type || 'general',
+        type: data.type || "general",
         ...data.customData,
       },
       android: {
         notification: {
-          channelId: getChannelIdForType(data.type || 'general'),
-          priority: 'high',
-          sound: 'default',
+          channelId: getChannelIdForType(data.type || "general"),
+          priority: "high",
+          sound: "default",
         },
       },
       apns: {
@@ -37,7 +39,7 @@ exports.sendNotification = functions.https.onCall(async (data, context) => {
               title: data.title,
               body: data.body,
             },
-            sound: 'default',
+            sound: "default",
             badge: 1,
           },
         },
@@ -46,82 +48,91 @@ exports.sendNotification = functions.https.onCall(async (data, context) => {
 
     // Send the notification using FCM V1 API
     const response = await admin.messaging().send(message);
-    
-    console.log('Successfully sent message:', response);
-    
+
+    console.log("Successfully sent message:", response);
+
     return {
       success: true,
       messageId: response,
     };
   } catch (error) {
-    console.error('Error sending message:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to send notification');
+    console.error("Error sending message:", error);
+    throw new functions.https.HttpsError("internal",
+        "Failed to send notification");
   }
 });
 
-// Helper function to get channel ID based on notification type
+/**
+ * Helper function to get channel ID based on notification type
+ * @param {string} type The notification type
+ * @return {string} The channel ID
+ */
 function getChannelIdForType(type) {
   switch (type) {
-    case 'order_update':
-    case 'order':
-      return 'orders';
-    case 'chat':
-      return 'chat';
+    case "order_update":
+    case "order":
+      return "orders";
+    case "chat":
+      return "chat";
     default:
-      return 'general';
+      return "general";
   }
 }
 
 // Cloud Function to send notification to multiple users
-exports.sendNotificationToMultiple = functions.https.onCall(async (data, context) => {
-  try {
-    if (!data.tokens || !Array.isArray(data.tokens) || !data.title || !data.body) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
-    }
+exports.sendNotificationToMultiple = functions.https.onCall(
+    async (data, context) => {
+      try {
+        if (!data.tokens || !Array.isArray(data.tokens) ||
+            !data.title || !data.body) {
+          throw new functions.https.HttpsError("invalid-argument",
+              "Missing required fields");
+        }
 
-    const message = {
-      tokens: data.tokens,
-      notification: {
-        title: data.title,
-        body: data.body,
-      },
-      data: {
-        type: data.type || 'general',
-        ...data.customData,
-      },
-      android: {
-        notification: {
-          channelId: getChannelIdForType(data.type || 'general'),
-          priority: 'high',
-          sound: 'default',
-        },
-      },
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title: data.title,
-              body: data.body,
-            },
-            sound: 'default',
-            badge: 1,
+        const message = {
+          tokens: data.tokens,
+          notification: {
+            title: data.title,
+            body: data.body,
           },
-        },
-      },
-    };
+          data: {
+            type: data.type || "general",
+            ...data.customData,
+          },
+          android: {
+            notification: {
+              channelId: getChannelIdForType(data.type || "general"),
+              priority: "high",
+              sound: "default",
+            },
+          },
+          apns: {
+            payload: {
+              aps: {
+                alert: {
+                  title: data.title,
+                  body: data.body,
+                },
+                sound: "default",
+                badge: 1,
+              },
+            },
+          },
+        };
 
-    const response = await admin.messaging().sendMulticast(message);
-    
-    console.log('Successfully sent multicast message:', response);
-    
-    return {
-      success: true,
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-      responses: response.responses,
-    };
-  } catch (error) {
-    console.error('Error sending multicast message:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to send notifications');
-  }
-});
+        const response = await admin.messaging().sendMulticast(message);
+
+        console.log("Successfully sent multicast message:", response);
+
+        return {
+          success: true,
+          successCount: response.successCount,
+          failureCount: response.failureCount,
+          responses: response.responses,
+        };
+      } catch (error) {
+        console.error("Error sending multicast message:", error);
+        throw new functions.https.HttpsError("internal",
+            "Failed to send notifications");
+      }
+    });
