@@ -148,7 +148,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
         timer.cancel();
         print('Order completed! Navigating to success page...');
         if (mounted) {
-          _navigateToSuccess();
+          final orderDoc = orderQuery.docs.first;
+          final data = orderDoc.data();
+          final method = (data['paymentMethod'] as String?) ?? widget.paymentMethod;
+          _navigateToSuccess(method);
         }
         return;
       }
@@ -170,7 +173,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
           timer.cancel();
           print('Order completed! Navigating to success page...');
           if (mounted) {
-            _navigateToSuccess();
+            final orderDoc2 = orderQuery2.docs.first;
+            final data2 = orderDoc2.data();
+            final method2 = (data2['paymentMethod'] as String?) ?? widget.paymentMethod;
+            _navigateToSuccess(method2);
           }
         }
       }
@@ -206,13 +212,13 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
     );
   }
 
-  void _navigateToSuccess() {
+  void _navigateToSuccess([String? paymentMethodOverride]) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => DigitalReceiptPage(
           cartItems: widget.cartItems,
           total: widget.total,
-          paymentMethod: widget.paymentMethod,
+          paymentMethod: paymentMethodOverride ?? widget.paymentMethod,
           orderId: widget.orderId,
           discountAmount: widget.discountAmount,
           originalAmount: widget.originalAmount,

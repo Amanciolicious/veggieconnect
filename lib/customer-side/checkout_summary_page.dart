@@ -91,13 +91,11 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
-        return 'GCash';
       case 'grab_pay':
-        return 'GrabPay';
       case 'paymaya':
-        return 'PayMaya';
       case 'card':
-        return 'Credit/Debit Card';
+      case 'online_payment':
+        return 'Online Payment';
       default:
         return 'Unknown Method';
     }
@@ -108,10 +106,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Pay on Pickup';
       case 'gcash':
-        return 'Pay online';
       case 'grab_pay':
       case 'paymaya':
       case 'card':
+      case 'online_payment':
         return 'Pay online';
       default:
         return 'Payment Method';
@@ -150,9 +148,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                 ),
               ),
               
-              // GCash Option
+              // Online Payment (generalized)
               RadioListTile<String>(
-                value: 'gcash',
+                value: 'online_payment',
                 groupValue: tempMethod,
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
@@ -241,13 +239,14 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       }
 
       // Handle payment based on method
-      if (selectedPaymentMethod == 'gcash') {
+      final isOnline = selectedPaymentMethod != 'cash_on_pickup';
+      if (isOnline) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Redirecting to payment...')),
           );
         }
-        // For GCash, navigate to payment processing page WITHOUT creating orders yet
+        // For online payment, navigate to processing page WITHOUT creating orders yet
         // Orders will be created by webhook after successful payment
         Navigator.push(
           context,
@@ -255,7 +254,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
             builder: (context) => PaymentProcessingPage(
               cartItems: widget.cartItems,
               total: finalAmount,
-              paymentMethod: selectedPaymentMethod,
+              paymentMethod: selectedPaymentMethod == 'online_payment' ? 'online_payment' : selectedPaymentMethod,
               orderId: orderId,
               discountAmount: discountAmount,
               originalAmount: total,

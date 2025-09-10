@@ -10,6 +10,7 @@ import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'buyer_order_history_page.dart';
+import 'buyer_products_page.dart';
 
 class DigitalReceiptPage extends StatefulWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems;
@@ -513,7 +514,10 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => BuyerProductsPage()),
+                      (route) => false,
+                    );
                   },
                   child: Text(
                     'Continue Shopping',

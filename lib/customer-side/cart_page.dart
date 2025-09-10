@@ -83,9 +83,9 @@ class _CartPageState extends State<CartPage> {
                 ),
               ),
               
-              // GCash Option
+              // Online Payment (generalized)
               RadioListTile<String>(
-                value: 'gcash',
+                value: 'online_payment',
                 groupValue: tempMethod,
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
@@ -148,6 +148,10 @@ class _CartPageState extends State<CartPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
+      case 'grab_pay':
+      case 'paymaya':
+      case 'card':
+      case 'online_payment':
         return 'Online Payment';
       default:
         return 'Unknown Method';
