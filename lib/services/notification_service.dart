@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'deep_link_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -259,12 +260,29 @@ class NotificationService {
 
   // Handle notification navigation
   void _handleNotificationNavigation(Map<String, dynamic> data) {
-    // This will be implemented based on your app's navigation structure
+    // Navigate to NavigationScreen when order pickup ready
     final type = data['type'] ?? 'general';
     final targetScreen = data['screen'];
-    
     debugPrint('Navigating to: $targetScreen (type: $type)');
-    // Navigation logic will be implemented in the main app
+    try {
+      if (type == 'pickup_ready' || targetScreen == 'navigation') {
+        final orderId = data['orderId']?.toString();
+        final supplierName = data['supplierName']?.toString() ?? 'Store';
+        final supplierUserId = data['supplierUserId']?.toString();
+        if (orderId != null) {
+          Navigator.of(DeepLinkService.navigatorKey.currentContext!, rootNavigator: true).pushNamed(
+            '/navigation',
+            arguments: {
+              'orderId': orderId,
+              'supplierName': supplierName,
+              'supplierUserId': supplierUserId,
+            },
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Navigation error on notification tap: $e');
+    }
   }
 
   // Show local notification

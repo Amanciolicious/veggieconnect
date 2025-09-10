@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:veggieconnect/services/supplier_location_service.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'supplier_chat_page.dart';
@@ -595,15 +596,36 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       final orderData = orderDoc.data() as Map<String, dynamic>;
       final buyerId = orderData['buyerId'] as String?;
       final buyerName = orderData['buyerName'] as String?;
+      final supplierId = orderData['sellerId'] as String?;
+      final supplierName = orderData['sellerName'] as String? ?? 'Store';
       
-      // Update order status
+      // If marking ready_to_pickup, attach pickup coordinates from supplier location
+      Map<String, dynamic> statusUpdate = {
+        'status': newStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (newStatus == 'ready_to_pickup' && supplierId != null) {
+        try {
+          final supplierLoc = await SupplierLocationService().getSupplierLocationBySupplierId(supplierId);
+          if (supplierLoc != null) {
+            statusUpdate.addAll({
+              'pickupLat': supplierLoc.latitude,
+              'pickupLng': supplierLoc.longitude,
+              'pickupAddress': supplierLoc.address,
+            });
+          }
+        } catch (e) {
+          // proceed without blocking if location not found
+          print('Failed to fetch supplier pickup location: $e');
+        }
+      }
+
+      // Update order status (and pickup fields if present)
       await FirebaseFirestore.instance
           .collection('orders')
           .doc(orderId)
-          .update({
-        'status': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+          .update(statusUpdate);
 
       // Send notification to customer
       if (buyerId != null) {
@@ -618,7 +640,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             break;
           case 'ready_to_pickup':
             title = 'Order Ready for Pickup';
-            body = 'Your order #${orderId.substring(0, 8)} is ready for pickup! Please contact the supplier to arrange pickup.';
+            body = 'Your order #${orderId.substring(0, 8)} at $supplierName is ready! Tap to navigate.';
             break;
           case 'picked_up':
             title = 'Order Picked Up';
@@ -630,17 +652,34 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             break;
         }
         
-        await notificationService.sendFCMNotification(
-          recipientId: buyerId,
-          title: title,
-          body: body,
-          type: 'order_update',
-          data: {
-            'orderId': orderId,
-            'status': newStatus,
-            'screen': 'order_details',
-          },
-        );
+        // For ready_to_pickup, send deep-linking data to Navigation
+        if (newStatus == 'ready_to_pickup') {
+          await notificationService.sendFCMNotification(
+            recipientId: buyerId,
+            title: title,
+            body: body,
+            type: 'pickup_ready',
+            data: {
+              'orderId': orderId,
+              'status': newStatus,
+              'screen': 'navigation',
+              'supplierName': supplierName,
+              'supplierUserId': supplierId,
+            },
+          );
+        } else {
+          await notificationService.sendFCMNotification(
+            recipientId: buyerId,
+            title: title,
+            body: body,
+            type: 'order_update',
+            data: {
+              'orderId': orderId,
+              'status': newStatus,
+              'screen': 'order_details',
+            },
+          );
+        }
       }
 
       if (mounted) {

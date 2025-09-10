@@ -11,6 +11,7 @@ import 'services/notification_service.dart';
 import 'services/performance_service.dart';
 import 'services/migration_service.dart';
 import 'services/deep_link_service.dart';
+import 'customer-side/navigation_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -167,6 +168,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             );
           },
           '/payment-test': (context) => const PaymentTestPage(),
+          '/navigation': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+            return NavigationScreen(
+              orderId: args?['orderId'] ?? '',
+              supplierName: args?['supplierName'] ?? 'Store',
+              supplierUserId: args?['supplierUserId'],
+            );
+          },
         },
       );
     }
