@@ -64,9 +64,6 @@ class PayMongoGCashService {
         return GCashPaymentResult(success: false, error: 'Could not launch checkout URL');
       }
 
-      // Optionally store temp order for webhook reconciliation
-      await _storeTemporaryOrderData(orderId, 'checkout_session', cartItems, amount);
-
       return GCashPaymentResult(success: true, orderId: orderId, checkoutUrl: checkoutUrl, message: 'Redirected to PayMongo');
     } catch (e) {
       Navigator.of(context, rootNavigator: true).pop();
@@ -74,46 +71,6 @@ class PayMongoGCashService {
     }
   }
 
-  /// Store temporary order data for webhook to create orders later
-  static Future<void> _storeTemporaryOrderData(
-    String orderId, 
-    String paymentIntentId, 
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems,
-    double amount,
-  ) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not authenticated');
-
-      // Get buyer name
-      String buyerName = user.displayName ?? '';
-      try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
-        }
-      } catch (_) {}
-
-      // Store temporary order data with cart document IDs
-      await FirebaseFirestore.instance.collection('temp_orders').doc(orderId).set({
-        'orderId': orderId,
-        'paymentIntentId': paymentIntentId,
-        'buyerId': user.uid,
-        'buyerName': buyerName,
-        'amount': amount,
-        'cartItems': cartItems.map((doc) => {
-          ...doc.data(),
-          'cartDocId': doc.id, // Include cart document ID for removal
-        }).toList(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'pending_payment',
-      });
-      
-      print('✅ Stored temporary order data for webhook processing');
-    } catch (e) {
-      print('❌ Error storing temporary order data: $e');
-    }
-  }
 
   static String _buildSuccessUrl(String orderId) {
     // You can add query params to identify the order when you handle redirect/webhook

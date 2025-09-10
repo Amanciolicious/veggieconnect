@@ -136,7 +136,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
-                            vertical: 8,
+                            vertical: 10,
                           ),
                         ),
                         items: _statusOptions.map((String status) {
@@ -304,7 +304,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       'Pending',
                       orders.where((doc) => 
                         (doc.data() as Map<String, dynamic>)['status'] == 'pending' ||
-                        (doc.data() as Map<String, dynamic>)['status'] == null
+                        (doc.data() as Map<String, dynamic>)['status'] == null ||
+                        (doc.data() as Map<String, dynamic>)['status'] == 'completed'
                       ).length.toString(),
                       Icons.schedule,
                       Colors.orange,
@@ -425,10 +426,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     return orders.where((doc) {
       final order = doc.data() as Map<String, dynamic>;
       
-      // Status filter for pending (handle both 'pending' and null values)
+      // Status filter for pending (handle 'pending', null, and 'completed' values)
       if (status == 'pending') {
         final orderStatus = order['status'];
-        if (orderStatus != 'pending' && orderStatus != null) {
+        if (orderStatus != 'pending' && orderStatus != null && orderStatus != 'completed') {
           return false;
         }
       }
@@ -637,7 +638,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
               _buildOrderDetailRow('Total', '₱${((order['price'] ?? 0) * (order['quantity'] ?? 1)).toStringAsFixed(2)}'),
               _buildOrderDetailRow('Buyer', order['buyerName'] ?? 'N/A'),
               _buildOrderDetailRow('Payment Method', _getPaymentMethodDisplayName(order['paymentMethod'] ?? 'N/A')),
-              _buildOrderDetailRow('Status', ((order['status'] == null || order['status'] == 'placed') ? 'pending' : order['status']).toUpperCase()),
+              _buildOrderDetailRow('Status', ((order['status'] == null || order['status'] == 'placed' || order['status'] == 'completed') ? 'pending' : order['status']).toUpperCase()),
               if (order['note'] != null)
                 _buildOrderDetailRow('Note', order['note']),
               if (order['createdAt'] != null)
@@ -767,7 +768,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order, String orderId) {
-    final status = (order['status'] == null || order['status'] == 'placed') ? 'pending' : order['status'];
+    // Show completed orders as pending for suppliers so they can process them
+    final status = (order['status'] == null || order['status'] == 'placed' || order['status'] == 'completed') ? 'pending' : order['status'];
     final productName = order['productName'] ?? 'Unknown Product';
     final quantity = order['quantity'] ?? 1;
     final price = (order['price'] ?? 0) as num;
@@ -974,8 +976,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   }
 
   Widget _buildStatusChip(String status) {
-    // Normalize for display
-    if (status == 'placed' || status.isEmpty) {
+    // Normalize for display - show completed orders as pending for suppliers
+    if (status == 'placed' || status.isEmpty || status == 'completed') {
       status = 'pending';
     }
     Color color;
@@ -1039,7 +1041,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       ),
     ));
 
-    if (status == 'pending') {
+    // Allow processing for both 'pending' and 'completed' status (for online payments)
+    if (status == 'pending' || status == 'completed') {
       actions.addAll([
         const PopupMenuItem(
           value: 'process',

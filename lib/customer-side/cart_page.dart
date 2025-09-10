@@ -92,11 +92,11 @@ class _CartPageState extends State<CartPage> {
                   children: [
                     Text('💳', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
-                    const Text('GCash'),
+                    const Text('Online Payment'),
                   ],
                 ),
                 subtitle: Text(
-                  'Pay with GCash',
+                  'Pay online',
                   style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,
@@ -148,7 +148,7 @@ class _CartPageState extends State<CartPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
-        return 'GCash';
+        return 'Online Payment';
       default:
         return 'Unknown Method';
     }

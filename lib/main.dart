@@ -1,10 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
+import 'package:app_links/app_links.dart';
 import 'authentication/login_page.dart';
+import 'customer-side/order_success_page.dart';
+import 'customer-side/payment_test_page.dart';
 import 'services/notification_service.dart';
 import 'services/performance_service.dart';
 import 'services/migration_service.dart';
+import 'services/deep_link_service.dart';
+import 'services/payment_completion_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,15 +39,92 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _appLinks = AppLinks();
+    
+    // Handle deep links when app is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initDeepLinks();
+    });
+  }
+
+  void _initDeepLinks() async {
+    // Handle initial link if app was opened via deep link
+    try {
+      final initialLink = await _appLinks.getInitialLink();
+      if (initialLink != null) {
+        print('Initial deep link: $initialLink');
+        _handleDeepLink(initialLink.toString());
+      }
+    } catch (e) {
+      print('Error getting initial link: $e');
+    }
+
+    // Listen for incoming links when app is already running
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      (Uri uri) {
+        print('Incoming deep link: $uri');
+        _handleDeepLink(uri.toString());
+      },
+      onError: (err) {
+        print('Deep link error: $err');
+      },
+    );
+  }
+
+  void _handleDeepLink(String url) {
+    print('Handling deep link: $url');
+    DeepLinkService.handleDeepLink(url);
+  }
+
+  // Handle initial route for deep links
+  static String? _getInitialRoute() {
+    // This will be called when the app is opened via deep link
+    return null; // Let the default route handling work
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.resumed) {
+      // App was resumed, check if we need to complete any pending orders
+      _checkForPendingOrders();
+    }
+  }
+
+  void _checkForPendingOrders() {
+    // This could be enhanced to check for specific pending orders
+    // For now, we'll rely on the deep link service to handle order completion
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'VeggieConnect',
       debugShowCheckedModeBanner: false,
+      navigatorKey: DeepLinkService.navigatorKey,
       theme: ThemeData(
         primarySwatch: Colors.green,
         textTheme: GoogleFonts.quicksandTextTheme(),
@@ -79,6 +163,16 @@ class MyApp extends StatelessWidget {
         ),
         ),
         home: const LoginPage(),
+        routes: {
+          '/order-success': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+            return OrderSuccessPage(
+              orderId: args?['orderId'],
+              status: args?['status'],
+            );
+          },
+          '/payment-test': (context) => const PaymentTestPage(),
+        },
       );
     }
   }

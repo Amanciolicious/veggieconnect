@@ -91,7 +91,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
-        return 'GCash';
+        return 'Online Payment';
       default:
         return 'Unknown Method';
     }
@@ -102,7 +102,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Pay on Pickup';
       case 'gcash':
-        return 'Secure Online Payment';
+        return 'Pay online';
       default:
         return 'Payment Method';
     }
@@ -149,11 +149,11 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                   children: [
                     Text('💳', style: GoogleFonts.quicksand(fontSize: 20)),
                     const SizedBox(width: 8),
-                    const Text('GCash'),
+                    const Text('Online Payment'),
                   ],
                 ),
                 subtitle: Text(
-                  'Pay with GCash',
+                  'Pay online',
                   style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,
@@ -234,7 +234,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       if (selectedPaymentMethod == 'gcash') {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Redirecting to GCash...')),
+            const SnackBar(content: Text('Redirecting to payment...')),
           );
         }
         // For GCash, navigate to payment processing page WITHOUT creating orders yet

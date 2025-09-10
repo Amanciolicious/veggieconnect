@@ -62,6 +62,7 @@ dependencies:
   screenshot: ^3.0.0
   path: ^1.9.0
   webview_flutter: ^4.10.0
+  app_links: ^6.3.2
 
 dev_dependencies:
   flutter_test:

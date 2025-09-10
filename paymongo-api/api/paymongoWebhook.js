@@ -7,6 +7,24 @@ if (!admin.apps.length) {
   });
 }
 
+// Convert PayMongo payment method to display name
+function getPaymentMethodDisplayName(paymentMethod) {
+  switch (paymentMethod.toLowerCase()) {
+    case 'gcash':
+      return 'GCash';
+    case 'grab_pay':
+      return 'GrabPay';
+    case 'paymaya':
+      return 'PayMaya';
+    case 'card':
+      return 'Credit/Debit Card';
+    case 'online_payment':
+      return 'Online Payment';
+    default:
+      return 'Online Payment';
+  }
+}
+
 module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,60 +54,120 @@ module.exports = async function handler(req, res) {
 
       if (orderId) {
         console.log(`Processing successful payment for order: ${orderId}`);
+        console.log('Session data:', JSON.stringify(session, null, 2));
         
         // Determine payment method from session
         let paymentMethod = 'online_payment';
+        
+        // Try to get the actual payment method used
         if (session.payment_method_types && session.payment_method_types.length > 0) {
-          const usedMethod = session.payment_method_types[0];
-          paymentMethod = usedMethod;
+          paymentMethod = session.payment_method_types[0];
         }
+        
+        // Check if there's a payment intent with more specific payment method info
+        if (session.payment_intent_id) {
+          try {
+            // Get payment intent details to find the actual payment method used
+            const paymentIntentResponse = await fetch(`https://api.paymongo.com/v1/payment_intents/${session.payment_intent_id}`, {
+              headers: {
+                'Authorization': `Basic ${Buffer.from(`${process.env.PAYMONGO_SECRET}:`).toString('base64')}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (paymentIntentResponse.ok) {
+              const paymentIntentData = await paymentIntentResponse.json();
+              console.log('Payment intent data:', JSON.stringify(paymentIntentData, null, 2));
+              
+              // Check for the actual payment method used
+              if (paymentIntentData.data && paymentIntentData.data.attributes) {
+                const attributes = paymentIntentData.data.attributes;
+                
+                // Look for the payment method in the payment intent
+                if (attributes.payment_method_allowed && attributes.payment_method_allowed.length > 0) {
+                  // Use the first allowed method as fallback
+                  paymentMethod = attributes.payment_method_allowed[0];
+                }
+                
+                // Check if there's a specific payment method used
+                if (attributes.payment_method) {
+                  paymentMethod = attributes.payment_method;
+                }
+              }
+            }
+          } catch (error) {
+            console.log('Error fetching payment intent:', error);
+          }
+        }
+        
+        console.log(`Determined payment method: ${paymentMethod}`);
 
-        // Call the complete order function
-        const completeOrderResponse = await admin.firestore()
+        // Get temporary order data
+        const tempOrderDoc = await admin.firestore()
             .collection('temp_orders')
             .doc(orderId)
             .get();
 
-        if (completeOrderResponse.exists) {
-          // Trigger order completion
-          const orderData = completeOrderResponse.data();
+        if (tempOrderDoc.exists) {
+          const orderData = tempOrderDoc.data();
+          console.log('Found temporary order data:', orderData);
           
-          const orderDataFinal = {
-            orderId: orderId,
-            buyerId: orderData.buyerId,
-            buyerName: orderData.buyerName,
-            items: orderData.cartItems,
-            totalAmount: orderData.amount,
-            paymentMethod: paymentMethod,
-            paymentStatus: 'paid',
-            orderStatus: 'confirmed',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          };
+          // Create individual orders for each cart item
+          const batch = admin.firestore().batch();
+          const ordersRef = admin.firestore().collection('orders');
 
-          // Save order to orders collection
-          await admin.firestore()
-              .collection('orders')
-              .doc(orderId)
-              .set(orderDataFinal);
+          for (const item of orderData.cartItems) {
+            const orderDoc = ordersRef.doc();
+            batch.set(orderDoc, {
+              'buyerId': orderData.buyerId,
+              'buyerName': orderData.buyerName,
+              'productId': item.productId,
+              'sellerId': item.sellerId,
+              'productName': item.name,
+              'quantity': item.quantity,
+              'unit': item.unit,
+              'price': item.price,
+              'status': 'completed',
+              'createdAt': admin.firestore.FieldValue.serverTimestamp(),
+              'paymentMethod': getPaymentMethodDisplayName(paymentMethod),
+              'paymentStatus': 'completed',
+              'paymentAmount': orderData.amount,
+              'originalAmount': orderData.originalAmount || orderData.amount,
+              'discountAmount': orderData.discountAmount || 0.0,
+              'hasPromoApplied': orderData.hasPromoApplied || false,
+              'promoType': orderData.promoType,
+              'paymentDate': admin.firestore.FieldValue.serverTimestamp(),
+              'imageUrl': item.imageUrl,
+              'supplierName': item.supplierName,
+              'orderId': orderId,
+              'totalAmount': orderData.amount,
+              'completedAt': admin.firestore.FieldValue.serverTimestamp(),
+              'updatedAt': admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+
+          // Commit the batch to create all orders
+          await batch.commit();
+          console.log(`Created ${orderData.cartItems.length} orders for orderId: ${orderId}`);
 
           // Remove items from cart
           if (orderData.cartItems && Array.isArray(orderData.cartItems)) {
-            const batch = admin.firestore().batch();
+            const cartBatch = admin.firestore().batch();
             
             for (const item of orderData.cartItems) {
               if (item.cartDocId) {
                 const cartDocRef = admin.firestore()
-                    .collection('carts')
+                    .collection('users')
                     .doc(orderData.buyerId)
-                    .collection('items')
+                    .collection('cart')
                     .doc(item.cartDocId);
                 
-                batch.delete(cartDocRef);
+                cartBatch.delete(cartDocRef);
               }
             }
             
-            await batch.commit();
+            await cartBatch.commit();
+            console.log(`Removed cart items for order ${orderId}`);
           }
 
           // Delete temporary order
@@ -99,6 +177,8 @@ module.exports = async function handler(req, res) {
               .delete();
 
           console.log(`Order ${orderId} completed via webhook`);
+        } else {
+          console.log(`No temporary order found for orderId: ${orderId}`);
         }
       }
     }
