@@ -56,12 +56,12 @@ module.exports = async function handler(req, res) {
         console.log(`Processing successful payment for order: ${orderId}`);
         console.log('Session data:', JSON.stringify(session, null, 2));
         
-        // Determine payment method from session
+        // Determine payment method from session (normalized slug)
         let paymentMethod = 'online_payment';
         
         // Try to get the actual payment method used
         if (session.payment_method_types && session.payment_method_types.length > 0) {
-          paymentMethod = session.payment_method_types[0];
+          paymentMethod = String(session.payment_method_types[0]).toLowerCase();
         }
         
         // Check if there's a payment intent with more specific payment method info
@@ -83,15 +83,12 @@ module.exports = async function handler(req, res) {
               if (paymentIntentData.data && paymentIntentData.data.attributes) {
                 const attributes = paymentIntentData.data.attributes;
                 
-                // Look for the payment method in the payment intent
                 if (attributes.payment_method_allowed && attributes.payment_method_allowed.length > 0) {
-                  // Use the first allowed method as fallback
-                  paymentMethod = attributes.payment_method_allowed[0];
+                  paymentMethod = String(attributes.payment_method_allowed[0]).toLowerCase();
                 }
                 
-                // Check if there's a specific payment method used
                 if (attributes.payment_method) {
-                  paymentMethod = attributes.payment_method;
+                  paymentMethod = String(attributes.payment_method).toLowerCase();
                 }
               }
             }
@@ -129,7 +126,8 @@ module.exports = async function handler(req, res) {
               'price': item.price,
               'status': 'completed',
               'createdAt': admin.firestore.FieldValue.serverTimestamp(),
-              'paymentMethod': getPaymentMethodDisplayName(paymentMethod),
+              // Store normalized slug so clients can map to friendly names
+              'paymentMethod': paymentMethod,
               'paymentStatus': 'completed',
               'paymentAmount': orderData.amount,
               'originalAmount': orderData.originalAmount || orderData.amount,

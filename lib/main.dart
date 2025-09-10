@@ -1,8 +1,9 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
 import 'authentication/login_page.dart';
 import 'customer-side/order_success_page.dart';
@@ -11,7 +12,6 @@ import 'services/notification_service.dart';
 import 'services/performance_service.dart';
 import 'services/migration_service.dart';
 import 'services/deep_link_service.dart';
-import 'services/payment_completion_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,10 +92,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   // Handle initial route for deep links
-  static String? _getInitialRoute() {
-    // This will be called when the app is opened via deep link
-    return null; // Let the default route handling work
-  }
 
   @override
   void dispose() {

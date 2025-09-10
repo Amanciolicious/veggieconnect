@@ -91,7 +91,13 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
-        return 'Online Payment';
+        return 'GCash';
+      case 'grab_pay':
+        return 'GrabPay';
+      case 'paymaya':
+        return 'PayMaya';
+      case 'card':
+        return 'Credit/Debit Card';
       default:
         return 'Unknown Method';
     }
@@ -102,6 +108,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       case 'cash_on_pickup':
         return 'Pay on Pickup';
       case 'gcash':
+        return 'Pay online';
+      case 'grab_pay':
+      case 'paymaya':
+      case 'card':
         return 'Pay online';
       default:
         return 'Payment Method';

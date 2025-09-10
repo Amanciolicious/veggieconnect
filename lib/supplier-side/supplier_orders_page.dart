@@ -122,66 +122,127 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                 ),
                 const SizedBox(height: 12),
                 
-                // Filter Row
-                Row(
-                  children: [
-                    // Status Filter
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _statusFilter,
-                        decoration: InputDecoration(
-                          labelText: 'Status',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                // Filter Row (responsive)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 360;
+                    if (isNarrow) {
+                      return Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: _statusFilter,
+                            decoration: InputDecoration(
+                              labelText: 'Status',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                            ),
+                            items: _statusOptions.map((String status) {
+                              return DropdownMenuItem<String>(
+                                value: status,
+                                child: Text(status.toUpperCase(), overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _statusFilter = newValue!;
+                              });
+                            },
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: _dateFilter,
+                            decoration: InputDecoration(
+                              labelText: 'Date',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            items: _dateOptions.map((String date) {
+                              return DropdownMenuItem<String>(
+                                value: date,
+                                child: Text(date.replaceAll('_', ' ').toUpperCase(), overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _dateFilter = newValue!;
+                              });
+                            },
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        // Status Filter
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _statusFilter,
+                            decoration: InputDecoration(
+                              labelText: 'Status',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                            ),
+                            items: _statusOptions.map((String status) {
+                              return DropdownMenuItem<String>(
+                                value: status,
+                                child: Text(status.toUpperCase(), overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _statusFilter = newValue!;
+                              });
+                            },
                           ),
                         ),
-                        items: _statusOptions.map((String status) {
-                          return DropdownMenuItem<String>(
-                            value: status,
-                            child: Text(status.toUpperCase()),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _statusFilter = newValue!;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    
-                    // Date Filter
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _dateFilter,
-                        decoration: InputDecoration(
-                          labelText: 'Date',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                        const SizedBox(width: 12),
+                        
+                        // Date Filter
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _dateFilter,
+                            decoration: InputDecoration(
+                              labelText: 'Date',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            items: _dateOptions.map((String date) {
+                              return DropdownMenuItem<String>(
+                                value: date,
+                                child: Text(date.replaceAll('_', ' ').toUpperCase(), overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _dateFilter = newValue!;
+                              });
+                            },
                           ),
                         ),
-                        items: _dateOptions.map((String date) {
-                          return DropdownMenuItem<String>(
-                            value: date,
-                            child: Text(date.replaceAll('_', ' ').toUpperCase()),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _dateFilter = newValue!;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 12),

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print, use_build_context_synchronously, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -91,13 +93,6 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
             _isLoading = false;
           });
           
-          // Automatically show the digital receipt after a short delay
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              _viewReceipt();
-            }
-          });
-          
           return;
         }
         
@@ -122,35 +117,66 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
     }
   }
 
-  void _viewReceipt() {
-    if (_orderData == null) return;
+  Future<void> _viewReceipt() async {
+    if (widget.orderId == null) return;
 
-    // Create a simple completion message and navigate to order history
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Order Placed Successfully! 🎉'),
-        content: Text(
-          'Your order #${widget.orderId!.substring(0, 8).toUpperCase()} has been placed and payment confirmed.\n\n'
-          'You will receive updates about your order status. Thank you for choosing VeggieConnect!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const BuyerOrderHistoryPage(),
-                ),
-              );
-            },
-            child: const Text('View Orders'),
+    try {
+      // Fetch the created orders for this orderId to build the receipt view
+      final ordersQuery = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('orderId', isEqualTo: widget.orderId)
+          .get();
+
+      if (ordersQuery.docs.isEmpty) {
+        // Fallback to order history if nothing found yet
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const BuyerOrderHistoryPage()),
+        );
+        return;
+      }
+
+      // Compute total from orders or use first doc totalAmount
+      double total = 0.0;
+      for (final doc in ordersQuery.docs) {
+        final data = doc.data();
+        final double price = (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0;
+        final int quantity = (data['quantity'] is num) ? (data['quantity'] as num).toInt() : 0;
+        total += price * quantity;
+      }
+      if (total <= 0 && ordersQuery.docs.first.data().containsKey('totalAmount')) {
+        final ta = ordersQuery.docs.first.data()['totalAmount'];
+        if (ta is num) total = ta.toDouble();
+      }
+
+      final String paymentMethod = (ordersQuery.docs.first.data()['paymentMethod'] as String?) ?? 'online_payment';
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DigitalReceiptPage(
+            cartItems: ordersQuery.docs,
+            total: total,
+            paymentMethod: paymentMethod,
+            orderId: widget.orderId!,
+            discountAmount: (ordersQuery.docs.first.data()['discountAmount'] is num)
+                ? (ordersQuery.docs.first.data()['discountAmount'] as num).toDouble()
+                : null,
+            originalAmount: (ordersQuery.docs.first.data()['originalAmount'] is num)
+                ? (ordersQuery.docs.first.data()['originalAmount'] as num).toDouble()
+                : null,
+            hasPromoApplied: (ordersQuery.docs.first.data()['hasPromoApplied'] as bool?) ?? false,
+            promoType: ordersQuery.docs.first.data()['promoType'] as String?,
           ),
-        ],
-      ),
-    );
+        ),
+      );
+    } catch (e) {
+      // If anything fails, go to order history as a safe fallback
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BuyerOrderHistoryPage()),
+      );
+    }
   }
 
   void _viewOrders() {

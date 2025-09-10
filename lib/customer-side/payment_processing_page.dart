@@ -6,7 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/paymongo_gcash_service.dart';
-import '../services/payment_completion_service.dart';
 import 'digital_receipt_page.dart';
 
 class PaymentProcessingPage extends StatefulWidget {
@@ -86,9 +85,9 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
 
         if (result?.success == true) {
           // Payment initiated successfully - user redirected to PayMongo
-          _showPaymentSuccessMessage();
-          // Start automatic order completion after 5 seconds
-          _startAutoCompleteTimer();
+          _showPaymentInitiatedMessage();
+          // Begin monitoring Firestore for webhook-confirmed order creation
+          _monitorPaymentCompletion();
         } else {
           setState(() {
             _isProcessing = false;
@@ -105,27 +104,21 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
     }
   }
 
-  void _showPaymentSuccessMessage() {
-    setState(() {
-      _isProcessing = false;
-    });
-    
+  void _showPaymentInitiatedMessage() {
+    // Keep processing state true; only navigate once webhook confirms
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Payment Initiated'),
+        title: const Text('Continue in PayMongo'),
         content: Text(
-          'Your ${_getPaymentMethodDisplayName()} payment has been initiated. You will be redirected to complete the payment.\n\n'
-          'Your order #${widget.orderId.substring(0, 8).toUpperCase()} has been saved and will be processed automatically once payment is confirmed.\n\n'
-          'After completing payment, you will be redirected back to the app to view your order receipt.',
+          'Your ${_getPaymentMethodDisplayName()} payment has been initiated. Complete the payment in the PayMongo page.\n\n'
+          'Once PayMongo confirms your payment, we will automatically show your digital receipt here.',
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              // Start monitoring for payment completion
-              _monitorPaymentCompletion();
+              Navigator.of(context).pop();
             },
             child: const Text('OK'),
           ),
@@ -200,64 +193,17 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       builder: (context) => AlertDialog(
         title: const Text('Completing Your Order'),
         content: const Text(
-          'We are automatically completing your order. This may take a few moments.\n\n'
-          'Please wait while we process your payment and create your order.',
+          'We didn\'t receive payment confirmation yet. If you\'ve completed payment, please wait a bit longer.\n\n'
+          'If you cancelled the payment, you can close this and try again.',
         ),
         actions: [
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _autoCompleteOrder();
-            },
-            child: const Text('Complete Order'),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
-  }
-
-  void _startAutoCompleteTimer() {
-    _autoCompleteTimer = Timer(const Duration(seconds: 5), () async {
-      if (mounted) {
-        await _autoCompleteOrder();
-      }
-    });
-  }
-
-  Future<void> _autoCompleteOrder() async {
-    try {
-      setState(() {
-        _isProcessing = true;
-      });
-
-      // Try to complete the order automatically
-      await PaymentCompletionService.completeOrder(widget.orderId);
-      
-      // Check if order was created
-      final orderQuery = await FirebaseFirestore.instance
-          .collection('orders')
-          .where('orderId', isEqualTo: widget.orderId)
-          .get();
-      
-      if (orderQuery.docs.isNotEmpty) {
-        setState(() {
-          _isProcessing = false;
-        });
-        if (mounted) {
-          _navigateToSuccess();
-        }
-      } else {
-        setState(() {
-          _isProcessing = false;
-          _errorMessage = 'Unable to complete order. Please contact support.';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _isProcessing = false;
-        _errorMessage = 'Error completing order: $e';
-      });
-    }
   }
 
   void _navigateToSuccess() {
@@ -428,11 +374,20 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
               ),
               SizedBox(height: screenWidth * 0.05),
               Text(
-                'Processing your payment...',
+                'Awaiting payment confirmation from PayMongo...',
                 style: GoogleFonts.quicksand(
                   fontSize: isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.05,
                   fontWeight: FontWeight.w400,
                   color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenWidth * 0.02),
+              Text(
+                'Complete your payment in the opened PayMongo page. This screen will update automatically once confirmed.',
+                style: GoogleFonts.quicksand(
+                  fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
+                  color: Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -480,40 +435,17 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                 ),
               ),
             ] else ...[
-              Icon(
-                Icons.check_circle,
-                size: screenWidth * 0.15,
-                color: Colors.green,
-              ),
-              SizedBox(height: screenWidth * 0.05),
-              Text(
-                'Payment Successful',
-                style: GoogleFonts.quicksand(
-                  fontSize: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.06,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green,
-                ),
-              ),
-              SizedBox(height: screenWidth * 0.05),
-              Text(
-                'Your order is being processed automatically. Please wait...',
-                style: GoogleFonts.quicksand(
-                  fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: screenWidth * 0.05),
+              // Fallback (should not normally be reached now)
               CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF6CA04A)),
                 strokeWidth: 3,
               ),
               SizedBox(height: screenWidth * 0.05),
               Text(
-                'Automatically completing your order...',
+                'Preparing secure checkout...',
                 style: GoogleFonts.quicksand(
-                  fontSize: isSmallScreen ? screenWidth * 0.035 : screenWidth * 0.04,
-                  color: Colors.grey[500],
+                  fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
+                  color: Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
               ),

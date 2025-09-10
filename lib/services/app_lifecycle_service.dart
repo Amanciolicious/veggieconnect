@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: avoid_print
+
 import 'deep_link_service.dart';
 
 class AppLifecycleService {

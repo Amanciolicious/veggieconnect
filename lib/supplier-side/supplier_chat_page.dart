@@ -42,7 +42,6 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     
     // Optimized for Infinix Smart 8 (720x1612)
     final padding = screenWidth * 0.04; // ~29px
