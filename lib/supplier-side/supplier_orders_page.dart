@@ -163,7 +163,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12,
-                                vertical: 8,
+                                vertical: 5,
                               ),
                             ),
                             items: _dateOptions.map((String date) {
