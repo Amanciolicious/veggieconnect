@@ -18,7 +18,7 @@ class BuyerOrderHistoryPage extends StatefulWidget {
 
 class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<String> _tabs = ['All', 'Pending', 'Processing', 'Picked Up'];
+  final List<String> _tabs = ['All', 'Pending', 'Processing', 'Ready to Pick Up', 'Picked Up'];
 
   @override
   void initState() {
@@ -58,6 +58,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
+          isScrollable: true,
           tabs: _tabs.map((t) => Tab(text: t)).toList(),
         ),
       ),
@@ -92,6 +93,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                   if (tab == 'All') return true;
                   final status = (doc['status'] ?? '').toString().toLowerCase();
                   final normalized = status == 'delivered' ? 'picked up' : status;
+                  if (tab == 'Ready to Pick Up') {
+                    return normalized == 'ready_to_pickup';
+                  }
                   return normalized == tab.toLowerCase();
                 }).toList();
                 if (orders.isEmpty) {
@@ -116,6 +120,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                     switch (status) {
                       case 'picked_up':
                         statusColor = Color(0xFF6CA04A);
+                        break;
+                      case 'ready_to_pickup':
+                        statusColor = Colors.purple;
                         break;
                       case 'processing':
                         statusColor = Colors.orange;
@@ -164,7 +171,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  status.toUpperCase(),
+                                  status == 'ready_to_pickup' ? 'READY TO PICK UP' : status.toUpperCase(),
                                   style: GoogleFonts.quicksand(
                                     color: statusColor,
                                     fontSize: screenWidth * 0.03,

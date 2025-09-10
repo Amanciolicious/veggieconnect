@@ -46,3 +46,4 @@ app.*.map.json
 
 .fake
 .vercel
+node_modules

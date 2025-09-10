@@ -28,6 +28,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     'all',
     'pending',
     'processing',
+    'ready_to_pickup',
     'picked_up',
     'cancelled',
   ];
@@ -43,7 +44,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -77,10 +78,12 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
+          isScrollable: true,
           tabs: const [
             Tab(text: 'All Order'),
             Tab(text: 'Pending'),
             Tab(text: 'Processing'),
+            Tab(text: 'Ready to Pick Up'),
             Tab(text: 'Picked Up'),
           ],
         ),
@@ -220,6 +223,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                 _buildOrdersList('all'),
                 _buildOrdersList('pending'),
                 _buildOrdersList('processing'),
+                _buildOrdersList('ready_to_pickup'),
                 _buildOrdersList('picked_up'),
               ],
             ),
@@ -285,19 +289,18 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
             // Summary Cards
             Container(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryCard(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildSummaryCard(
                       'Total',
                       orders.length.toString(),
                       Icons.shopping_cart,
                       const Color(0xFF6CA04A),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildSummaryCard(
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
                       'Pending',
                       orders.where((doc) => 
                         (doc.data() as Map<String, dynamic>)['status'] == 'pending' ||
@@ -306,10 +309,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       Icons.schedule,
                       Colors.orange,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildSummaryCard(
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
                       'Processing',
                       orders.where((doc) => 
                         (doc.data() as Map<String, dynamic>)['status'] == 'processing'
@@ -317,10 +318,17 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       Icons.sync,
                       Colors.blue,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildSummaryCard(
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
+                      'Ready to Pick Up',
+                      orders.where((doc) => 
+                        (doc.data() as Map<String, dynamic>)['status'] == 'ready_to_pickup'
+                      ).length.toString(),
+                      Icons.local_shipping,
+                      Colors.purple,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
                       'Picked Up',
                       orders.where((doc) => 
                         (doc.data() as Map<String, dynamic>)['status'] == 'picked_up'
@@ -328,8 +336,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       Icons.check_circle,
                       Colors.green,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             
@@ -353,6 +361,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
 
   Widget _buildSummaryCard(String title, String count, IconData icon, Color color) {
     return Container(
+      width: 120,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -385,6 +394,9 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
               fontSize: 12,
               color: Colors.grey[600],
             ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -491,6 +503,9 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       case 'process':
         _updateOrderStatus(orderId, 'processing');
         break;
+      case 'ready':
+        _updateOrderStatus(orderId, 'ready_to_pickup');
+        break;
       case 'pickup':
         _updateOrderStatus(orderId, 'picked_up');
         break;
@@ -538,6 +553,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           case 'processing':
             title = 'Order Processing Started';
             body = 'Your order #${orderId.substring(0, 8)} is now being processed by the supplier.';
+            break;
+          case 'ready_to_pickup':
+            title = 'Order Ready for Pickup';
+            body = 'Your order #${orderId.substring(0, 8)} is ready for pickup! Please contact the supplier to arrange pickup.';
             break;
           case 'picked_up':
             title = 'Order Picked Up';
@@ -971,6 +990,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         color = Colors.blue;
         text = 'PROCESSING';
         break;
+      case 'ready_to_pickup':
+        color = Colors.purple;
+        text = 'READY TO PICK UP';
+        break;
       case 'picked_up':
         color = Colors.green;
         text = 'PICKED UP';
@@ -1040,6 +1063,19 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         ),
       ]);
     } else if (status == 'processing') {
+      actions.addAll([
+        const PopupMenuItem(
+          value: 'ready',
+          child: Row(
+            children: [
+              Icon(Icons.local_shipping, size: 16),
+              SizedBox(width: 8),
+              Text('Mark as Ready to Pick Up'),
+            ],
+          ),
+        ),
+      ]);
+    } else if (status == 'ready_to_pickup') {
       actions.addAll([
         const PopupMenuItem(
           value: 'pickup',

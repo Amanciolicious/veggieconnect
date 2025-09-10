@@ -45,24 +45,40 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
   }
 
   String _getPaymentMethodDisplayName() {
-    switch (widget.paymentMethod) {
+    switch (widget.paymentMethod.toLowerCase()) {
       case 'cash_on_pickup':
         return 'Cash on Pickup';
       case 'gcash':
         return 'GCash';
+      case 'grab_pay':
+        return 'GrabPay';
+      case 'paymaya':
+        return 'PayMaya';
+      case 'card':
+        return 'Credit/Debit Card';
+      case 'online_payment':
+        return 'Online Payment';
       default:
-        return 'Unknown Payment Method';
+        return 'Online Payment';
     }
   }
 
   String _getPaymentMethodIcon() {
-    switch (widget.paymentMethod) {
+    switch (widget.paymentMethod.toLowerCase()) {
       case 'cash_on_pickup':
         return '💵';
       case 'gcash':
+        return '💚';
+      case 'grab_pay':
+        return '🚗';
+      case 'paymaya':
+        return '💙';
+      case 'card':
+        return '💳';
+      case 'online_payment':
         return '💳';
       default:
-        return '❓';
+        return '💳';
     }
   }
 

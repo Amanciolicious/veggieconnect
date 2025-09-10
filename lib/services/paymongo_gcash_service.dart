@@ -34,10 +34,15 @@ class PayMongoGCashService {
           'amount': amountCentavos,
           'description': description,
           'successUrl': _buildSuccessUrl(orderId),
-          'cancelUrl': PaymongoConfig.cancelUrl,
+          'cancelUrl': _buildCancelUrl(orderId),
           'customerName': await _getBuyerName(),
           'customerEmail': await _getBuyerEmail(),
           'customerPhone': await _getBuyerPhone(),
+          'metadata': {
+            'orderId': orderId,
+            'app': 'VeggieConnect',
+            'version': '1.0.0',
+          },
         }),
       );
 
@@ -112,7 +117,11 @@ class PayMongoGCashService {
 
   static String _buildSuccessUrl(String orderId) {
     // You can add query params to identify the order when you handle redirect/webhook
-    return '${PaymongoConfig.successUrl}?orderId=$orderId';
+    return '${PaymongoConfig.successUrl}?orderId=$orderId&status=success';
+  }
+
+  static String _buildCancelUrl(String orderId) {
+    return '${PaymongoConfig.cancelUrl}?orderId=$orderId&status=cancelled';
   }
 
   static Future<String> _getBuyerName() async {
@@ -120,7 +129,7 @@ class PayMongoGCashService {
     if (user == null) return 'Guest';
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final data = doc.data() as Map<String, dynamic>?;
+      final data = doc.data();
       return (data?['name'] as String?) ?? (user.displayName ?? 'Guest');
     } catch (_) {
       return user.displayName ?? 'Guest';
@@ -136,7 +145,7 @@ class PayMongoGCashService {
     final user = FirebaseAuth.instance.currentUser;
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
-      final data = doc.data() as Map<String, dynamic>?;
+      final data = doc.data();
       final phone = data?['phone'] as String?;
       return phone ?? '';
     } catch (_) {

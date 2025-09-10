@@ -31,6 +31,7 @@ module.exports = async function handler(req, res) {
       successUrl,
       cancelUrl,
       lineItems,
+      metadata,
     } = req.body;
 
     if (!amount || !successUrl || !cancelUrl) {
@@ -63,6 +64,7 @@ module.exports = async function handler(req, res) {
           line_items: resolvedLineItems,
           success_url: successUrl,
           cancel_url: cancelUrl,
+          metadata: metadata || {},
           billing: {
             name: customerName || 'Guest',
             email: customerEmail || 'guest@example.com',

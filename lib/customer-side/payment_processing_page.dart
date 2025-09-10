@@ -52,14 +52,16 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       return;
     }
 
-    if (widget.paymentMethod == 'gcash') {
+    if (widget.paymentMethod == 'gcash' || widget.paymentMethod == 'grab_pay' || 
+        widget.paymentMethod == 'paymaya' || widget.paymentMethod == 'card' || 
+        widget.paymentMethod == 'online_payment') {
       setState(() {
         _isProcessing = true;
         _errorMessage = null;
       });
 
       try {
-        // Use PayMongo GCash service
+        // Use PayMongo service for all online payment methods
         final result = await PayMongoGCashService.processPayment(
           context: context,
           amount: widget.total,
@@ -97,8 +99,8 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Payment Initiated'),
-        content: const Text(
-          'Your GCash payment has been initiated. You will be redirected to GCash to complete the payment. '
+        content: Text(
+          'Your ${_getPaymentMethodDisplayName()} payment has been initiated. You will be redirected to complete the payment. '
           'Your order will be processed once payment is confirmed.',
         ),
         actions: [
@@ -133,6 +135,23 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
 
   void _retryPayment() {
     _processPayment();
+  }
+
+  String _getPaymentMethodDisplayName() {
+    switch (widget.paymentMethod.toLowerCase()) {
+      case 'gcash':
+        return 'GCash';
+      case 'grab_pay':
+        return 'GrabPay';
+      case 'paymaya':
+        return 'PayMaya';
+      case 'card':
+        return 'Credit/Debit Card';
+      case 'online_payment':
+        return 'Online Payment';
+      default:
+        return 'Online Payment';
+    }
   }
 
   @override

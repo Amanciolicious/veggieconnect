@@ -16,7 +16,6 @@ import 'package:veggieconnect/customer-side/customer_messages_page.dart';
 import 'package:veggieconnect/customer-side/cart_page.dart';
 import 'package:veggieconnect/customer-side/favorite_page.dart';
 import 'package:veggieconnect/customer-side/profile_page.dart';
-import 'package:veggieconnect/customer-side/paymongo_test_page.dart';
 import 'buyer_order_history_page.dart';
 import 'farm_locations_page.dart';
 import '../widgets/modern_app_bar.dart';
