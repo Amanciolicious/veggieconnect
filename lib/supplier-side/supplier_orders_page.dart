@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/supplier_location_service.dart';
+import 'package:veggieconnect/services/navigation_manager.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'supplier_chat_page.dart';
@@ -627,6 +628,15 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           .doc(orderId)
           .update(statusUpdate);
 
+      // Handle route locking/unlocking based on status
+      if (newStatus == 'ready_to_pickup') {
+        // Lock route for this order
+        await NavigationManager().lockRouteForOrder(orderId, supplierId ?? '');
+      } else if (newStatus == 'picked_up') {
+        // Unlock route when order is completed
+        await NavigationManager().unlockRoute();
+      }
+
       // Send notification to customer
       if (buyerId != null) {
         final notificationService = NotificationService();
@@ -665,20 +675,21 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
               'screen': 'navigation',
               'supplierName': supplierName,
               'supplierUserId': supplierId,
+              'customerUserId': buyerId, // Customer is the recipient
             },
           );
         } else {
-          await notificationService.sendFCMNotification(
-            recipientId: buyerId,
-            title: title,
-            body: body,
-            type: 'order_update',
-            data: {
-              'orderId': orderId,
-              'status': newStatus,
-              'screen': 'order_details',
-            },
-          );
+        await notificationService.sendFCMNotification(
+          recipientId: buyerId,
+          title: title,
+          body: body,
+          type: 'order_update',
+          data: {
+            'orderId': orderId,
+            'status': newStatus,
+            'screen': 'order_details',
+          },
+        );
         }
       }
 

@@ -26,18 +26,31 @@ class ProductImageWidget extends StatelessWidget {
 
     // Since we now use Cloudinary URLs, all images should be network URLs
     if (imagePath.startsWith('http')) {
-      return Image.network(
-        imagePath,
+      return Container(
         width: width,
         height: height,
-        fit: fit,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholder();
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildErrorWidget();
-        },
+        constraints: BoxConstraints(
+          maxWidth: width,
+          maxHeight: height,
+          minWidth: width,
+          minHeight: height,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            imagePath,
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return _buildPlaceholder();
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return _buildErrorWidget();
+            },
+          ),
+        ),
       );
     }
 
@@ -47,17 +60,35 @@ class ProductImageWidget extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     if (placeholder != null) {
-      return SizedBox(
+      return Container(
         width: width,
         height: height,
-        child: placeholder!,
+        constraints: BoxConstraints(
+          maxWidth: width,
+          maxHeight: height,
+          minWidth: width,
+          minHeight: height,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: placeholder!,
+        ),
       );
     }
     
     return Container(
       width: width,
       height: height,
-      color: Colors.grey[200],
+      constraints: BoxConstraints(
+        maxWidth: width,
+        maxHeight: height,
+        minWidth: width,
+        minHeight: height,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: const Icon(
         Icons.camera_alt,
         size: 40,
@@ -68,17 +99,35 @@ class ProductImageWidget extends StatelessWidget {
 
   Widget _buildErrorWidget() {
     if (errorWidget != null) {
-      return SizedBox(
+      return Container(
         width: width,
         height: height,
-        child: errorWidget!,
+        constraints: BoxConstraints(
+          maxWidth: width,
+          maxHeight: height,
+          minWidth: width,
+          minHeight: height,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: errorWidget!,
+        ),
       );
     }
     
     return Container(
       width: width,
       height: height,
-      color: Colors.grey[200],
+      constraints: BoxConstraints(
+        maxWidth: width,
+        maxHeight: height,
+        minWidth: width,
+        minHeight: height,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: const Icon(
         Icons.broken_image,
         size: 40,

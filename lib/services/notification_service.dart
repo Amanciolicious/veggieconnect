@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'deep_link_service.dart';
+import '../customer-side/navigation_screen.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -128,6 +128,13 @@ class NotificationService {
         importance: Importance.high,
       );
 
+      const AndroidNotificationChannel arrivalChannel = AndroidNotificationChannel(
+        'arrival',
+        'Arrival Notifications',
+        description: 'Notifications when you arrive at pickup locations',
+        importance: Importance.max,
+      );
+
       await _localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(generalChannel);
@@ -139,6 +146,10 @@ class NotificationService {
       await _localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(chatChannel);
+
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(arrivalChannel);
     } catch (e) {
       debugPrint('Error creating notification channels: $e');
     }
@@ -245,8 +256,10 @@ class NotificationService {
   // Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
     debugPrint('Notification tapped: ${message.data}');
-    // Handle navigation based on notification type
-    _handleNotificationNavigation(message.data);
+    // Add a small delay to ensure app is fully loaded
+    Future.delayed(Duration(milliseconds: 500), () {
+      _handleNotificationNavigation(message.data);
+    });
   }
 
   // Handle local notification tap
@@ -254,7 +267,10 @@ class NotificationService {
     debugPrint('Local notification tapped: ${response.payload}');
     if (response.payload != null) {
       final data = json.decode(response.payload!);
-      _handleNotificationNavigation(data);
+      // Add a small delay to ensure app is fully loaded
+      Future.delayed(Duration(milliseconds: 500), () {
+        _handleNotificationNavigation(data);
+      });
     }
   }
 
@@ -264,50 +280,117 @@ class NotificationService {
     final type = data['type'] ?? 'general';
     final targetScreen = data['screen'];
     debugPrint('Navigating to: $targetScreen (type: $type)');
+    debugPrint('Notification data: $data');
+    
     try {
       if (type == 'pickup_ready' || targetScreen == 'navigation') {
         final orderId = data['orderId']?.toString();
         final supplierName = data['supplierName']?.toString() ?? 'Store';
         final supplierUserId = data['supplierUserId']?.toString();
+        final customerUserId = data['customerUserId']?.toString();
+        
+        debugPrint('Navigation parameters:');
+        debugPrint('  orderId: $orderId');
+        debugPrint('  supplierName: $supplierName');
+        debugPrint('  supplierUserId: $supplierUserId');
+        debugPrint('  customerUserId: $customerUserId');
+        
         if (orderId != null) {
-          Navigator.of(DeepLinkService.navigatorKey.currentContext!, rootNavigator: true).pushNamed(
-            '/navigation',
-            arguments: {
-              'orderId': orderId,
-              'supplierName': supplierName,
-              'supplierUserId': supplierUserId,
-            },
-          );
+          final context = DeepLinkService.navigatorKey.currentContext;
+          if (context != null) {
+            debugPrint('Navigator context found, proceeding with navigation...');
+            try {
+              Navigator.of(context, rootNavigator: true).pushNamed(
+                '/navigation',
+                arguments: {
+                  'orderId': orderId,
+                  'supplierName': supplierName,
+                  'supplierUserId': supplierUserId,
+                  'customerUserId': customerUserId,
+                },
+              );
+              debugPrint('Navigation command sent successfully');
+            } catch (navError) {
+              debugPrint('Navigation failed: $navError');
+              // Try alternative navigation method
+              _tryAlternativeNavigation(context, orderId, supplierName, supplierUserId, customerUserId);
+            }
+          } else {
+            debugPrint('ERROR: Navigator context is null');
+            // Try to get context after a delay
+            Future.delayed(Duration(seconds: 1), () {
+              final delayedContext = DeepLinkService.navigatorKey.currentContext;
+              if (delayedContext != null) {
+                debugPrint('Delayed context found, retrying navigation...');
+                _tryAlternativeNavigation(delayedContext, orderId, supplierName, supplierUserId, customerUserId);
+              }
+            });
+          }
+        } else {
+          debugPrint('ERROR: orderId is null');
         }
+      } else {
+        debugPrint('Notification type or screen does not match navigation criteria');
       }
     } catch (e) {
       debugPrint('Navigation error on notification tap: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
+    }
+  }
+
+  // Alternative navigation method
+  void _tryAlternativeNavigation(BuildContext context, String orderId, String supplierName, String? supplierUserId, String? customerUserId) {
+    try {
+      debugPrint('Trying alternative navigation method...');
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => NavigationScreen(
+            orderId: orderId,
+            supplierName: supplierName,
+            supplierUserId: supplierUserId,
+            customerUserId: customerUserId,
+          ),
+        ),
+      );
+      debugPrint('Alternative navigation successful');
+    } catch (e) {
+      debugPrint('Alternative navigation also failed: $e');
     }
   }
 
   // Show local notification
   Future<void> _showLocalNotification(NotificationData notification) async {
     try {
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      final isArrivalConfirmation = notification.type == 'arrival_confirmation';
+      
+      final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'general',
-        'General Notifications',
-        channelDescription: 'General app notifications',
-        importance: Importance.high,
-        priority: Priority.high,
+        isArrivalConfirmation ? 'arrival' : 'general',
+        isArrivalConfirmation ? 'Arrival Notifications' : 'General Notifications',
+        channelDescription: isArrivalConfirmation 
+            ? 'Notifications when you arrive at pickup locations'
+            : 'General app notifications',
+        importance: isArrivalConfirmation ? Importance.max : Importance.high,
+        priority: isArrivalConfirmation ? Priority.max : Priority.high,
         showWhen: true,
         enableVibration: true,
         playSound: true,
+        color: isArrivalConfirmation ? const Color(0xFF4CAF50) : null,
+        ledColor: isArrivalConfirmation ? const Color(0xFF4CAF50) : null,
+        ledOnMs: 1000,
+        ledOffMs: 500,
       );
 
-      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+      final DarwinNotificationDetails iOSPlatformChannelSpecifics =
           DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
+        sound: isArrivalConfirmation ? 'arrival_sound.caf' : 'default',
+        badgeNumber: 1,
       );
 
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
         iOS: iOSPlatformChannelSpecifics,
       );
@@ -696,6 +779,7 @@ class NotificationService {
     required String body,
     String type = 'general',
     Map<String, dynamic>? data,
+    bool showBadge = true,
   }) async {
     try {
       // Persist to Firestore so it appears in in-app notification lists (drives badges)
@@ -716,6 +800,8 @@ class NotificationService {
             'recipientId': recipientId,
           },
           'isRead': false,
+          'showBadge': showBadge,
+          'priority': type == 'arrival_confirmation' ? 'high' : 'normal',
         });
       } catch (e) {
         debugPrint('Error saving notification to Firestore: $e');

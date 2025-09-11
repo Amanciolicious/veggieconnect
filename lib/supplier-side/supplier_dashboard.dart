@@ -17,7 +17,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'supplier_chat_list_page.dart';
 import 'add_product_page.dart';
 import 'package:veggieconnect/supplier-side/farm_map_page.dart' show SupplierLocationPage;
-import 'package:veggieconnect/supplier-side/supplier_location_management_page.dart';
 
 class SupplierDashboard extends StatefulWidget {
   const SupplierDashboard({super.key});
@@ -519,24 +518,6 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SupplierLocationPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.location_on),
-              title: Text(
-                'Manage Location',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SupplierLocationManagementPage()),
                 );
               },
             ),

@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import '../customer-side/order_success_page.dart';
 import 'payment_completion_service.dart';
-import 'cart_service.dart';
 
 class DeepLinkService {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

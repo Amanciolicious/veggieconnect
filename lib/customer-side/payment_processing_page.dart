@@ -265,7 +265,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       print('Temporary order data stored: ${widget.orderId}');
     } catch (e) {
       print('Error storing temporary order data: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -323,7 +323,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       print('Orders stored to Firestore: ${widget.orderId}');
     } catch (e) {
       print('Error storing orders to Firestore: $e');
-      throw e;
+      rethrow;
     }
   }
 

@@ -11,6 +11,10 @@ import '../services/supplier_location_service.dart';
 import '../services/map_service.dart';
 import '../models/farm_location.dart';
 import '../services/farm_location_service.dart';
+import '../models/farm_location_request.dart';
+import '../services/farm_location_request_service.dart';
+import '../services/farm_location_countdown_service.dart';
+import 'dart:async';
 
 class SupplierLocationPage extends StatefulWidget {
   const SupplierLocationPage({super.key});
@@ -24,19 +28,61 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
   final SupplierLocationService _supplierLocationService = SupplierLocationService();
   final FarmLocationService _farmLocationService = FarmLocationService();
   final MapService _mapService = MapService();
+  final FarmLocationRequestService _farmLocationRequestService = FarmLocationRequestService();
+  final FarmLocationCountdownService? _countdownService = FarmLocationCountdownService();
   
   SupplierLocation? _supplierLocation;
   List<FarmLocation> _canvassedFarms = [];
+  List<FarmLocationRequest> _pendingRequests = [];
   LatLng? _selectedLocation;
   bool _isLoading = true;
   bool _isAddingPin = false; // Track if user is in pin addition mode
   bool _isEditingPin = false; // Track if user is in pin editing mode
   bool _isDragging = false;
+  bool _isRequestingFarm = false;
+  Timer? _countdownTimer;
+  bool _isFarmRequestMode = false; // Track if in farm request mode
+  Offset? _mousePosition; // Track mouse position for pin preview
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    
+    // Load pending requests and start countdown service safely
+    _loadPendingRequestsSafely();
+    
+    // Start timer to update countdown display every second
+    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild to update the countdown display
+        });
+      }
+    });
+  }
+
+  Future<void> _loadPendingRequestsSafely() async {
+    try {
+      await _loadPendingRequests();
+      
+      // Safely start countdowns for existing pending requests
+      _countdownService?.startCountdownForPendingRequests();
+    } catch (e) {
+      print('Error loading pending requests or starting countdown service: $e');
+      // Continue without farm request functionality
+    }
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    try {
+      _countdownService?.dispose();
+    } catch (e) {
+      print('Error disposing countdown service: $e');
+    }
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -49,6 +95,177 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
         _supplierLocation = location;
         _canvassedFarms = farms;
         _isLoading = false;
+      });
+      
+      // Auto-zoom to supplier's location if available, otherwise get current location
+      if (location != null) {
+        _zoomToSupplierLocation();
+      } else {
+        // Automatically get current location if no supplier location is set
+        await _getCurrentLocationAutomatically();
+      }
+    }
+  }
+
+  Future<void> _getCurrentLocationAutomatically() async {
+    try {
+      final locationData = await _mapService.getCurrentLocationWithAddress();
+      if (locationData != null) {
+        final location = locationData['location'] as LatLng?;
+        final address = locationData['address'] as String?;
+
+        if (location != null && address != null) {
+          // Check if location is within Bogo City boundary
+          const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
+          double distance = _mapService.calculateDistance(bogoCityCenter, location);
+          
+          if (distance <= 5.0) { // 5km radius
+            // Move map to current location with proper zoom
+            _mapController.move(location, 16.0);
+            
+            // Set the selected location
+            setState(() {
+              _selectedLocation = location;
+            });
+
+            // Auto-save the current location
+            await _autoSaveCurrentLocation(location, address);
+          } else {
+            // Location outside Bogo City, just center on Bogo City
+            _mapController.move(bogoCityCenter, 12.0);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error getting current location automatically: $e');
+      // Fallback to Bogo City center
+      const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
+      _mapController.move(bogoCityCenter, 12.0);
+    }
+  }
+
+  void _zoomToSupplierLocation() {
+    if (_supplierLocation != null) {
+      final supplierLatLng = LatLng(_supplierLocation!.latitude, _supplierLocation!.longitude);
+      // Use smooth animation to zoom to supplier location
+      _mapController.move(supplierLatLng, 16.0);
+      
+      // Also set as selected location for consistency
+      setState(() {
+        _selectedLocation = supplierLatLng;
+      });
+    }
+  }
+
+  Future<void> _loadPendingRequests() async {
+    try {
+      final requests = await _farmLocationRequestService.getCurrentUserRequests();
+      if (mounted) {
+        setState(() {
+          _pendingRequests = requests.where((req) => req.isPending).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading pending requests: $e');
+      // Silent fail for pending requests - don't block the page
+    }
+  }
+
+  String _formatCountdown(FarmLocationRequest request) {
+    if (request.autoApprovalAt == null) return '';
+    
+    final now = DateTime.now();
+    final timeLeft = request.autoApprovalAt!.difference(now);
+    
+    if (timeLeft.isNegative) {
+      return 'Auto-approval overdue';
+    }
+    
+    final minutes = timeLeft.inMinutes;
+    final seconds = timeLeft.inSeconds % 60;
+    return 'Auto-approval in ${minutes}m ${seconds}s';
+  }
+
+  Future<void> _requestFarmLocation() async {
+    // Enable farm request mode to show mouse-following pin
+    setState(() {
+      _isFarmRequestMode = true;
+      _selectedLocation = null; // Clear any existing selection
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Move your mouse over the map to position the farm location pin, then tap to confirm'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _submitFarmRequest() async {
+    if (_selectedLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a location on the map first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Show dialog to get farm details
+      final result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (context) => _FarmRequestDialog(),
+      );
+
+      if (result == null) return;
+
+      setState(() {
+        _isRequestingFarm = true;
+      });
+
+      final requestId = await _farmLocationRequestService.submitFarmLocationRequest(
+        farmName: result['farmName']!,
+        farmDescription: result['farmDescription']!,
+        location: _selectedLocation!,
+        address: await _mapService.getAddressFromCoordinates(_selectedLocation!),
+      );
+
+      // Start countdown for this request
+      try {
+        _countdownService?.startCountdownIfPending(requestId);
+      } catch (e) {
+        print('Error starting countdown for request: $e');
+      }
+      
+      // Reload pending requests
+      await _loadPendingRequests();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Farm location request submitted successfully! It will be auto-approved in 2 minutes.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        // Ensure pin is visible after submit
+        _mapController.move(_selectedLocation!, 15.0);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit farm request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isRequestingFarm = false;
       });
     }
   }
@@ -66,6 +283,16 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+    
+    // If in farm request mode, set location and show dialog
+    if (_isFarmRequestMode) {
+      setState(() {
+        _selectedLocation = point;
+        _isFarmRequestMode = false; // Exit farm request mode
+      });
+      _submitFarmRequest();
       return;
     }
     
@@ -249,6 +476,9 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
       // Reload the data
       await _loadData();
 
+      // Zoom to the newly set location
+      _zoomToSupplierLocation();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Location automatically pinned and saved!'),
@@ -318,6 +548,9 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
       // Reload the data
       await _loadData();
 
+      // Zoom to the updated location
+      _zoomToSupplierLocation();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Location updated successfully!'),
@@ -344,6 +577,22 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Pin mode cancelled'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _cancelFarmRequestMode() {
+    setState(() {
+      _isFarmRequestMode = false;
+      _selectedLocation = null;
+      _mousePosition = null;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Farm request mode cancelled'),
+        backgroundColor: Colors.orange,
         duration: Duration(seconds: 2),
       ),
     );
@@ -515,6 +764,9 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
       // Reload supplier location
       await _loadData();
 
+      // Zoom to the newly added location
+      _zoomToSupplierLocation();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Supplier location added successfully!')),
       );
@@ -537,6 +789,9 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
       
       // Reload supplier location
       await _loadData();
+
+      // Zoom to the moved location
+      _zoomToSupplierLocation();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Supplier location moved successfully!')),
@@ -1313,15 +1568,24 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
-                FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: bogoCityCenter,
-                initialZoom: 12,
-                onTap: _onMapTap,
-                maxZoom: 16,
-                minZoom: 10,
-              ),
+                MouseRegion(
+                  onHover: _isFarmRequestMode ? (event) {
+                    setState(() {
+                      _mousePosition = event.localPosition;
+                    });
+                  } : null,
+                  child: FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: bogoCityCenter,
+                      initialZoom: 14,
+                      onTap: _onMapTap,
+                      maxZoom: 18,
+                      minZoom: 10,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                      ),
+                    ),
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -1417,6 +1681,39 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                   ),
               ],
             ),
+                ),
+                // Mouse-following pin for farm request mode
+                if (_isFarmRequestMode && _mousePosition != null)
+                  Positioned(
+                    left: _mousePosition!.dx - 20,
+                    top: _mousePosition!.dy - 40,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.agriculture,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
                 // Bogo City boundary indicator
                 Positioned(
                   top: 16,
@@ -1446,7 +1743,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                 ),
                 // Location status indicator
                 Positioned(
-                  top: 60,
+                  top: 70,
                   left: 16,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1464,7 +1761,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                     child: Text(
                       _supplierLocation != null 
                           ? '📍 Supplier Location Set'
-                          : '📍 No Supplier Location',
+                          : '📍 Auto-detecting Location...',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -1501,6 +1798,34 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                       ),
                     ),
                   ),
+                // Farm request mode indicator
+                if (_isFarmRequestMode)
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        '🌾 Farm Request Mode',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Pin editing mode indicator
                 if (_isEditingPin)
                   Positioned(
@@ -1529,14 +1854,53 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                       ),
                     ),
                   ),
+                // Pending Farm Requests Indicator
+                if (_pendingRequests.isNotEmpty)
+                  Positioned(
+                    top: 120,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.pending_actions, color: Colors.white, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            '${_pendingRequests.length} Pending Farm Request${_pendingRequests.length > 1 ? 's' : ''}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 // Center map button
                 Positioned(
-                  bottom: 100,
+                  bottom: 200,
                   right: 16,
                   child: FloatingActionButton(
                     heroTag: "center_map_fab",
                     onPressed: () {
-                      _mapController.move(bogoCityCenter, 12);
+                      if (_supplierLocation != null) {
+                        _zoomToSupplierLocation();
+                      } else {
+                        _mapController.move(bogoCityCenter, 12);
+                      }
                     },
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -1567,38 +1931,127 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
             ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Use Current Location Button
-          FloatingActionButton(
-            heroTag: "current_location_fab",
-            onPressed: _getCurrentLocationAndPin,
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            tooltip: 'Use Current Location',
-            child: Icon(Icons.my_location),
+          // Request Farm Location Button
+          Container(
+            margin: EdgeInsets.only(bottom: 12, right: 16),
+            child: FloatingActionButton.extended(
+              heroTag: "request_farm_fab",
+              onPressed: _isRequestingFarm ? null : (_isFarmRequestMode ? _cancelFarmRequestMode : _requestFarmLocation),
+              backgroundColor: _isFarmRequestMode ? Colors.red : Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              icon: _isRequestingFarm
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Icon(_isFarmRequestMode ? Icons.close : Icons.agriculture),
+              label: Text(_isFarmRequestMode ? 'Cancel Request' : 'Request Farm Location'),
+            ),
           ),
-          SizedBox(height: 16),
+          // Use Current Location Button
+          Container(
+            margin: EdgeInsets.only(bottom: 12, right: 16),
+            child: FloatingActionButton(
+              heroTag: "current_location_fab",
+              onPressed: _getCurrentLocationAndPin,
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              tooltip: 'Use Current Location',
+              child: Icon(Icons.my_location),
+            ),
+          ),
           // Main Action Button
-          _supplierLocation == null
-              ? FloatingActionButton.extended(
-            heroTag: "add_location_fab",
-            onPressed: _isAddingPin ? _cancelPinAdditionMode : _enablePinAdditionMode,
-            backgroundColor: _isAddingPin ? Colors.red : Colors.blue,
-            foregroundColor: Colors.white,
-            icon: Icon(_isAddingPin ? Icons.close : Icons.add_location),
-                  label: Text(_isAddingPin ? 'Cancel' : 'Add Location'),
-                )
-              : FloatingActionButton.extended(
-                  heroTag: "edit_location_fab",
-                  onPressed: _isEditingPin ? _cancelPinAdditionMode : _enablePinEditingMode,
-                  backgroundColor: _isEditingPin ? Colors.red : Colors.blue,
-                  foregroundColor: Colors.white,
-                  icon: Icon(_isEditingPin ? Icons.close : Icons.edit_location),
-                  label: Text(_isEditingPin ? 'Cancel' : 'Move Location'),
-              ),
+          Container(
+            margin: EdgeInsets.only(bottom: 12, right: 16),
+            child: _supplierLocation == null
+                ? FloatingActionButton.extended(
+              heroTag: "add_location_fab",
+              onPressed: _isAddingPin ? _cancelPinAdditionMode : _enablePinAdditionMode,
+              backgroundColor: _isAddingPin ? Colors.red : Colors.blue,
+              foregroundColor: Colors.white,
+              icon: Icon(_isAddingPin ? Icons.close : Icons.add_location),
+                    label: Text(_isAddingPin ? 'Cancel' : 'Add Location'),
+                  )
+                : FloatingActionButton.extended(
+                    heroTag: "edit_location_fab",
+                    onPressed: _isEditingPin ? _cancelPinAdditionMode : _enablePinEditingMode,
+                    backgroundColor: _isEditingPin ? Colors.red : Colors.blue,
+                    foregroundColor: Colors.white,
+                    icon: Icon(_isEditingPin ? Icons.close : Icons.edit_location),
+                    label: Text(_isEditingPin ? 'Cancel' : 'Move Location'),
+                ),
+          ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _FarmRequestDialog extends StatefulWidget {
+  @override
+  State<_FarmRequestDialog> createState() => _FarmRequestDialogState();
+}
+
+class _FarmRequestDialogState extends State<_FarmRequestDialog> {
+  final TextEditingController _farmNameController = TextEditingController();
+  final TextEditingController _farmDescriptionController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Request Farm Location',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: _farmNameController,
+              decoration: InputDecoration(
+                labelText: 'Farm Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              controller: _farmDescriptionController,
+              decoration: InputDecoration(
+                labelText: 'Farm Description (Optional)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              maxLines: 2,
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'farmName': _farmNameController.text.trim(),
+                  'farmDescription': _farmDescriptionController.text.trim(),
+                });
+              },
+              child: Text('Submit'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

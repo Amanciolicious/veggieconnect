@@ -3,10 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/supplier_location.dart';
 import '../services/supplier_location_service.dart';
 import '../services/map_service.dart';
-import 'location_selection_page.dart';
 
 class FarmLocationsPage extends StatefulWidget {
   const FarmLocationsPage({super.key});
@@ -37,75 +38,10 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   @override
   void initState() {
     super.initState();
-  }
-
-  bool _didShowLocationDialog = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_didShowLocationDialog) {
-      _didShowLocationDialog = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showLocationSelectionDialog();
-      });
-    }
-  }
-
-  void _showLocationSelectionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.location_on, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Set Your Location'),
-            ],
-          ),
-          content: Text(
-            'Choose how you want to set your location to find nearby farms. '
-            'You can use your current GPS location or enter an address manually.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showLocationSelectionPage();
-              },
-              child: Text('Choose Location'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _initializeLocation(); // Use default location
-              },
-              child: Text('Skip'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showLocationSelectionPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => LocationSelectionPage(
-          onLocationSelected: (location, address) {
-            if (mounted) {
-              setState(() {
-                _userLocation = location;
-                _userAddress = address;
-              });
-              _loadSupplierLocations();
-            }
-          },
-        ),
-      ),
-    );
+    // Automatically try to get current location on page load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _useCurrentLocation();
+    });
   }
 
   void _initializeLocation() async {
@@ -1441,7 +1377,31 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   Future<void> _useCurrentLocation() async {
     if (_isGettingLocation) return;
     setState(() { _isGettingLocation = true; });
+    
     try {
+      // Check location permission first
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        _showPermissionPermanentlyDeniedDialog();
+        return;
+      }
+      
+      if (permission == LocationPermission.denied) {
+        _showPermissionDeniedDialog();
+        return;
+      }
+      
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationServiceDialog();
+        return;
+      }
+      
       final data = await _mapService.getCurrentLocationWithAddress();
       if (data == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1497,5 +1457,184 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
     } finally {
       if (mounted) setState(() { _isGettingLocation = false; });
     }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Location Services Disabled'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location services are currently disabled on your device.'),
+            SizedBox(height: 12),
+            Text(
+              'To use your current location:',
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('1. Go to your device Settings'),
+            Text('2. Find Location or Privacy settings'),
+            Text('3. Turn on Location Services'),
+            Text('4. Return to this app and try again'),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Alternative: You can use the default location for now.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.blue[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initializeLocation(); // Use default location
+            },
+            child: const Text('Use Default Location'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _useCurrentLocation(); // Retry
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+            child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_disabled, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Location Permission Denied'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location permission is required to find your current location.'),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'You can still use the default location for now.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.blue[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initializeLocation(); // Use default location
+            },
+            child: const Text('Use Default Location'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _useCurrentLocation(); // Retry
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+            child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionPermanentlyDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.settings, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Permission Required'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location permissions are permanently denied.'),
+            SizedBox(height: 12),
+            Text(
+              'To enable location access:',
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('1. Go to your device Settings'),
+            Text('2. Find Apps or Application Manager'),
+            Text('3. Find VeggieConnect'),
+            Text('4. Go to Permissions'),
+            Text('5. Enable Location permission'),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Alternative: You can use the default location for now.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.blue[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initializeLocation(); // Use default location
+            },
+            child: const Text('Use Default Location'),
+          ),
+        ],
+      ),
+    );
   }
 }

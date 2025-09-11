@@ -170,10 +170,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/payment-test': (context) => const PaymentTestPage(),
           '/navigation': (context) {
             final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+            print('Navigation route called with arguments: $args');
             return NavigationScreen(
               orderId: args?['orderId'] ?? '',
               supplierName: args?['supplierName'] ?? 'Store',
               supplierUserId: args?['supplierUserId'],
+              customerUserId: args?['customerUserId'],
             );
           },
         },

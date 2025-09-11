@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/location_map_widget.dart';
 import '../services/location_service.dart';
 import '../services/map_service.dart';
@@ -36,6 +38,29 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
   Future<void> _refreshCurrentLocation() async {
     try {
       setState(() => _isLoading = true);
+      
+      // Check location permission first
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        _showPermissionPermanentlyDeniedDialog();
+        return;
+      }
+      
+      if (permission == LocationPermission.denied) {
+        _showPermissionDeniedDialog();
+        return;
+      }
+      
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationServiceDialog();
+        return;
+      }
       
       // Get current location with address
       final data = await _mapService.getCurrentLocationWithAddress();
@@ -539,6 +564,146 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
     if (_currentLocation != null) {
       _mapService.setDestination(destination);
     }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Location Services Disabled'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location services are currently disabled on your device.'),
+            SizedBox(height: 12),
+            Text(
+              'To use your current location:',
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('1. Go to your device Settings'),
+            Text('2. Find Location or Privacy settings'),
+            Text('3. Turn on Location Services'),
+            Text('4. Return to this app and try again'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _refreshCurrentLocation(); // Retry
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+            child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_disabled, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Location Permission Denied'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location permission is required to find your current location.'),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Please enable location permission in your device settings.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.blue[700],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _refreshCurrentLocation(); // Retry
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+            child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionPermanentlyDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.settings, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Permission Required'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Location permissions are permanently denied.'),
+            SizedBox(height: 12),
+            Text(
+              'To enable location access:',
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('1. Go to your device Settings'),
+            Text('2. Find Apps or Application Manager'),
+            Text('3. Find VeggieConnect'),
+            Text('4. Go to Permissions'),
+            Text('5. Enable Location permission'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

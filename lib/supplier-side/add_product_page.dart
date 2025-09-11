@@ -852,7 +852,11 @@ class _AddProductPageState extends State<AddProductPage> {
                             items: _categories.map((category) {
                               return DropdownMenuItem(
                                 value: category,
-                                child: Text(category),
+                                child: Text(
+                                  category,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               );
                             }).toList(),
                             onChanged: (value) {
@@ -860,6 +864,8 @@ class _AddProductPageState extends State<AddProductPage> {
                                 _category = value!;
                               });
                             },
+                            isExpanded: true,
+                            value: _category,
                           ),
                         ),
                         SizedBox(width: 16),
@@ -880,7 +886,11 @@ class _AddProductPageState extends State<AddProductPage> {
                             items: _units.map((unit) {
                               return DropdownMenuItem(
                                 value: unit,
-                                child: Text(unit),
+                                child: Text(
+                                  unit,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               );
                             }).toList(),
                             onChanged: (value) {
@@ -888,6 +898,8 @@ class _AddProductPageState extends State<AddProductPage> {
                                 _unit = value!;
                               });
                             },
+                            isExpanded: true,
+                            value: _unit,
                           ),
                         ),
                       ],

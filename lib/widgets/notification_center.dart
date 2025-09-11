@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_service.dart';
+import '../customer-side/navigation_screen.dart';
 
 class NotificationCenter extends StatefulWidget {
   const NotificationCenter({super.key});
@@ -225,6 +226,10 @@ class _NotificationCenterState extends State<NotificationCenter> {
         iconData = Icons.shopping_bag;
         iconColor = const Color(0xFF6CA04A);
         break;
+      case 'pickup_ready':
+        iconData = Icons.notifications_active;
+        iconColor = Colors.green;
+        break;
       case 'chat':
         iconData = Icons.chat_bubble;
         iconColor = Colors.blue;
@@ -302,11 +307,59 @@ class _NotificationCenterState extends State<NotificationCenter> {
     
     // Handle navigation based on notification type and data
     final data = notification.data;
+    final type = data['type'] as String?;
     final screen = data['screen'] as String?;
     
-    if (screen != null) {
-      // Navigate to the appropriate screen
-      // This would need to be implemented based on your app's navigation structure
+    debugPrint('Notification tapped: type=$type, screen=$screen, data=$data');
+    
+    if (type == 'pickup_ready' || screen == 'navigation') {
+      final orderId = data['orderId']?.toString();
+      final supplierName = data['supplierName']?.toString() ?? 'Store';
+      final supplierUserId = data['supplierUserId']?.toString();
+      final customerUserId = data['customerUserId']?.toString();
+      
+      debugPrint('Navigation parameters:');
+      debugPrint('  orderId: $orderId');
+      debugPrint('  supplierName: $supplierName');
+      debugPrint('  supplierUserId: $supplierUserId');
+      debugPrint('  customerUserId: $customerUserId');
+      
+      if (orderId != null) {
+        try {
+          Navigator.of(context).pushNamed(
+            '/navigation',
+            arguments: {
+              'orderId': orderId,
+              'supplierName': supplierName,
+              'supplierUserId': supplierUserId,
+              'customerUserId': customerUserId,
+            },
+          );
+          debugPrint('Navigation to /navigation successful');
+        } catch (e) {
+          debugPrint('Navigation failed: $e');
+          // Try alternative navigation method
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => NavigationScreen(
+                orderId: orderId,
+                supplierName: supplierName,
+                supplierUserId: supplierUserId,
+                customerUserId: customerUserId,
+              ),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: Missing order information'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else if (screen != null) {
+      // Handle other screen navigations
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Navigate to $screen'),
