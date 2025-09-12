@@ -54,7 +54,7 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 
 ### Third-party Integrations
 - **Cloudinary** - Image storage and optimization
-- **PayMongo** - Payment processing (GCash, Cards)
+- **PayMongo** - Payment processing (GCash, Maya, Cards)
 - **OpenStreetMap** - Mapping services (flutter_map)
 - **Geolocator** - Location services
 - **Vercel** - Hosting and deploying PayMongo online payment webhooks for seamless payment integration
