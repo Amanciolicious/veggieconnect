@@ -1,4 +1,4 @@
-# VeggieConnect - Connecting Filipino Suppliers to Communities
+# VeggieConnect - Connecting Filipino Farmers and Suppliers to Local Communities
 
 *A modern agricultural application that bridges farmers and consumers in Bogo City, Cebu.*
 
