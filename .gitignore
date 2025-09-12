@@ -5,11 +5,9 @@
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
 .history
 .svn/
-.swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -27,11 +25,12 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
-/coverage/
 
 # Symbolication related
 app.*.symbols
@@ -44,6 +43,134 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-.fake
+# ===================================
+# ENVIRONMENT & SECURITY FILES
+# ===================================
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# API Keys and secrets
+config/secrets.dart
+lib/config/api_keys.dart
+lib/config/credentials.dart
+
+# Firebase configuration files with sensitive data
+google-services.json
+GoogleService-Info.plist
+firebase-adminsdk-*.json
+
+# ===================================
+# PAYMENT & THIRD-PARTY CREDENTIALS
+# ===================================
+# PayMongo credentials
+paymongo_config.json
+paymongo_keys.dart
+
+# Cloudinary credentials
+cloudinary_config.json
+cloudinary_keys.dart
+
+# ===================================
+# DEPLOYMENT & BUILD FILES
+# ===================================
+# Vercel
 .vercel
-node_modules
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+out/
+
+# ===================================
+# DEVELOPMENT & TESTING
+# ===================================
+# Coverage reports
+coverage/
+*.lcov
+
+# Test files
+test_driver/screenshots/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# ===================================
+# PLATFORM SPECIFIC
+# ===================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ===================================
+# IDE & EDITOR FILES
+# ===================================
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Android Studio
+.gradle/
+local.properties
+*.jks
+*.keystore
+
+# Xcode
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+
+# ===================================
+# LOGS & DEBUGGING
+# ===================================
+# Application logs
+logs/
+*.log
+
+# Debug files
+debug/
+*.debug
+
+# Crash reports
+crash_reports/
+
+# ===================================
+# BACKUP & TEMPORARY FILES
+# ===================================
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary directories
+tmp/
+temp/
