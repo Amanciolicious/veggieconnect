@@ -1,6 +1,6 @@
 # VeggieConnect - Connecting Filipino Suppliers to Communities
 
-*A modern marketplace that bridges farmers and consumers in Bogo City, Cebu.*
+*A modern agricultural application that bridges farmers and consumers in Bogo City, Cebu.*
 
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-039BE5?style=for-the-badge&logo=Firebase&logoColor=white)](https://firebase.google.com)
