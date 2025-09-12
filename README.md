@@ -12,7 +12,7 @@
 
 VeggieConnect is a comprehensive agricultural application built for the farmers, suppliers, and customers of Bogo City. This platform connects local producers with their community through modern technology.
 
-**Mission:** Mission: Make fresh vegetables and farm products more accessible through direct connections with farmers and suppliers, while promoting sustainable agriculture in Bogo City.
+**Mission:** Make fresh vegetables and farm products more accessible through direct connections with farmers and suppliers, while promoting sustainable agriculture in Bogo City.
 
 ## Key Features
 
