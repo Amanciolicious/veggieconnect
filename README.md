@@ -187,7 +187,7 @@ flutter build apk --release
 ## Application Usage
 
 ### For Customers
-1. **Register** - Create an account using Gmail
+1. **Register** - Create an account using Gmail with PIN verification through EmailJS
 2. **Browse Products** - View available vegetables and farm products
 3. **Add to Cart** - Add products to shopping cart
 4. **Choose Payment** - Select cash-on-pickup or online payment
