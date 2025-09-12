@@ -16,6 +16,7 @@ import 'package:veggieconnect/admin-side/admin_farm_map_page.dart';
 import 'package:veggieconnect/services/tax_service.dart';
 import '../authentication/login_page.dart';
 import '../services/cloudinary_service.dart';
+import '../widgets/lottie_loading_widget.dart';
 import 'admin_verify_listings_page.dart';
 import 'admin_manage_accounts_page.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -24,7 +25,9 @@ import '../widgets/modern_app_bar.dart';
 import '../widgets/modern_card.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  const AdminDashboard({super.key, this.initialIndex});
+
+  final int? initialIndex;
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -61,6 +64,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex ?? 0;
     _tabController = TabController(length: 5, vsync: this);
     _initializeConnectivity();
     _loadLocalProfileImage();
@@ -713,7 +717,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -779,7 +789,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -839,7 +855,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -857,9 +879,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       final data = doc.data() as Map<String, dynamic>;
                       final productId = data['productId'] ?? '';
                       final quantity = (data['quantity'] ?? 1) as int;
-                      if (productId is String && productId.isNotEmpty) {
-                        productSales[productId] = (productSales[productId] ?? 0) + quantity;
-                      }
+                      productSales[productId] = (productSales[productId] ?? 0) + quantity;
                     }
                   }
                   // Get product details
@@ -910,7 +930,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -929,7 +955,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     return const Card(
                       child: Padding(
                         padding: EdgeInsets.all(32),
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                       ),
                     );
                   }
@@ -1005,7 +1037,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -1050,7 +1088,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -1087,8 +1131,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             },
           ),
           const SizedBox(height: 20),
-          // Removed Conversion Rate (not applicable)
-          const SizedBox(height: 20),
           // Daily/Weekly Sales Trend (last 7/30 days, real-time)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
@@ -1097,7 +1139,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading...',
+                      ),
+                    ),
                   ),
                 );
               }
@@ -1233,7 +1281,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       stream: FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: GroceryLoadingWidget(
+              size: 120,
+              showText: true,
+              loadingText: 'Loading dashboard...',
+            ),
+          );
         }
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return const Center(child: Text('No profile data found.'));

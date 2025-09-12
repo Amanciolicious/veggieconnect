@@ -1,5 +1,4 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously, deprecated_member_use
-
 import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:veggieconnect/authentication/login_page.dart';
 import 'package:veggieconnect/admin-side/admin_dashboard.dart';
 import 'package:veggieconnect/supplier-side/supplier_dashboard.dart';
-import 'package:veggieconnect/customer-side/onboarding_page.dart';
+import 'package:veggieconnect/customer-side/customer_onboarding_page.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class PinVerifyPage extends StatefulWidget {
   final String userId;
@@ -339,9 +339,13 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: _isLoading
-                              ? CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: GroceryLoadingWidget(
+                                    size: 24,
+                                    showText: false,
+                                  ),
                                 )
                               : Text(
                                   'Verify PIN',

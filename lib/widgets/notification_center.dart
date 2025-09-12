@@ -1,9 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+// Removed AppLoader to avoid using Lottie in notifications loading state
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_service.dart';
-import '../customer-side/navigation_screen.dart';
+import '../customer-side/customer_navigation_screen.dart';
+import './lottie_loading_widget.dart';
 
 class NotificationCenter extends StatefulWidget {
   const NotificationCenter({super.key});
@@ -74,11 +76,35 @@ class _NotificationCenterState extends State<NotificationCenter> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: LottieLoadingWidget(
+                        assetPath: 'assets/lottie-loading-json/Grocery shopping bag pickup and delivery.json',
+                        width: 100,
+                        height: 100,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading notifications...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
+         
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
@@ -252,6 +278,10 @@ class _NotificationCenterState extends State<NotificationCenter> {
         break;
       case 'low_stock':
         iconData = Icons.warning;
+        iconColor = Colors.red;
+        break;
+      case 'order_cancelled':
+        iconData = Icons.cancel;
         iconColor = Colors.red;
         break;
       case 'system':

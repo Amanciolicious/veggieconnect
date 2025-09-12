@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:veggieconnect/config/paymongo_config.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class PayMongoGCashService {
   // Creates a Checkout Session via Cloud Function and launches the PayMongo URL
@@ -116,8 +117,9 @@ class PayMongoGCashService {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          const GroceryLoadingWidget(
+            size: 80,
+            showText: false,
           ),
           SizedBox(height: 16),
           Text(

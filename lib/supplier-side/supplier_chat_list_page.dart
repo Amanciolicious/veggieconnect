@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'supplier_chat_page.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import '../widgets/lottie_loading_widget.dart';
+import 'supplier_dashboard.dart';
+import 'supplier_map_page.dart' show SupplierLocationPage;
 
 class SupplierChatListPage extends StatefulWidget {
   const SupplierChatListPage({super.key});
@@ -63,6 +67,28 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
           ],
         ],
       ),
+      drawer: _buildSupplierDrawer(context),
+      bottomNavigationBar: CurvedNavigationBar(
+        index: 0, // default to home tab when coming from messages page
+        backgroundColor: const Color(0xFF4CAF50),
+        color: Colors.white,
+        height: 60,
+        animationDuration: const Duration(milliseconds: 300),
+        onTap: (index) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => SupplierDashboard(initialIndex: index),
+            ),
+          );
+        },
+        items: const [
+          Icon(Icons.home, size: 30, color: Colors.green),
+          Icon(Icons.inventory, size: 30, color: Colors.green),
+          Icon(Icons.inventory_2, size: 30, color: Colors.green),
+          Icon(Icons.shopping_cart, size: 30, color: Colors.green),
+          Icon(Icons.person, size: 30, color: Colors.green),
+        ],
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _chatService.getConversations(user.uid),
         builder: (context, snapshot) {
@@ -79,9 +105,11 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
           }
 
           if (!snapshot.hasData) {
-            return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+            return const Center(
+              child: GroceryLoadingWidget(
+                size: 120,
+                showText: true,
+                loadingText: 'Loading conversations...',
               ),
             );
           }
@@ -389,5 +417,56 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
         SnackBar(content: Text('Failed to hide conversation: $e')),
       );
     }
+  }
+
+  Drawer _buildSupplierDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          Container(
+            decoration: const BoxDecoration(color: Color(0xFF6CA04A)),
+            child: const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.transparent),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  'Supplier Menu',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+          _drawerItem(icon: Icons.dashboard, label: 'Overview', onTap: () => _goToTab(context, 0)),
+          _drawerItem(icon: Icons.inventory, label: 'Manage Products', onTap: () => _goToTab(context, 1)),
+          _drawerItem(icon: Icons.inventory_2, label: 'Stock Management', onTap: () => _goToTab(context, 2)),
+          _drawerItem(icon: Icons.shopping_cart, label: 'Orders Management', onTap: () => _goToTab(context, 3)),
+          _drawerItem(icon: Icons.person, label: 'Profile', onTap: () => _goToTab(context, 4)),
+          const Divider(),
+          _drawerItem(icon: Icons.person_pin, label: 'My Location', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierLocationPage()));
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerItem({required IconData icon, required String label, required VoidCallback onTap, bool selected = false}) {
+    return ListTile(
+      leading: Icon(icon, color: selected ? const Color(0xFF4CAF50) : const Color(0xFF757575)),
+      title: Text(label),
+      selected: selected,
+      selectedTileColor: const Color(0xFF4CAF50).withOpacity(0.08),
+      onTap: onTap,
+    );
+  }
+
+  void _goToTab(BuildContext context, int index) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => SupplierDashboard(initialIndex: index),
+      ),
+    );
   }
 }

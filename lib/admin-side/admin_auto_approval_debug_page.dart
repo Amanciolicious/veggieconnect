@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class AdminAutoApprovalDebugPage extends StatefulWidget {
   const AdminAutoApprovalDebugPage({super.key});
@@ -80,9 +81,11 @@ class _AdminAutoApprovalDebugPageState extends State<AdminAutoApprovalDebugPage>
         ),
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+          ? const Center(
+              child: GroceryLoadingWidget(
+                size: 100,
+                showText: true,
+                loadingText: 'Loading pending products...'
               ),
             )
           : _pendingProducts.isEmpty

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/supplier_location.dart';
+import '../widgets/app_loader.dart';
 import '../services/supplier_location_service.dart';
 
 class AdminSupplierLocationPage extends StatefulWidget {
@@ -113,7 +114,7 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader(width: 160, height: 160))
           : Column(
               children: [
                 // Summary card
@@ -171,7 +172,7 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
                         children: [
                           TileLayer(
                             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.vegieconnect',
+                            userAgentPackageName: 'com.veggieconnect.app',
                           ),
                           // Bogo City boundary circle
                           CircleLayer(

@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../services/location_service.dart';
 import '../services/map_service.dart';
+import './lottie_loading_widget.dart';
 
 class LocationMapWidget extends StatefulWidget {
   final LatLng? initialLocation;
@@ -258,8 +259,10 @@ class _LocationMapWidgetState extends State<LocationMapWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(
-              color: Color(0xFF4CAF50),
+            const GroceryLoadingWidget(
+              size: 100,
+              showText: true,
+              loadingText: 'Initializing map...'
             ),
             const SizedBox(height: 16),
             Text(

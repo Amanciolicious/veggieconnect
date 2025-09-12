@@ -5,13 +5,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app_links/app_links.dart';
 import 'authentication/login_page.dart';
-import 'customer-side/order_success_page.dart';
-import 'customer-side/payment_test_page.dart';
+import 'customer-side/customer_order_success_page.dart';
+import 'customer-side/customer_payment_test_page.dart';
 import 'services/notification_service.dart';
 import 'services/performance_service.dart';
 import 'services/migration_service.dart';
 import 'services/deep_link_service.dart';
-import 'customer-side/navigation_screen.dart';
+import 'services/preboarding_service.dart';
+import 'customer-side/customer_navigation_screen.dart';
+import 'widgets/app_loader.dart';
+import 'screens/preboarding_screen.dart';
+import 'screens/lottie_demo_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -158,7 +162,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ),
         ),
         ),
-        home: const LoginPage(),
+        home: const AppInitializer(),
         routes: {
           '/order-success': (context) {
             final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -178,7 +182,49 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               customerUserId: args?['customerUserId'],
             );
           },
+          '/lottie-demo': (context) => const LottieDemoScreen(),
         },
       );
     }
   }
+
+
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  bool _isLoading = true;
+  bool _showPreboarding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPreboardingStatus();
+  }
+
+  Future<void> _checkPreboardingStatus() async {
+    final hasSeenPreboarding = await PreboardingService.hasSeenPreboarding();
+    
+    setState(() {
+      _showPreboarding = !hasSeenPreboarding;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: AppLoader(width: 180, height: 180),
+        ),
+      );
+    }
+
+    return _showPreboarding ? const PreboardingScreen() : const LoginPage();
+  }
+}

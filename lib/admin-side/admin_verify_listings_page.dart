@@ -6,6 +6,7 @@ import '../services/content_filter_service.dart';
 import '../services/auto_approval_service.dart';
 import '../services/countdown_timer_service.dart';
 import '../widgets/countdown_timer_widget.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class AdminVerifyListingsPage extends StatefulWidget {
   const AdminVerifyListingsPage({super.key});
@@ -123,9 +124,11 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                 stream: _getFilteredProductsStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                    return const Center(
+                      child: GroceryLoadingWidget(
+                        size: 120,
+                        showText: true,
+                        loadingText: 'Loading products...',
                       ),
                     );
                   }

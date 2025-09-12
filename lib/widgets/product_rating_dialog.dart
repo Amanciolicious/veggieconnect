@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'star_rating_widget.dart';
 import '../services/product_rating_service.dart';
+import './lottie_loading_widget.dart';
 
 class ProductRatingDialog extends StatefulWidget {
   final String productId;
@@ -324,12 +325,12 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                         ),
                       ),
                       child: _isSubmitting
-                          ? SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: GroceryLoadingWidget(
+                                size: 24,
+                                showText: false,
                               ),
                             )
                           : Text(

@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter/material.dart';
-import '../customer-side/order_success_page.dart';
+import '../customer-side/customer_order_success_page.dart';
 import 'payment_completion_service.dart';
 
 class DeepLinkService {

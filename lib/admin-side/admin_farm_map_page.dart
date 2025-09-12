@@ -10,6 +10,7 @@ import '../services/farm_location_service.dart';
 import '../services/farm_location_request_service.dart';
 import '../services/map_service.dart';
 import 'admin_supplier_location_page.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class AdminFarmMapPage extends StatefulWidget {
   const AdminFarmMapPage({super.key});
@@ -175,7 +176,16 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator();
+                    return const SizedBox(
+                      height: 80,
+                      child: Center(
+                        child: GroceryLoadingWidget(
+                          size: 80,
+                          showText: true,
+                          loadingText: 'Loading suppliers...'
+                        ),
+                      ),
+                    );
                   }
                   
                   final suppliers = snapshot.data?.docs ?? [];
@@ -612,8 +622,14 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : StreamBuilder<List<FarmLocationRequest>>(
+          ? const Center(
+              child: GroceryLoadingWidget(
+                size: 140,
+                showText: true,
+                loadingText: 'Loading farm locations...'
+              ),
+            )
+           : StreamBuilder<List<FarmLocationRequest>>(
               stream: _requestService.streamPendingRequests(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
@@ -633,7 +649,7 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                   children: [
                     TileLayer(
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.vegieconnect',
+                      userAgentPackageName: 'com.veggieconnect.app',
                     ),
                     CircleLayer(
                       circles: [

@@ -2,12 +2,13 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:veggieconnect/customer-side/contact_info_page.dart';
+import 'package:veggieconnect/customer-side/customer_contact_info_page.dart';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:veggieconnect/services/promo_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key, this.onLoginTap});
@@ -357,12 +358,12 @@ class _SignUpPageState extends State<SignUpPage> {
                     elevation: 2,
                   ),
                   child: _isLoading
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: GroceryLoadingWidget(
+                            size: 24,
+                            showText: false,
                           ),
                         )
                       : Text(

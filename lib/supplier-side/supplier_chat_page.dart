@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'package:intl/intl.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class SupplierChatPage extends StatefulWidget {
   final String conversationId;
@@ -81,8 +82,10 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
 
                 if (!snapshot.hasData) {
                   return Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                    child: const GroceryLoadingWidget(
+                      size: 80,
+                      showText: true,
+                      loadingText: 'Loading messages...'
                     ),
                   );
                 }

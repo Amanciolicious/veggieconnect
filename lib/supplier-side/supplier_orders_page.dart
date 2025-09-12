@@ -10,6 +10,7 @@ import 'package:veggieconnect/services/navigation_manager.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'supplier_chat_page.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class SupplierOrdersPage extends StatefulWidget {
   const SupplierOrdersPage({super.key});
@@ -46,7 +47,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -57,7 +58,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -81,12 +81,15 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           isScrollable: true,
+          labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
           tabs: const [
             Tab(text: 'All Order'),
             Tab(text: 'Pending'),
             Tab(text: 'Processing'),
             Tab(text: 'Ready to Pick Up'),
             Tab(text: 'Picked Up'),
+            Tab(text: 'Cancelled'),
           ],
         ),
       ),
@@ -247,7 +250,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                   },
                 ),
                 
-                const SizedBox(height: 12),
                 
                 // Urgent Button
                 if (_showOnlyPending)
@@ -280,15 +282,19 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           
           // Orders List
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOrdersList('all'),
-                _buildOrdersList('pending'),
-                _buildOrdersList('processing'),
-                _buildOrdersList('ready_to_pickup'),
-                _buildOrdersList('picked_up'),
-              ],
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.6, // Limit TabView height
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildOrdersList('all'),
+                  _buildOrdersList('pending'),
+                  _buildOrdersList('processing'),
+                  _buildOrdersList('ready_to_pickup'),
+                  _buildOrdersList('picked_up'),
+                  _buildOrdersList('cancelled'),
+                ],
+              ),
             ),
           ),
         ],
@@ -301,7 +307,13 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       stream: _getOrdersStream(status),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: GroceryLoadingWidget(
+              size: 120,
+              showText: true,
+              loadingText: 'Loading orders...',
+            ),
+          );
         }
 
         if (snapshot.hasError) {
@@ -400,6 +412,15 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                       Icons.check_circle,
                       Colors.green,
                     ),
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
+                      'Cancelled',
+                      orders.where((doc) => 
+                        (doc.data() as Map<String, dynamic>)['status'] == 'cancelled'
+                      ).length.toString(),
+                      Icons.cancel,
+                      Colors.red,
+                    ),
                   ],
                 ),
               ),
@@ -493,6 +514,12 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       if (status == 'pending') {
         final orderStatus = order['status'];
         if (orderStatus != 'pending' && orderStatus != null && orderStatus != 'completed') {
+          return false;
+        }
+      } else if (status != 'all') {
+        // For other specific statuses, match exactly
+        final orderStatus = order['status'];
+        if (orderStatus != status) {
           return false;
         }
       }
@@ -775,7 +802,13 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                     .snapshots(),
                 builder: (context, ratingSnapshot) {
                   if (ratingSnapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: GroceryLoadingWidget(
+                        size: 100,
+                        showText: true,
+                        loadingText: 'Loading ratings...',
+                      ),
+                    );
                   }
                   
                   if (!ratingSnapshot.hasData || ratingSnapshot.data!.docs.isEmpty) {
@@ -1082,8 +1115,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           ),
         ),
       ),
-      ),
-    );
+    ),);
   }
 
   Widget _buildStatusChip(String status) {

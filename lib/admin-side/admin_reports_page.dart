@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'admin_dashboard.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class AdminReportsPage extends StatelessWidget {
   const AdminReportsPage({super.key});
@@ -95,8 +96,10 @@ class AdminReportsPage extends StatelessWidget {
 
         if (!snapshot.hasData) {
           return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+            child: const GroceryLoadingWidget(
+              size: 100,
+              showText: true,
+              loadingText: 'Loading reports...'
             ),
           );
         }

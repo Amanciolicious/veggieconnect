@@ -15,11 +15,14 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'supplier_chat_list_page.dart';
-import 'add_product_page.dart';
-import 'package:veggieconnect/supplier-side/farm_map_page.dart' show SupplierLocationPage;
+import 'supplier_add_product_page.dart';
+import 'package:veggieconnect/supplier-side/supplier_map_page.dart' show SupplierLocationPage;
+import '../widgets/lottie_loading_widget.dart';
 
 class SupplierDashboard extends StatefulWidget {
-  const SupplierDashboard({super.key});
+  const SupplierDashboard({super.key, this.initialIndex});
+
+  final int? initialIndex;
 
   @override
   State<SupplierDashboard> createState() => _SupplierDashboardState();
@@ -32,6 +35,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex ?? 0;
     _loadLocalProfileImage();
   }
 
@@ -506,7 +510,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
             ListTile(
               leading: const Icon(Icons.person_pin),
               title: Text(
-                'Supplier Location',
+                'My Location',
                 style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Color(0xFF222222),
@@ -850,7 +854,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
       stream: baseQuery.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(strokeWidth: 2));
+          return Center(
+            child: GroceryLoadingWidget(
+              size: 100,
+              showText: true,
+              loadingText: 'Loading orders...',
+            ),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
@@ -1042,7 +1052,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: GroceryLoadingWidget(
+              size: 100,
+              showText: true,
+              loadingText: 'Loading...',
+            ),
+          );
         }
         if (snapshot.hasError) {
           return Center(
@@ -1113,7 +1129,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(strokeWidth: 2));
+          return Center(
+            child: GroceryLoadingWidget(
+              size: 100,
+              showText: true,
+              loadingText: 'Loading orders...',
+            ),
+          );
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}', style: GoogleFonts.quicksand(fontSize: 14)));
@@ -1325,7 +1347,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
       stream: FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: GroceryLoadingWidget(
+              size: 100,
+              showText: true,
+              loadingText: 'Loading...',
+            ),
+          );
         }
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return const Center(child: Text('No profile data found.'));

@@ -6,6 +6,7 @@ import 'package:path/path.dart';
 import '../services/supplier_report_service.dart';
 import '../models/supplier_report_model.dart';
 import '../services/ban_service.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class AdminManageAccountsPage extends StatefulWidget {
   const AdminManageAccountsPage({super.key});
@@ -96,9 +97,11 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                    return const Center(
+                      child: GroceryLoadingWidget(
+                        size: 120,
+                        showText: true,
+                        loadingText: 'Loading users...',
                       ),
                     );
                   }

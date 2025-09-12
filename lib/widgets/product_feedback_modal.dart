@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'star_rating_widget.dart';
+import './lottie_loading_widget.dart';
 
 class ProductFeedbackModal extends StatefulWidget {
   final String productId;
@@ -117,8 +118,10 @@ class _ProductFeedbackModalState extends State<ProductFeedbackModal> {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6CA04A)),
+                        child: const GroceryLoadingWidget(
+                          size: 80,
+                          showText: true,
+                          loadingText: 'Loading reviews...'
                         ),
                       ),
                     );

@@ -5,7 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
-import 'buyer_chat_page.dart';
+import 'customer_chat_page.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class CustomerMessagesPage extends StatefulWidget {
   const CustomerMessagesPage({super.key});
@@ -77,20 +78,11 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
         stream: _chatService.streamBuyerConversations(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFF6CA04A)),
-                  SizedBox(height: 16),
-                  Text(
-                    'Loading conversations...',
-                    style: GoogleFonts.quicksand(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+            return const Center(
+              child: GroceryLoadingWidget(
+                size: 120,
+                showText: true,
+                loadingText: 'Loading conversations...',
               ),
             );
           }

@@ -1,10 +1,9 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously, deprecated_member_use
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../customer-side/customer_home_page.dart';
-import '../customer-side/onboarding_page.dart';
+import '../customer-side/customer_dashboard.dart';
+import '../customer-side/customer_onboarding_page.dart';
 import '../admin-side/admin_dashboard.dart';
 import '../supplier-side/supplier_dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -130,7 +129,7 @@ class _LoginPageState extends State<LoginPage> {
         final isNewlyRegistered = data['isNewlyRegistered'] ?? false;
         final onboardingCompleted = data['onboardingCompleted'] ?? false;
         
-        if (isNewlyRegistered && !onboardingCompleted) {
+        if ((isNewlyRegistered && !onboardingCompleted) || !onboardingDone) {
           // Show onboarding for newly registered users
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => OnboardingPage(userId: credential.user!.uid)),
@@ -575,38 +574,38 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Login Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        onPressed: _isLoading ? null : _handleLogin,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: _isLoading
-                              ? SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
+                   // Login Button
+SizedBox(
+  width: double.infinity,
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.green,
+      foregroundColor: Colors.white,
+      elevation: 2,
+    ),
+    onPressed: _isLoading ? null : _handleLogin,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: _isLoading
+          ? SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,        // thinner spinner
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white), 
+              ),
+            )
+          : Text(
+              'Login',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+    ),
+  ),
+),
                     const SizedBox(height: 12),
                     // Or Divider
                     Row(
@@ -651,7 +650,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -660,23 +658,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('VegieConnect Home'),
-        backgroundColor: const Color(0xFFA7C957),
-      ),
-      body: const Center(
-        child: Text('Welcome to VegieConnect!'),
       ),
     );
   }

@@ -1,9 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:firebase_auth/firebase_auth.dart';
-import '../customer-side/contact_info_page.dart';
+import '../customer-side/customer_contact_info_page.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/authentication/login_page.dart';
+import '../widgets/lottie_loading_widget.dart';
 
 class VerifyEmailPage extends StatefulWidget {
   final String userId;
@@ -201,11 +202,11 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: _isLoading
                             ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                height: 24,
+                                width: 24,
+                                child: GroceryLoadingWidget(
+                                  size: 24,
+                                  showText: false,
                                 ),
                               )
                             : Text(

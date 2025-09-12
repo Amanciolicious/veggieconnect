@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -9,7 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'deep_link_service.dart';
-import '../customer-side/navigation_screen.dart';
+import '../customer-side/customer_navigation_screen.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
