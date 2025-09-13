@@ -288,6 +288,46 @@ class _NotificationCenterState extends State<NotificationCenter> {
         iconData = Icons.info;
         iconColor = Colors.blue;
         break;
+      case 'product_submission':
+        iconData = Icons.add_box;
+        iconColor = Colors.orange;
+        break;
+      case 'farm_location_request':
+        iconData = Icons.location_on;
+        iconColor = Colors.green;
+        break;
+      case 'supplier_report':
+        iconData = Icons.report;
+        iconColor = Colors.red;
+        break;
+      case 'user_registration':
+        iconData = Icons.person_add;
+        iconColor = Colors.blue;
+        break;
+      case 'high_value_order':
+        iconData = Icons.trending_up;
+        iconColor = Colors.purple;
+        break;
+      case 'auto_approval':
+        iconData = Icons.auto_awesome;
+        iconColor = Colors.green;
+        break;
+      case 'payment_dispute':
+        iconData = Icons.error_outline;
+        iconColor = Colors.orange;
+        break;
+      case 'system_error':
+        iconData = Icons.bug_report;
+        iconColor = Colors.red;
+        break;
+      case 'suspicious_activity':
+        iconData = Icons.security;
+        iconColor = Colors.red;
+        break;
+      case 'multiple_reports':
+        iconData = Icons.warning;
+        iconColor = Colors.red;
+        break;
       default:
         iconData = Icons.notifications;
         iconColor = Colors.grey;

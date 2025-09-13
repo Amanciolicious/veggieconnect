@@ -311,6 +311,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             },
                           ),
                           
+                          // Real-time Rating Distribution Display
                           SizedBox(height: screenWidth * 0.02),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
@@ -328,6 +329,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 if (r >= 1 && r <= 5) counts[r]++;
                               }
                               final total = docs.length;
+                              
                               Widget buildBar(int stars) {
                                 final count = counts[stars];
                                 final pct = total > 0 ? (count * 100.0 / total) : 0.0;
@@ -449,6 +451,198 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     ),
                                   ],
                                 ),
+                                
+                                SizedBox(height: screenWidth * 0.04),
+                                
+                                // Individual Reviews List
+                                StreamBuilder<QuerySnapshot>(
+                                  stream: FirebaseFirestore.instance
+                                      .collection('product_ratings')
+                                      .where('productId', isEqualTo: widget.productId)
+                                      .orderBy('timestamp', descending: true)
+                                      .limit(10) // Show latest 10 reviews
+                                      .snapshots(),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                      return Container(
+                                        padding: EdgeInsets.all(screenWidth * 0.04),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[50],
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.grey[200]!),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.rate_review_outlined, color: Colors.grey[400], size: screenWidth * 0.05),
+                                            SizedBox(width: screenWidth * 0.03),
+                                            Expanded(
+                                              child: Text(
+                                                'No customer reviews yet. Be the first to review!',
+                                                style: GoogleFonts.quicksand(
+                                                  fontSize: screenWidth * 0.035,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    
+                                    final reviews = snapshot.data!.docs;
+                                    
+                                    return Column(
+                                      children: reviews.map((reviewDoc) {
+                                        final reviewData = reviewDoc.data() as Map<String, dynamic>;
+                                        final rating = reviewData['rating'] ?? 0;
+                                        final feedback = reviewData['feedback'] ?? '';
+                                        final buyerName = reviewData['buyerName'] ?? 'Anonymous Customer';
+                                        final timestamp = reviewData['timestamp'] as Timestamp?;
+                                        final supplierName = reviewData['supplierName'] ?? 'Unknown Supplier';
+                                        
+                                        // Format date
+                                        String formattedDate = 'Recently';
+                                        if (timestamp != null) {
+                                          final date = timestamp.toDate();
+                                          final now = DateTime.now();
+                                          final difference = now.difference(date);
+                                          
+                                          if (difference.inDays > 0) {
+                                            formattedDate = '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+                                          } else if (difference.inHours > 0) {
+                                            formattedDate = '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+                                          } else if (difference.inMinutes > 0) {
+                                            formattedDate = '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+                                          } else {
+                                            formattedDate = 'Just now';
+                                          }
+                                        }
+                                        
+                                        return Container(
+                                          margin: EdgeInsets.only(bottom: screenWidth * 0.03),
+                                          padding: EdgeInsets.all(screenWidth * 0.035),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Color(0xFF8D9773).withOpacity(0.15),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.grey.withOpacity(0.08),
+                                                spreadRadius: 1,
+                                                blurRadius: 4,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              // Header with customer name and rating
+                                              Row(
+                                                children: [
+                                                  // Customer avatar
+                                                  Container(
+                                                    width: screenWidth * 0.08,
+                                                    height: screenWidth * 0.08,
+                                                    decoration: BoxDecoration(
+                                                      color: Color(0xFF6CA04A).withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                                                      border: Border.all(
+                                                        color: Color(0xFF6CA04A).withOpacity(0.3),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.person,
+                                                      color: Color(0xFF6CA04A),
+                                                      size: screenWidth * 0.045,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: screenWidth * 0.03),
+                                                  
+                                                  // Customer name and supplier info
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          buyerName,
+                                                          style: GoogleFonts.quicksand(
+                                                            fontSize: screenWidth * 0.038,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: Color(0xFF333333),
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          'Purchased from $supplierName',
+                                                          style: GoogleFonts.quicksand(
+                                                            fontSize: screenWidth * 0.032,
+                                                            color: Color(0xFF757575),
+                                                            fontWeight: FontWeight.w400,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  
+                                                  // Date and rating
+                                                  Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                                    children: [
+                                                      StarRatingDisplay(
+                                                        rating: rating.toDouble(),
+                                                        size: screenWidth * 0.035,
+                                                        showRatingText: false,
+                                                      ),
+                                                      SizedBox(height: 2),
+                                                      Text(
+                                                        formattedDate,
+                                                        style: GoogleFonts.quicksand(
+                                                          fontSize: screenWidth * 0.03,
+                                                          color: Color(0xFF9E9E9E),
+                                                          fontWeight: FontWeight.w400,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                              
+                                              // Review comment
+                                              if (feedback.isNotEmpty) ...[
+                                                SizedBox(height: screenWidth * 0.025),
+                                                Container(
+                                                  padding: EdgeInsets.all(screenWidth * 0.03),
+                                                  decoration: BoxDecoration(
+                                                    color: Color(0xFFF8FAF5),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(
+                                                      color: Color(0xFF8D9773).withOpacity(0.1),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    feedback,
+                                                    style: GoogleFonts.quicksand(
+                                                      fontSize: screenWidth * 0.035,
+                                                      color: Color(0xFF555555),
+                                                      fontWeight: FontWeight.w400,
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ),
@@ -468,30 +662,47 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               // Only show quantity selector for customers (not suppliers)
                               if (user == null || product['sellerId'] != user?.uid)
                                 Container(
+                                  width: 140, // Fixed width to prevent overflow
+                                  height: 40, // Fixed height for consistent appearance
                                   decoration: BoxDecoration(
                                     color: Color(0xFF6CA04A).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(screenWidth * 0.07),
+                                    borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: Color(0xFF6CA04A).withOpacity(0.3),
                                       width: 1,
                                     ),
                                   ),
                                   child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      IconButton(
-                                        icon: Icon(Icons.remove, size: screenWidth * 0.06),
-                                        onPressed: _qty > 1 ? () => setState(() => _qty--) : null,
-                                      ),
-                                      Text(
-                                        '$_qty ${product['unit'] ?? 'unit'}',
-                                        style: GoogleFonts.quicksand(
-                                          fontSize: screenWidth * 0.045,
-                                          fontWeight: FontWeight.w400,
+                                      SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          icon: Icon(Icons.remove, size: 18),
+                                          onPressed: _qty > 1 ? () => setState(() => _qty--) : null,
                                         ),
                                       ),
-                                      IconButton(
-                                        icon: Icon(Icons.add, size: screenWidth * 0.06),
-                                        onPressed: () => setState(() => _qty++),
+                                      Expanded(
+                                        child: Text(
+                                          '$_qty ${(product['unit'] ?? 'unit').toString().length > 6 ? (product['unit'] ?? 'unit').toString().substring(0, 6) : product['unit'] ?? 'unit'}',
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.quicksand(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          icon: Icon(Icons.add, size: 18),
+                                          onPressed: () => setState(() => _qty++),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -512,6 +723,73 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 ),
                               ),
                             ],
+                          ),
+                          SizedBox(height: screenWidth * 0.015),
+                          // Real-time Sold Counter
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('products')
+                                .doc(widget.productId)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return SizedBox.shrink();
+                              }
+                              
+                              final productData = snapshot.data!.data() as Map<String, dynamic>?;
+                              final soldCount = productData?['soldCount'] ?? 0;
+                              
+                              return Row(
+                                children: [
+                                  Icon(Icons.trending_up, color: Color(0xFF6CA04A), size: screenWidth * 0.05),
+                                  SizedBox(width: screenWidth * 0.02),
+                                  Text(
+                                    '${soldCount} sold',
+                                    style: GoogleFonts.quicksand(
+                                      fontSize: screenWidth * 0.04,
+                                      color: Color(0xFF6CA04A),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(width: screenWidth * 0.02),
+                                  // Add a small badge for visual appeal
+                                  if (soldCount > 0)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.02,
+                                        vertical: screenWidth * 0.01,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFF6CA04A).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Color(0xFF6CA04A).withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.local_fire_department,
+                                            color: Color(0xFF6CA04A),
+                                            size: screenWidth * 0.035,
+                                          ),
+                                          SizedBox(width: screenWidth * 0.01),
+                                          Text(
+                                            soldCount >= 10 ? 'Popular' : 'Selling',
+                                            style: GoogleFonts.quicksand(
+                                              fontSize: screenWidth * 0.03,
+                                              color: Color(0xFF6CA04A),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                           SizedBox(height: screenWidth * 0.04),
                           Text(

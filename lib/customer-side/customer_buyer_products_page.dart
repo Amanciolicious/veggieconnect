@@ -161,10 +161,8 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
             size: isSmallScreen ? 22 : 24,
           ),
           onPressed: () {
-  Navigator.of(context).push(
-    MaterialPageRoute(builder: (context) => ProductDetailsPage(product: {}, productId: '',)),
-  );
-},
+            Navigator.of(context).pop();
+          },
         ),
         elevation: 0,
       ),

@@ -7,6 +7,7 @@ import '../services/supplier_report_service.dart';
 import '../models/supplier_report_model.dart';
 import '../services/ban_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import 'supplier_reports_page.dart';
 
 class AdminManageAccountsPage extends StatefulWidget {
   const AdminManageAccountsPage({super.key});
@@ -405,47 +406,26 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
             ),
           ),
           SizedBox(height: screenWidth * 0.03),
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isBanned ? Color(0xFF6CA04A) : Colors.red,
-                  ),
-                  onPressed: () => isBanned ? _unbanUser(userId) : _showBanDialog(context, screenWidth, userId, user),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-                    child: Text(
-                      isBanned ? 'Unban' : 'Ban',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: screenWidth * 0.04,
-                      ),
-                    ),
+          // Action Buttons - Single full-width View Details button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF6CA04A),
+              ),
+              onPressed: () => _viewUserDetails(context, screenWidth, userId, user),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                child: Text(
+                  'View Details',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              SizedBox(width: screenWidth * 0.03),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                  ),
-                  onPressed: () => _viewUserDetails(context, screenWidth, userId, user),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-                    child: Text(
-                      'View Details',
-                      style: TextStyle(
-                        color: Color(0xFF6CA04A),
-                        fontSize: screenWidth * 0.04,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -493,7 +473,11 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
                     child: Column(
                       children: [
-                        Icon(Icons.schedule, color: Colors.white, size: screenWidth * 0.06),
+                        Icon(
+                          Icons.schedule,
+                          color: Colors.white,
+                          size: screenWidth * 0.06,
+                        ),
                         SizedBox(height: screenWidth * 0.02),
                         Text(
                           'Temporary Ban',
@@ -530,7 +514,11 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
                     child: Column(
                       children: [
-                        Icon(Icons.block, color: Colors.white, size: screenWidth * 0.06),
+                        Icon(
+                          Icons.block,
+                          color: Colors.white,
+                          size: screenWidth * 0.06,
+                        ),
                         SizedBox(height: screenWidth * 0.02),
                         Text(
                           'Permanent Ban',

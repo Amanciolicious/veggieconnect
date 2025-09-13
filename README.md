@@ -1,16 +1,18 @@
-# VeggieConnect - Connecting Filipino Suppliers to Communities
+# VeggieConnect - Connecting Filipino Farmers and Suppliers to Local Communities
 
-*A modern marketplace that bridges farmers and consumers in Bogo City, Cebu.*
+*A modern agricultural application that bridges farmers and consumers in Bogo City, Cebu.*
 
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-039BE5?style=for-the-badge&logo=Firebase&logoColor=white)](https://firebase.google.com)
 [![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![NodeJS](https://img.shields.io/badge/node.js-339933?style=for-the-badge&logo=Node.js&logoColor=white)](https://dart.dev)
+[![VERCEL](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://dart.dev)
 
 ## About the Project
 
 VeggieConnect is a comprehensive agricultural application built for the farmers, suppliers, and customers of Bogo City. This platform connects local producers with their community through modern technology.
 
-**Mission:** Mission: Make fresh vegetables and farm products more accessible through direct connections with farmers and suppliers, while promoting sustainable agriculture in Bogo City.
+**Mission:** Make fresh vegetables and farm products more accessible through direct connections with farmers and suppliers, while promoting sustainable agriculture in Bogo City.
 
 ## Key Features
 
@@ -52,7 +54,7 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 
 ### Third-party Integrations
 - **Cloudinary** - Image storage and optimization
-- **PayMongo** - Payment processing (GCash, Cards)
+- **PayMongo** - Payment processing (GCash, Maya, Cards)
 - **OpenStreetMap** - Mapping services (flutter_map)
 - **Geolocator** - Location services
 - **Vercel** - Hosting and deploying PayMongo online payment webhooks for seamless payment integration
@@ -185,7 +187,7 @@ flutter build apk --release
 ## Application Usage
 
 ### For Customers
-1. **Register** - Create an account using Gmail
+1. **Register** - Create an account using Gmail with PIN verification through EmailJS
 2. **Browse Products** - View available vegetables and farm products
 3. **Add to Cart** - Add products to shopping cart
 4. **Choose Payment** - Select cash-on-pickup or online payment

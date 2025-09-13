@@ -21,6 +21,7 @@ import '../widgets/notification_center.dart';
 import '../services/cloudinary_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/modern_wave_drawer.dart';
 
 // Chat and notification center removed
 
@@ -364,185 +365,68 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   Widget _buildModernDrawer() {
-    return Drawer(
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50),
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(20),
-              ),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: user != null 
+        ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
+        : null,
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final avatarUrl = (userData?['avatarUrl'] ?? userData?['profileImageUrl']) as String?;
+        final displayName = userData?['name'] ?? user?.displayName ?? 'Vegie Lover';
+        final email = user?.email ?? 'vegieuser@email.com';
+        
+        return ModernWaveDrawer(
+          selectedIndex: _selectedIndex,
+          onItemTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.pop(context);
+          },
+          headerName: displayName,
+          headerEmail: email,
+          headerAvatarUrl: avatarUrl,
+          onHeaderTap: _showProfileImageOptions,
+          items: [
+            DrawerItem(icon: Icons.home, title: 'Home', index: 0),
+            DrawerItem(icon: Icons.favorite, title: 'Favorites', index: 1),
+            DrawerItem(icon: Icons.shopping_cart, title: 'Cart', index: 2),
+            DrawerItem(icon: Icons.store, title: 'Browse', index: 3),
+            DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
+          ],
+          additionalItems: [
+            DrawerItem(
+              icon: Icons.history,
+              title: 'Order History',
+              index: -1,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => BuyerOrderHistoryPage()),
+                );
+              },
             ),
-            child: DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.transparent),
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: user != null 
-                  ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
-                  : null,
-                builder: (context, snapshot) {
-                  final userData = snapshot.data?.data() as Map<String, dynamic>?;
-                  final avatarUrl = (userData?['avatarUrl'] ?? userData?['profileImageUrl']) as String?;
-                  final displayName = userData?['name'] ?? user?.displayName ?? 'Vegie Lover';
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: _showProfileImageOptions,
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 32,
-                                backgroundColor: Colors.white,
-                                backgroundImage: avatarUrl != null 
-                                  ? NetworkImage(avatarUrl) 
-                                  : null,
-                                child: avatarUrl == null 
-                                  ? const Icon(Icons.person, size: 32, color: Color(0xFF4CAF50))
-                                  : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  size: 16,
-                                  color: Color(0xFF4CAF50),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        displayName,
-                        style: GoogleFonts.inter(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? 'vegieuser@email.com',
-                        style: GoogleFonts.inter(
-                          color: Colors.white70, 
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  );
-                },
-              ),
+            DrawerItem(
+              icon: Icons.person_pin,
+              title: 'My Locations',
+              index: -1,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FarmLocationsPage()),
+                );
+              },
             ),
-          ),
-          _buildDrawerItem(Icons.home, 'Home', () {
-            Navigator.pop(context);
-            setState(() => _selectedIndex = 0);
-          }),
-          _buildDrawerItem(Icons.favorite_border, 'Favorites', () {
-            Navigator.pop(context);
-            setState(() => _selectedIndex = 1);
-          }),
-          _buildDrawerItem(Icons.shopping_cart_outlined, 'Cart', () {
-            Navigator.pop(context);
-            setState(() => _selectedIndex = 2);
-          }),
-          _buildDrawerItem(Icons.chat_bubble_outline, 'Messages', () {
-            Navigator.pop(context);
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => CustomerMessagesPage()),
-            );
-          }),
-          _buildDrawerItem(Icons.store, 'Browse Products', () {
-            Navigator.pop(context);
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => BuyerProductsPage()),
-            );
-          }),
-          _buildDrawerItem(Icons.person_outline, 'Profile', () {
-            Navigator.pop(context);
-            setState(() => _selectedIndex = 4);
-          }),
-          _buildDrawerItem(Icons.history, 'Order History', () {
-            Navigator.pop(context);
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => BuyerOrderHistoryPage()),
-            );
-          }),
-          _buildDrawerItem(Icons.person_pin, 'My Locations', () {
-            Navigator.pop(context);
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const FarmLocationsPage()),
-            );
-          }),
-          const Divider(height: 32),
-          _buildDrawerItem(Icons.logout, 'Logout', _logout, isDestructive: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
-    return ListTile(
-      leading: Icon(
-        icon, 
-        color: isDestructive ? Colors.red : const Color(0xFF4CAF50),
-        size: 24,
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.red : const Color(0xFF1A1A1A),
-        ),
-      ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+            DrawerItem(
+              icon: Icons.logout,
+              title: 'Logout',
+              index: -1,
+              isDestructive: true,
+              onTap: _logout,
+            ),
+          ],
+        );
+      },
     );
   }
 

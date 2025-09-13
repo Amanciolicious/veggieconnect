@@ -1071,6 +1071,226 @@ class NotificationService {
   void dispose() {
     _notificationController.close();
   }
+
+  // Send new product submission notification to all admins
+  Future<void> sendNewProductSubmissionNotification({
+    required String productName,
+    required String supplierName,
+    required String supplierId,
+    required String productId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'New Product Submission',
+      body: '$supplierName submitted "$productName" for approval',
+      type: 'product_submission',
+      data: {
+        'productName': productName,
+        'supplierName': supplierName,
+        'supplierId': supplierId,
+        'productId': productId,
+        'screen': 'verify_listings',
+      },
+    );
+  }
+
+  // Send farm location request notification to all admins
+  Future<void> sendFarmLocationRequestNotification({
+    required String farmName,
+    required String supplierName,
+    required String supplierId,
+    required String requestId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'New Farm Location Request',
+      body: '$supplierName requested to add "$farmName" to the map',
+      type: 'farm_location_request',
+      data: {
+        'farmName': farmName,
+        'supplierName': supplierName,
+        'supplierId': supplierId,
+        'requestId': requestId,
+        'screen': 'farm_requests',
+      },
+    );
+  }
+
+  // Send supplier report notification to all admins
+  Future<void> sendSupplierReportNotification({
+    required String supplierName,
+    required String customerName,
+    required String reason,
+    required String supplierId,
+    required String reportId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'Supplier Reported',
+      body: '$customerName reported $supplierName for: $reason',
+      type: 'supplier_report',
+      data: {
+        'supplierName': supplierName,
+        'customerName': customerName,
+        'reason': reason,
+        'supplierId': supplierId,
+        'reportId': reportId,
+        'screen': 'manage_accounts',
+      },
+    );
+  }
+
+  // Send new user registration notification to all admins
+  Future<void> sendNewUserRegistrationNotification({
+    required String userName,
+    required String userEmail,
+    required String userRole,
+    required String userId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'New User Registration',
+      body: '$userName ($userRole) registered with email: $userEmail',
+      type: 'user_registration',
+      data: {
+        'userName': userName,
+        'userEmail': userEmail,
+        'userRole': userRole,
+        'userId': userId,
+        'screen': 'manage_accounts',
+      },
+    );
+  }
+
+  // Send high-value order notification to all admins
+  Future<void> sendHighValueOrderNotification({
+    required String customerName,
+    required String supplierName,
+    required double orderAmount,
+    required String orderId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'High-Value Order Alert',
+      body: '$customerName placed a ₱${orderAmount.toStringAsFixed(2)} order with $supplierName',
+      type: 'high_value_order',
+      data: {
+        'customerName': customerName,
+        'supplierName': supplierName,
+        'orderAmount': orderAmount,
+        'orderId': orderId,
+        'screen': 'analytics',
+      },
+    );
+  }
+
+  // Send auto-approval notification to all admins
+  Future<void> sendAutoApprovalNotification({
+    required String itemType,
+    required String itemName,
+    required String supplierName,
+    required String itemId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'Auto-Approval Triggered',
+      body: '$itemType "$itemName" by $supplierName was automatically approved',
+      type: 'auto_approval',
+      data: {
+        'itemType': itemType,
+        'itemName': itemName,
+        'supplierName': supplierName,
+        'itemId': itemId,
+        'screen': itemType == 'Product' ? 'verify_listings' : 'farm_requests',
+      },
+    );
+  }
+
+  // Send payment dispute notification to all admins
+  Future<void> sendPaymentDisputeNotification({
+    required String customerName,
+    required String orderId,
+    required String disputeReason,
+    required double orderAmount,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'Payment Dispute',
+      body: '$customerName disputed ₱${orderAmount.toStringAsFixed(2)} payment for order #$orderId',
+      type: 'payment_dispute',
+      data: {
+        'customerName': customerName,
+        'orderId': orderId,
+        'disputeReason': disputeReason,
+        'orderAmount': orderAmount,
+        'screen': 'analytics',
+      },
+    );
+  }
+
+  // Send system error notification to all admins
+  Future<void> sendSystemErrorNotification({
+    required String errorType,
+    required String errorMessage,
+    String? userId,
+    String? orderId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'System Error Alert',
+      body: '$errorType: $errorMessage',
+      type: 'system_error',
+      data: {
+        'errorType': errorType,
+        'errorMessage': errorMessage,
+        'userId': userId,
+        'orderId': orderId,
+        'screen': 'dashboard',
+      },
+    );
+  }
+
+  // Send suspicious activity notification to all admins
+  Future<void> sendSuspiciousActivityNotification({
+    required String activityType,
+    required String description,
+    required String userId,
+    String? userName,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'Suspicious Activity Detected',
+      body: '$activityType: $description',
+      type: 'suspicious_activity',
+      data: {
+        'activityType': activityType,
+        'description': description,
+        'userId': userId,
+        'userName': userName,
+        'screen': 'manage_accounts',
+      },
+    );
+  }
+
+  // Send multiple reports threshold notification to all admins
+  Future<void> sendMultipleReportsNotification({
+    required String supplierName,
+    required String supplierId,
+    required int reportCount,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'Multiple Reports Alert',
+      body: '$supplierName has received $reportCount reports and may need review',
+      type: 'multiple_reports',
+      data: {
+        'supplierName': supplierName,
+        'supplierId': supplierId,
+        'reportCount': reportCount,
+        'screen': 'manage_accounts',
+      },
+    );
+  }
 }
 
 // Background message handler

@@ -14,6 +14,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:veggieconnect/admin-side/admin_farm_map_page.dart';
 import 'package:veggieconnect/services/tax_service.dart';
+import '../services/revenue_service.dart';
 import '../authentication/login_page.dart';
 import '../services/cloudinary_service.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -23,6 +24,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../widgets/modern_app_bar.dart';
 import '../widgets/modern_card.dart';
+import '../widgets/modern_wave_drawer.dart';
+import '../widgets/notification_center.dart';
+import '../services/notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key, this.initialIndex});
@@ -336,204 +340,66 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   }
 
   Widget _buildModernDrawer() {
-    return Drawer(
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50),
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(20),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseAuth.instance.currentUser != null 
+        ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+        : null,
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Admin';
+        final email = FirebaseAuth.instance.currentUser?.email ?? 'admin@email.com';
+        final profileImageUrl = userData?['profileImageUrl'] as String?;
+        
+        return ModernWaveDrawer(
+          selectedIndex: _selectedIndex,
+          onItemTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.pop(context);
+          },
+          headerName: displayName,
+          headerEmail: email,
+          headerAvatarUrl: profileImageUrl,
+          onHeaderTap: _showProfileImageOptions,
+          items: [
+            DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
+            DrawerItem(icon: Icons.analytics, title: 'Analytics', index: 1),
+            DrawerItem(icon: Icons.location_on, title: 'Farm Locations', index: 2),
+            DrawerItem(icon: Icons.verified, title: 'Verify Listings', index: 3),
+            DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
+          ],
+          additionalItems: [
+            DrawerItem(
+              icon: Icons.manage_accounts,
+              title: 'Manage Accounts',
+              index: -1,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
+                );
+              },
             ),
-            child: DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.transparent),
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseAuth.instance.currentUser != null 
-                  ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
-                  : null,
-                builder: (context, snapshot) {
-                  final userData = snapshot.data?.data() as Map<String, dynamic>?;
-                  final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Admin';
-                  final email = FirebaseAuth.instance.currentUser?.email ?? 'admin@email.com';
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: _showProfileImageOptions,
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 32,
-                                backgroundColor: Colors.white,
-                                backgroundImage: _getAdminProfileImage(userData),
-                                child: _getAdminProfileImage(userData) == null 
-                                  ? const Icon(Icons.admin_panel_settings, size: 32, color: Color(0xFF4CAF50))
-                                  : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  size: 16,
-                                  color: Color(0xFF4CAF50),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        displayName,
-                        style: GoogleFonts.inter(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: GoogleFonts.inter(
-                          color: Colors.white70, 
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  );
-                },
-              ),
+            DrawerItem(
+              icon: Icons.logout,
+              title: 'Logout',
+              index: -1,
+              isDestructive: true,
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                if (!mounted) return;
+                
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              },
             ),
-          ),
-          _buildDrawerItem(Icons.dashboard, 'Overview', 0),
-          _buildDrawerItem(Icons.analytics, 'Analytics', 1),
-          _buildDrawerItem(Icons.location_on, 'Farm Locations', 2),
-          _buildDrawerItem(Icons.verified, 'Verify Listings', 3),
-          _buildDrawerItem(Icons.person, 'Profile', 4),
-          const Divider(height: 32),
-          ListTile(
-            leading: const Icon(Icons.manage_accounts, color: Color(0xFF4CAF50), size: 24),
-            title: Text(
-              'Manage Accounts',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF1A1A1A),
-              ),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
-              );
-            },
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red, size: 24),
-            title: Text(
-              'Logout',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.red,
-              ),
-            ),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!mounted) return;
-              
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              );
-            },
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(IconData icon, String title, int index) {
-    final isSelected = _selectedIndex == index;
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isSelected ? const Color(0xFF4CAF50) : const Color(0xFF757575),
-        size: 24,
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          color: isSelected ? const Color(0xFF4CAF50) : const Color(0xFF1A1A1A),
-        ),
-      ),
-      selected: isSelected,
-      selectedTileColor: const Color(0xFF4CAF50).withOpacity(0.08),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-        Navigator.pop(context);
+          ],
+        );
       },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );
   }
 
@@ -616,22 +482,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 },
               ),
               // Revenue
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('orders')
-                    .where('status', isEqualTo: 'completed')
-                    .snapshots(),
+              StreamBuilder<double>(
+                stream: RevenueService.getTotalRevenueStream(),
                 builder: (context, snapshot) {
-                  double revenue = 0;
-                  if (snapshot.hasData) {
-                    for (var doc in snapshot.data!.docs) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      revenue += (data['totalPrice'] ?? 0).toDouble();
-                    }
-                  }
+                  final revenue = snapshot.data ?? 0.0;
                   return StatCard(
                     title: 'Total Revenue',
-                    value: '₱${revenue.toStringAsFixed(2)}',
+                    value: RevenueService.formatCurrency(revenue),
                     icon: Icons.attach_money,
                     color: const Color(0xFF4CAF50),
                   );
@@ -710,10 +567,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
           const SizedBox(height: 20),
           // Revenue Overview (real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-            builder: (context, orderSnap) {
-              if (orderSnap.connectionState == ConnectionState.waiting) {
+          StreamBuilder<Map<String, double>>(
+            stream: RevenueService.getRevenueAnalyticsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -727,26 +584,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   ),
                 );
               }
-              final now = DateTime.now();
-              final firstDayThisMonth = DateTime(now.year, now.month, 1);
-              final firstDayLastMonth = DateTime(now.year, now.month - 1, 1);
-              final firstDayThisYear = DateTime(now.year, 1, 1);
-              final firstDayLastYear = DateTime(now.year - 1, 1, 1);
-              double thisMonth = 0, lastMonth = 0, thisYear = 0, lastYear = 0;
-              if (orderSnap.hasData) {
-                for (var doc in orderSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-                  final amount = (data['totalPrice'] ?? 0).toDouble();
-                  if (createdAt == null) continue;
-                  if (createdAt.isAfter(firstDayThisMonth)) thisMonth += amount;
-                  if (createdAt.isAfter(firstDayLastMonth) && createdAt.isBefore(firstDayThisMonth)) lastMonth += amount;
-                  if (createdAt.isAfter(firstDayThisYear)) thisYear += amount;
-                  if (createdAt.isAfter(firstDayLastYear) && createdAt.isBefore(firstDayThisYear)) lastYear += amount;
-                }
-              }
-              double percentMonth = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
-              double percentYear = lastYear > 0 ? ((thisYear - lastYear) / lastYear) * 100 : 0;
+              
+              final analytics = snapshot.data ?? {};
+              final thisMonth = analytics['thisMonth'] ?? 0.0;
+              final lastMonth = analytics['lastMonth'] ?? 0.0;
+              final thisYear = analytics['thisYear'] ?? 0.0;
+              final lastYear = analytics['lastYear'] ?? 0.0;
+              final monthlyGrowth = analytics['monthlyGrowth'] ?? 0.0;
+              final yearlyGrowth = analytics['yearlyGrowth'] ?? 0.0;
+              
               return _expandableCard(
                 title: 'Revenue Overview',
                 child: Column(
@@ -755,10 +601,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     Row(
                       children: [
                         Expanded(
-                          child: _buildAnalyticsItem('This Month', '₱${thisMonth.toStringAsFixed(0)}', '${percentMonth >= 0 ? '+' : ''}${percentMonth.toStringAsFixed(0)}%'),
+                          child: _buildAnalyticsItem(
+                            'This Month', 
+                            RevenueService.formatCurrencyCompact(thisMonth), 
+                            RevenueService.formatGrowthPercentage(monthlyGrowth)
+                          ),
                         ),
                         Expanded(
-                          child: _buildAnalyticsItem('Last Month', '₱${lastMonth.toStringAsFixed(0)}', ''),
+                          child: _buildAnalyticsItem(
+                            'Last Month', 
+                            RevenueService.formatCurrencyCompact(lastMonth), 
+                            ''
+                          ),
                         ),
                       ],
                     ),
@@ -766,10 +620,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     Row(
                       children: [
                         Expanded(
-                          child: _buildAnalyticsItem('This Year', '₱${thisYear.toStringAsFixed(0)}', '${percentYear >= 0 ? '+' : ''}${percentYear.toStringAsFixed(0)}%'),
+                          child: _buildAnalyticsItem(
+                            'This Year', 
+                            RevenueService.formatCurrencyCompact(thisYear), 
+                            RevenueService.formatGrowthPercentage(yearlyGrowth)
+                          ),
                         ),
                         Expanded(
-                          child: _buildAnalyticsItem('Last Year', '₱${lastYear.toStringAsFixed(0)}', ''),
+                          child: _buildAnalyticsItem(
+                            'Last Year', 
+                            RevenueService.formatCurrencyCompact(lastYear), 
+                            ''
+                          ),
                         ),
                       ],
                     ),
@@ -780,7 +642,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             },
           ),
           const SizedBox(height: 20),
-          // Removed User Growth (not applicable)
           // Order Counts (real-time)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('orders').snapshots(),
@@ -969,7 +830,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   if (orderSnap.hasData) {
                     for (var doc in orderSnap.data!.docs) {
                       final data = doc.data() as Map<String, dynamic>;
-                      final productId = (data['productId'] ?? '').toString();
+                      final productId = data['productId'] ?? '';
                       final amount = (data['totalPrice'] ?? 0).toDouble();
                       final category = productIdToCategory[productId] ?? 'Uncategorized';
                       categorySales[category] = (categorySales[category] ?? 0) + amount;

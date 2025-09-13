@@ -282,7 +282,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           
           // Orders List
           Expanded(
-            child: Container(
+            child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.6, // Limit TabView height
               child: TabBarView(
                 controller: _tabController,
@@ -626,6 +626,8 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       final buyerName = orderData['buyerName'] as String?;
       final supplierId = orderData['sellerId'] as String?;
       final supplierName = orderData['sellerName'] as String? ?? 'Store';
+      final productId = orderData['productId'] as String?;
+      final quantity = orderData['quantity'] as int? ?? 1;
       
       // If marking ready_to_pickup, attach pickup coordinates from supplier location
       Map<String, dynamic> statusUpdate = {
@@ -654,6 +656,22 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           .collection('orders')
           .doc(orderId)
           .update(statusUpdate);
+
+      // Increment soldCount when order is marked as picked_up
+      if (newStatus == 'picked_up' && productId != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('products')
+              .doc(productId)
+              .update({
+            'soldCount': FieldValue.increment(quantity),
+            'lastSoldAt': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          print('Failed to update product soldCount: $e');
+          // Continue with the rest of the process even if soldCount update fails
+        }
+      }
 
       // Handle route locking/unlocking based on status
       if (newStatus == 'ready_to_pickup') {

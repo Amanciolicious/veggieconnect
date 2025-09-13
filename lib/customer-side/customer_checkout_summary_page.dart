@@ -316,27 +316,48 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       
       for (final doc in widget.cartItems) {
         final data = doc.data();
-        final supplierId = data['sellerId'] as String?;
-        final supplierName = data['supplierName'] as String?;
+        final supplierId = data['sellerId'] ?? '';
+        final supplierName = data['supplierName'] ?? 'Unknown Supplier';
         
         if (supplierId != null && supplierName != null) {
           suppliers[supplierId] = supplierName;
         }
       }
       
-      // Send notification to each supplier
+      // Send order notifications to suppliers
       for (final entry in suppliers.entries) {
-        await notificationService.sendFCMNotification(
+        notificationService.sendOrderUpdateNotification(
+          orderId: orderId,
+          status: 'pending',
           recipientId: entry.key,
-          title: 'New Order Received',
-          body: 'You have received a new order #$orderId',
-          type: 'order_update',
-          data: {
-            'orderId': orderId,
-            'status': 'pending',
-            'screen': 'orders',
-          },
+          recipientName: entry.value,
+          recipientRole: 'supplier',
         );
+      }
+
+      // Send high-value order notification to admins if order exceeds threshold
+      const highValueThreshold = 1000.0; // ₱1000 threshold
+      if (finalAmount >= highValueThreshold) {
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          final userData = userDoc.data();
+          final customerName = userData?['name'] ?? userData?['email'] ?? 'Unknown Customer';
+          
+          // Get primary supplier for the notification
+          final primarySupplier = suppliers.entries.first;
+          
+          await notificationService.sendHighValueOrderNotification(
+            customerName: customerName,
+            supplierName: primarySupplier.value,
+            orderAmount: finalAmount,
+            orderId: orderId,
+          );
+        } catch (e) {
+          print('Failed to send high-value order notification: $e');
+        }
       }
 
       // For all methods, finalize: mark promo used, clear cart, and go back to cart page

@@ -9,6 +9,7 @@ import 'package:veggieconnect/supplier-side/supplier_orders_page.dart';
 import '../authentication/login_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:veggieconnect/services/cloudinary_service.dart';
+import 'package:veggieconnect/services/revenue_service.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/notification_center.dart';
 import 'dart:io';
@@ -18,6 +19,7 @@ import 'supplier_chat_list_page.dart';
 import 'supplier_add_product_page.dart';
 import 'package:veggieconnect/supplier-side/supplier_map_page.dart' show SupplierLocationPage;
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/modern_wave_drawer.dart';
 
 class SupplierDashboard extends StatefulWidget {
   const SupplierDashboard({super.key, this.initialIndex});
@@ -326,246 +328,89 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           ),
         ],
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Color(0xFF6CA04A),
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(0),
-                  bottomRight: Radius.circular(0),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
-                ],
+      drawer: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseAuth.instance.currentUser != null 
+          ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+          : null,
+        builder: (context, snapshot) {
+          final userData = snapshot.data?.data() as Map<String, dynamic>?;
+          final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Supplier';
+          final email = FirebaseAuth.instance.currentUser?.email ?? 'supplier@email.com';
+          final profileImageUrl = userData?['profileImageUrl'] as String?;
+          
+          return ModernWaveDrawer(
+            selectedIndex: _selectedIndex,
+            onItemTap: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+              Navigator.pop(context);
+            },
+            headerName: displayName,
+            headerEmail: email,
+            headerAvatarUrl: profileImageUrl,
+            onHeaderTap: _showProfileImageOptions,
+            items: [
+              DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
+              DrawerItem(icon: Icons.inventory, title: 'Manage Products', index: 1),
+              DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
+              DrawerItem(icon: Icons.person, title: 'Profile', index: 3),
+            ],
+            additionalItems: [
+              DrawerItem(
+                icon: Icons.shopping_cart,
+                title: 'Orders Management',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SupplierOrdersPage()),
+                  );
+                },
               ),
-              child: DrawerHeader(
-                decoration: const BoxDecoration(color: Colors.transparent),
-                child: StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseAuth.instance.currentUser != null 
-                    ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
-                    : null,
-                  builder: (context, snapshot) {
-                    final userData = snapshot.data?.data() as Map<String, dynamic>?;
-                    final profileImageUrl = userData?['profileImageUrl'] as String?;
-                    final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Supplier';
-                    final email = FirebaseAuth.instance.currentUser?.email ?? 'supplier@email.com';
-                    
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: _showProfileImageOptions,
-                          child: Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 32,
-                                backgroundColor: Colors.white,
-                                backgroundImage: _getSupplierProfileImage(userData),
-                                child: _getSupplierProfileImage(userData) == null 
-                                  ? Icon(Icons.store, size: 40, color: Color(0xFFA7C957))
-                                  : null,
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Color(0xFF6CA04A), width: 2),
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    size: 16,
-                                    color: Color(0xFF6CA04A),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          displayName,
-                          style: GoogleFonts.quicksand(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          email,
-                          style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    );
-                  },
-                ),
+              DrawerItem(
+                icon: Icons.person_pin,
+                title: 'My Location',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SupplierLocationPage()),
+                  );
+                },
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: Text(
-                'Overview',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
+              DrawerItem(
+                icon: Icons.message,
+                title: 'Messages',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SupplierChatListPage()),
+                  );
+                },
               ),
-              selected: _selectedIndex == 0,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 0;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory),
-              title: Text(
-                'Manage Products',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
+              DrawerItem(
+                icon: Icons.logout,
+                title: 'Logout',
+                index: -1,
+                isDestructive: true,
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (!mounted) return;
+             
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
               ),
-              selected: _selectedIndex == 1,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 1;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory_2),
-              title: Text(
-                'Stock Management',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              selected: _selectedIndex == 2,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 2;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: Text(
-                'Orders Management',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SupplierOrdersPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(
-                'Profile',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              selected: _selectedIndex == 4,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 4;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_pin),
-              title: Text(
-                'My Location',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SupplierLocationPage()),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.message),
-              title: Text(
-                'Messages',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => SupplierChatListPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: Text(
-                'Logout',
-                style: GoogleFonts.quicksand(
-                  fontSize: 14,
-                  color: Color(0xFF222222),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                if (!mounted) return;
-           
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              },
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -654,21 +499,17 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                 },
               ),
               // Revenue
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('orders')
-                    .where('sellerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-                    .where('status', isEqualTo: 'completed')
-                    .snapshots(),
+              StreamBuilder<double>(
+                stream: RevenueService.getCurrentUserRevenueStream(),
                 builder: (context, snapshot) {
-                  double revenue = 0;
-                  if (snapshot.hasData) {
-                    for (var doc in snapshot.data!.docs) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      revenue += (data['totalPrice'] ?? 0).toDouble();
-                    }
-                  }
-                  return _buildStatCard(cardRadius, 'Revenue', '₱${revenue.toStringAsFixed(2)}', Icons.attach_money, Colors.green);
+                  final revenue = snapshot.data ?? 0.0;
+                  return _buildStatCard(
+                    cardRadius, 
+                    'Revenue', 
+                    RevenueService.formatCurrency(revenue), 
+                    Icons.attach_money, 
+                    Colors.green
+                  );
                 },
               ),
               // Total Orders

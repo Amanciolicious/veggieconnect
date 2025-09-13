@@ -1472,7 +1472,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       
       // Move map to user location after the widget is built
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _mapController.mapEventStream != null) {
+        if (mounted) {
           _mapController.move(loc, 15.0);
         }
       });

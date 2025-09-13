@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/farm_location_request.dart';
 import 'map_service.dart';
@@ -42,7 +43,21 @@ class FarmLocationRequestService {
         'status': 'pending',
         'requestedAt': FieldValue.serverTimestamp(),
         'autoApprovalAt': Timestamp.fromDate(autoApprovalAt),
+        'notes': '',
       });
+
+      // Send admin notification for new farm location request
+      try {
+        final supplierName = user.displayName ?? user.email ?? 'Unknown Supplier';
+        await _notificationService.sendFarmLocationRequestNotification(
+          farmName: farmName,
+          supplierName: supplierName,
+          supplierId: user.uid,
+          requestId: docRef.id,
+        );
+      } catch (e) {
+        debugPrint('Failed to send farm location request notification: $e');
+      }
 
       // Update the document with its own ID
       await docRef.update({'id': docRef.id});

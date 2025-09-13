@@ -10,6 +10,7 @@ import '../services/cloudinary_service.dart';
 import '../services/content_filter_service.dart';
 import '../services/tax_service.dart';
 import '../services/product_rating_service.dart';
+import '../services/notification_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -405,7 +406,8 @@ class _AddProductPageState extends State<AddProductPage> {
                   'createdAt': FieldValue.serverTimestamp(),
                   'updatedAt': FieldValue.serverTimestamp(),
                   'imageUrl': _imageUrl ?? '',
-                  'popularity': 0, // default favorites count
+                  'favoriteCount': 0, // initialize favorite count for popular products
+                  'soldCount': 0, // initialize sold counter
                   'status': status,
                   'isVerified': isVerified,
                   'rejectionReason': '',
