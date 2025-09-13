@@ -393,6 +393,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             DrawerItem(icon: Icons.shopping_cart, title: 'Cart', index: 2),
             DrawerItem(icon: Icons.store, title: 'Browse', index: 3),
             DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
+            DrawerItem(icon: Icons.message, title: 'Messages', index: -1, onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomerMessagesPage()),
+              );
+            }),
           ],
           additionalItems: [
             DrawerItem(

@@ -10,6 +10,9 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import '../widgets/lottie_loading_widget.dart';
 import 'supplier_dashboard.dart';
 import 'supplier_map_page.dart' show SupplierLocationPage;
+import '../widgets/modern_wave_drawer.dart';
+import '../authentication/login_page.dart';
+import 'supplier_orders_page.dart';
 
 class SupplierChatListPage extends StatefulWidget {
   const SupplierChatListPage({super.key});
@@ -67,7 +70,89 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
           ],
         ],
       ),
-      drawer: _buildSupplierDrawer(context),
+      drawer: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseAuth.instance.currentUser != null 
+          ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+          : null,
+        builder: (context, snapshot) {
+          final userData = snapshot.data?.data() as Map<String, dynamic>?;
+          final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Supplier';
+          final email = FirebaseAuth.instance.currentUser?.email ?? 'supplier@email.com';
+          final profileImageUrl = userData?['avatarUrl'] as String?;
+          
+          return ModernWaveDrawer(
+            selectedIndex: -1, // No main tab selected since we're on messages page
+            onItemTap: (index) {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SupplierDashboard(initialIndex: index),
+                ),
+              );
+            },
+            headerName: displayName,
+            headerEmail: email,
+            headerAvatarUrl: profileImageUrl,
+            items: [
+              DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
+              DrawerItem(icon: Icons.inventory, title: 'Manage Products', index: 1),
+              DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
+              DrawerItem(icon: Icons.person, title: 'Profile', index: 3),
+            ],
+            additionalItems: [
+              DrawerItem(
+                icon: Icons.shopping_cart,
+                title: 'Orders Management',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SupplierOrdersPage()),
+                  );
+                },
+              ),
+              DrawerItem(
+                icon: Icons.person_pin,
+                title: 'My Location',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SupplierLocationPage()),
+                  );
+                },
+              ),
+              DrawerItem(
+                icon: Icons.message,
+                title: 'Messages',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  // Already on messages page, no navigation needed
+                },
+              ),
+              DrawerItem(
+                icon: Icons.logout,
+                title: 'Logout',
+                index: -1,
+                isDestructive: true,
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (!mounted) return;
+             
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
       bottomNavigationBar: CurvedNavigationBar(
         index: 0, // default to home tab when coming from messages page
         backgroundColor: const Color(0xFF4CAF50),
@@ -417,56 +502,5 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
         SnackBar(content: Text('Failed to hide conversation: $e')),
       );
     }
-  }
-
-  Drawer _buildSupplierDrawer(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          Container(
-            decoration: const BoxDecoration(color: Color(0xFF6CA04A)),
-            child: const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.transparent),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Text(
-                  'Supplier Menu',
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
-          _drawerItem(icon: Icons.dashboard, label: 'Overview', onTap: () => _goToTab(context, 0)),
-          _drawerItem(icon: Icons.inventory, label: 'Manage Products', onTap: () => _goToTab(context, 1)),
-          _drawerItem(icon: Icons.inventory_2, label: 'Stock Management', onTap: () => _goToTab(context, 2)),
-          _drawerItem(icon: Icons.shopping_cart, label: 'Orders Management', onTap: () => _goToTab(context, 3)),
-          _drawerItem(icon: Icons.person, label: 'Profile', onTap: () => _goToTab(context, 4)),
-          const Divider(),
-          _drawerItem(icon: Icons.person_pin, label: 'My Location', onTap: () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierLocationPage()));
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _drawerItem({required IconData icon, required String label, required VoidCallback onTap, bool selected = false}) {
-    return ListTile(
-      leading: Icon(icon, color: selected ? const Color(0xFF4CAF50) : const Color(0xFF757575)),
-      title: Text(label),
-      selected: selected,
-      selectedTileColor: const Color(0xFF4CAF50).withOpacity(0.08),
-      onTap: onTap,
-    );
-  }
-
-  void _goToTab(BuildContext context, int index) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => SupplierDashboard(initialIndex: index),
-      ),
-    );
   }
 }

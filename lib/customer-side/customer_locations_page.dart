@@ -113,9 +113,11 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading supplier locations: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading supplier locations: $e')),
+        );
+      }
     }
   }
 
@@ -739,18 +741,20 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
     // Open supplier location in OpenStreetMap
     final url = 'https://www.openstreetmap.org/?mlat=${supplier.latitude}&mlon=${supplier.longitude}&zoom=16&layers=M';
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening ${supplier.locationName} in OpenStreetMap...'),
-        action: SnackBarAction(
-          label: 'Open',
-          onPressed: () {
-            // Note: In a real app, you would use url_launcher package to open the URL
-            // await launchUrl(Uri.parse(url));
-          },
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Opening ${supplier.locationName} in OpenStreetMap...'),
+          action: SnackBarAction(
+            label: 'Open',
+            onPressed: () {
+              // Note: In a real app, you would use url_launcher package to open the URL
+              // await launchUrl(Uri.parse(url));
+            },
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   void _fitMapToRoute() {
@@ -813,19 +817,23 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
           _fitMapToRoute();
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Route displayed on map'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Route displayed on map'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not generate route'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not generate route'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       // Close loading dialog if still open
@@ -833,12 +841,14 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
         Navigator.of(context).pop();
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error generating route: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating route: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -1437,17 +1447,21 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       
       final data = await _mapService.getCurrentLocationWithAddress();
       if (data == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to get current location'), backgroundColor: Colors.red),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Unable to get current location'), backgroundColor: Colors.red),
+          );
+        }
         return;
       }
       final LatLng? loc = data['location'] as LatLng?;
       final String? address = data['address'] as String?;
       if (loc == null || address == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid location data'), backgroundColor: Colors.red),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Invalid location data'), backgroundColor: Colors.red),
+          );
+        }
         return;
       }
       
@@ -1456,13 +1470,15 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       double distance = _mapService.calculateDistance(bogoCityCenter, loc);
       
       if (distance > 50.0) { // 50km radius - more lenient for customers
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Your location seems far from Bogo City. Suppliers may be limited.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 4),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Your location seems far from Bogo City. Suppliers may be limited.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
       }
       
       setState(() {
@@ -1479,20 +1495,24 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       
       await _loadSupplierLocations();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Location set to: ${address.length > 50 ? '${address.substring(0, 50)}...' : address}'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Location set to: ${address.length > 50 ? '${address.substring(0, 50)}...' : address}'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error getting location: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error getting location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() { _isGettingLocation = false; });
     }
