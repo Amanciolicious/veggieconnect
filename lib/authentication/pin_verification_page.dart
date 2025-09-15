@@ -319,178 +319,187 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: 40),
-              
-              // Header Icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Color(0xFF4CAF50).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.verified_user,
-                  size: 40,
-                  color: Color(0xFF4CAF50),
-                ),
-              ),
-              
-              SizedBox(height: 32),
-              
-              // Title
-              Text(
-                'Enter Verification PIN',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey[800],
-                ),
-              ),
-              
-              SizedBox(height: 12),
-              
-              // Subtitle
-              Text(
-                'We sent a 5-digit PIN to',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              
-              SizedBox(height: 4),
-              
-              Text(
-                widget.email,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF4CAF50),
-                ),
-              ),
-              
-              SizedBox(height: 40),
-              
-              // PIN Input Fields
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(5, (index) => _buildPinInput(index)),
-              ),
-              
-              SizedBox(height: 32),
-              
-              // Verify Button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: (_isLoading || _enteredPin.length != 5) ? null : _verifyPin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF4CAF50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Verify PIN',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-              
-              SizedBox(height: 24),
-              
-              // Resend PIN
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         kToolbarHeight - 48, // Account for SafeArea and padding
+            ),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  SizedBox(height: 20),
+                  
+                  // Header Icon
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF4CAF50).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.verified_user,
+                      size: 35,
+                      color: Color(0xFF4CAF50),
+                    ),
+                  ),
+                  
+                  SizedBox(height: 24),
+                  
+                  // Title
                   Text(
-                    'Didn\'t receive the PIN? ',
+                    'Enter Verification PIN',
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 10),
+                  
+                  // Subtitle
+                  Text(
+                    'We sent a 5-digit PIN to',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
                       color: Colors.grey[600],
                     ),
                   ),
-                  TextButton(
-                    onPressed: (_resendCountdown > 0 || _isResending) ? null : _resendPin,
-                    child: _isResending
-                        ? SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                  
+                  SizedBox(height: 4),
+                  
+                  Text(
+                    widget.email,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF4CAF50),
+                    ),
+                  ),
+                  
+                  SizedBox(height: 32),
+                  
+                  // PIN Input Fields
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(5, (index) => _buildPinInput(index)),
+                  ),
+                  
+                  SizedBox(height: 28),
+                  
+                  // Verify Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: (_isLoading || _enteredPin.length != 5) ? null : _verifyPin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF4CAF50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Verify PIN',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
-                          )
-                        : Text(
-                            _resendCountdown > 0 
-                                ? 'Resend in ${_resendCountdown}s'
-                                : 'Resend PIN',
+                    ),
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Resend PIN
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Didn\'t receive the PIN? ',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: (_resendCountdown > 0 || _isResending) ? null : _resendPin,
+                        child: _isResending
+                            ? SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                                ),
+                              )
+                            : Text(
+                                _resendCountdown > 0 
+                                    ? 'Resend in ${_resendCountdown}s'
+                                    : 'Resend PIN',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _resendCountdown > 0 
+                                      ? Colors.grey[400]
+                                      : Color(0xFF4CAF50),
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                  
+                  Expanded(child: SizedBox(height: 20)),
+                  
+                  // Help Text
+                  Container(
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: Colors.orange[600],
+                          size: 18,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'This PIN will expire in 15 minutes. Enter it as soon as you receive it.',
                             style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: _resendCountdown > 0 
-                                  ? Colors.grey[400]
-                                  : Color(0xFF4CAF50),
+                              fontSize: 11,
+                              color: Colors.orange[700],
                             ),
                           ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              
-              Spacer(),
-              
-              // Help Text
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      color: Colors.orange[600],
-                      size: 20,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'This PIN will expire in 15 minutes. Enter it as soon as you receive it.',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.orange[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

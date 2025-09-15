@@ -238,14 +238,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.star_border, color: Colors.grey, size: 16),
+                                      Icon(Icons.star_border, color: Colors.grey, size: 14),
                                       SizedBox(width: 4),
-                                      Text(
-                                        'No ratings yet',
-                                        style: GoogleFonts.quicksand(
-                                          fontSize: screenWidth * 0.032,
-                                          color: Colors.grey[600],
-                                          fontWeight: FontWeight.w400,
+                                      Flexible(
+                                        child: Text(
+                                          'No ratings yet',
+                                          style: GoogleFonts.quicksand(
+                                            fontSize: 11,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
@@ -271,7 +274,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               final highRatingPercentage = total > 0 ? (highRatingCount * 100.0 / total) : 0.0;
                               
                               return Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: Color(0xFF6CA04A).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
@@ -280,27 +283,30 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.star, color: Color(0xFF6CA04A), size: 16),
+                                    Icon(Icons.star, color: Color(0xFF6CA04A), size: 14),
                                     SizedBox(width: 4),
-                                    Text(
-                                      '${percentage.toStringAsFixed(0)}% Satisfaction',
-                                      style: GoogleFonts.quicksand(
-                                        fontSize: screenWidth * 0.032,
-                                        color: Color(0xFF6CA04A),
-                                        fontWeight: FontWeight.w400,
+                                    Flexible(
+                                      child: Text(
+                                        '${percentage.toStringAsFixed(0)}% Satisfaction',
+                                        style: GoogleFonts.quicksand(
+                                          fontSize: 11,
+                                          color: Color(0xFF6CA04A),
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    SizedBox(width: 8),
+                                    SizedBox(width: 6),
                                     Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: Color(0xFF6CA04A),
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         '${highRatingPercentage.toStringAsFixed(0)}% 4-5★',
                                         style: GoogleFonts.quicksand(
-                                          fontSize: screenWidth * 0.028,
+                                          fontSize: 9,
                                           color: Colors.white,
                                           fontWeight: FontWeight.w400,
                                         ),

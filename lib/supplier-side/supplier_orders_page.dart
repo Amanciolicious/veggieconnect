@@ -1312,67 +1312,78 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.star, color: Color(0xFFFFD700), size: 20),
-            SizedBox(width: 8),
-            Text('Customer Feedback'),
+            Icon(Icons.star, color: Color(0xFFFFD700), size: 18),
+            SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'Customer Feedback',
+                style: TextStyle(fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Rating
-            Row(
-              children: [
-                Text(
-                  'Rating: ',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Rating
+              Row(
+                children: [
+                  Text(
+                    'Rating: ',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  StarRatingDisplay(
+                    rating: (ratingData['rating'] ?? 0).toDouble(),
+                    size: 16.0,
+                    activeColor: Color(0xFFFFD700),
+                    inactiveColor: Colors.grey[300]!,
+                    showRatingText: true,
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              // Feedback
+              Text(
+                'Feedback:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                constraints: BoxConstraints(maxHeight: 120),
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                StarRatingDisplay(
-                  rating: (ratingData['rating'] ?? 0).toDouble(),
-                  size: 20.0,
-                  activeColor: Color(0xFFFFD700),
-                  inactiveColor: Colors.grey[300]!,
-                  showRatingText: true,
+                child: SingleChildScrollView(
+                  child: Text(
+                    ratingData['feedback'] ?? 'No feedback provided',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+              if (ratingData['timestamp'] != null) ...[
+                SizedBox(height: 10),
+                Text(
+                  'Submitted: ${DateFormat('MMM dd, yyyy - HH:mm').format((ratingData['timestamp'] as Timestamp).toDate())}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
-            ),
-            SizedBox(height: 16),
-            // Feedback
-            Text(
-              'Feedback:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Text(
-                ratingData['feedback'] ?? 'No feedback provided',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-            if (ratingData['timestamp'] != null) ...[
-              SizedBox(height: 12),
-              Text(
-                'Submitted: ${DateFormat('MMM dd, yyyy - HH:mm').format((ratingData['timestamp'] as Timestamp).toDate())}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: Text('Close', style: TextStyle(fontSize: 13)),
           ),
         ],
       ),
