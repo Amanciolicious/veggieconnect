@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/notification_service.dart';
@@ -10,6 +9,7 @@ import 'package:veggieconnect/services/supplier_report_service.dart';
 import 'package:veggieconnect/services/ban_service.dart';
 import 'package:veggieconnect/services/rating_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../services/auth_state_service.dart';
 
 class BuyerOrderHistoryPage extends StatefulWidget {
   const BuyerOrderHistoryPage({super.key});
@@ -21,6 +21,9 @@ class BuyerOrderHistoryPage extends StatefulWidget {
 class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final List<String> _tabs = ['All', 'Pending', 'Processing', 'Ready to Pick Up', 'Picked Up', 'Cancelled'];
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -37,7 +40,6 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
         body: Center(child: Text('Not logged in.')),
@@ -72,7 +74,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('orders')
-                  .where('buyerId', isEqualTo: user.uid)
+                  .where('buyerId', isEqualTo: user?.uid)
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -264,10 +266,10 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                             child: SizedBox(
                                               width: 20,
                                               height: 20,
-                                              child: GroceryLoadingWidget(
-                                                size: 20,
-                                                showText: false,
-                                              ),
+                                              child: CircularProgressIndicator(
+                strokeWidth: 2,        // thinner spinner
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white), 
+              ),
                                             ),
                                           ),
                                         );
@@ -486,9 +488,6 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
 
   void _showReportDialog(BuildContext context, String orderId, Map<String, dynamic> order) async {
     final TextEditingController reasonController = TextEditingController();
-    final user = FirebaseAuth.instance.currentUser;
-    
-    if (user == null) return;
     
     showDialog(
       context: context,
@@ -548,7 +547,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                   // Submit the report
                   await SupplierReportService.submitReport(
                     supplierId: order['sellerId'] ?? '',
-                    reporterId: user.uid,
+                    reporterId: user!.uid,
                     productId: order['productId'] ?? '',
                     reason: reasonController.text.trim(),
                     productName: order['productName'] ?? '',
@@ -561,7 +560,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                   final query = await FirebaseFirestore.instance
                       .collection('orders')
                       .where('orderId', isEqualTo: sharedOrderId)
-                      .where('buyerId', isEqualTo: user.uid)
+                      .where('buyerId', isEqualTo: user?.uid)
                       .get();
                   if (query.docs.isNotEmpty) {
                     final batch = FirebaseFirestore.instance.batch();
@@ -741,9 +740,6 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
 
   Future<void> _cancelOrder(String orderId, Map<String, dynamic> order) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
       // Update order status to cancelled
       await FirebaseFirestore.instance
           .collection('orders')
@@ -751,7 +747,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
           .update({
         'status': 'cancelled',
         'cancelledAt': FieldValue.serverTimestamp(),
-        'cancelledBy': user.uid,
+        'cancelledBy': user?.uid,
       });
 
       // Send notification to supplier
@@ -804,9 +800,6 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
 
   void _buyAgain(BuildContext context, Map<String, dynamic> order) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
       // Check if product still exists and is available
       final productId = order['productId'] as String?;
       if (productId == null) {
@@ -850,7 +843,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
 
       // Add to cart
       await FirebaseFirestore.instance.collection('cart').add({
-        'userId': user.uid,
+        'userId': user?.uid,
         'productId': productId,
         'quantity': requestedQuantity,
         'addedAt': FieldValue.serverTimestamp(),

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 // Chat widgets removed
 import '../models/supplier_location.dart';
 import '../services/supplier_location_service.dart';
@@ -14,6 +13,7 @@ import '../services/farm_location_service.dart';
 import '../models/farm_location_request.dart';
 import '../services/farm_location_request_service.dart';
 import '../services/farm_location_countdown_service.dart';
+import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 import 'dart:async';
 
@@ -31,6 +31,9 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
   final MapService _mapService = MapService();
   final FarmLocationRequestService _farmLocationRequestService = FarmLocationRequestService();
   final FarmLocationCountdownService _countdownService = FarmLocationCountdownService();
+  final AuthStateService _authService = AuthStateService();
+  
+  AuthUser? get user => _authService.currentUser;
   
   SupplierLocation? _supplierLocation;
   List<FarmLocation> _canvassedFarms = [];
@@ -88,9 +91,9 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
 
   Future<void> _loadData() async {
     setState(() { _isLoading = true; });
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final location = await _supplierLocationService.getSupplierLocationBySupplierId(user.uid);
+    final currentUser = user;
+    if (currentUser != null) {
+      final location = await _supplierLocationService.getSupplierLocationBySupplierId(currentUser.uid);
       final farms = await _farmLocationService.getAllFarmLocations();
       setState(() {
         _supplierLocation = location;
@@ -120,37 +123,34 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
           const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
           double distance = _mapService.calculateDistance(bogoCityCenter, location);
           
-          if (distance <= 5.0) { // 5km radius
-            // Move map to current location with proper zoom
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                try {
-                  _mapController.move(location, 16.0);
-                } catch (e) {
-                  print('Map controller not ready yet: $e');
-                }
-              }
-            });
-            
-            // Set the selected location
-            setState(() {
-              _selectedLocation = location;
-            });
-
-            // Auto-save the current location
-            await _autoSaveCurrentLocation(location, address);
-          } else {
-            // Location outside Bogo City, just center on Bogo City
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                try {
-                  _mapController.move(bogoCityCenter, 12.0);
-                } catch (e) {
-                  print('Map controller not ready yet: $e');
-                }
-              }
-            });
+          if (distance > 5.0) { // 5km radius
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Supplier locations can only be added within Bogo City boundaries'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
           }
+
+          // Move map to current location with proper zoom
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              try {
+                _mapController.move(location, 16.0);
+              } catch (e) {
+                print('Map controller not ready yet: $e');
+              }
+            }
+          });
+          
+          // Set the selected location
+          setState(() {
+            _selectedLocation = location;
+          });
+
+          // Auto-save the current location
+          await _autoSaveCurrentLocation(location, address);
         }
       }
     } catch (e) {
@@ -501,8 +501,8 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
 
   Future<void> _autoSaveCurrentLocation(LatLng location, String address) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      final currentUser = user;
+      if (currentUser == null) {
         throw Exception('User not authenticated');
       }
 
@@ -516,8 +516,8 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
       }
 
       await _supplierLocationService.createOrUpdateSupplierLocation(
-        supplierId: user.uid,
-        supplierName: user.displayName ?? user.email ?? 'Unknown Supplier',
+        supplierId: currentUser.uid,
+        supplierName: currentUser.displayName ?? currentUser.email ?? 'Unknown Supplier',
         locationName: locationName,
         description: 'Auto-detected location',
         location: location,
@@ -573,8 +573,8 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
 
   Future<void> _updateToCurrentLocation(LatLng location, String address) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      final currentUser = user;
+      if (currentUser == null) {
         throw Exception('User not authenticated');
       }
 
@@ -588,8 +588,8 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
       }
 
       await _supplierLocationService.createOrUpdateSupplierLocation(
-        supplierId: user.uid,
-        supplierName: user.displayName ?? user.email ?? 'Unknown Supplier',
+        supplierId: currentUser.uid,
+        supplierName: currentUser.displayName ?? currentUser.email ?? 'Unknown Supplier',
         locationName: locationName,
         description: 'Auto-detected location',
         location: location,
@@ -792,20 +792,20 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
 
   Future<void> _addSupplierLocation(String name, String description, LatLng location) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      final currentUser = user;
+      if (currentUser == null) return;
 
       // Get user data for supplier name
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(currentUser.uid)
           .get();
       
       final supplierName = userDoc.data()?['name'] ?? 'Unknown Supplier';
       
       // Use the new API
       await _supplierLocationService.createOrUpdateSupplierLocation(
-        supplierId: user.uid,
+        supplierId: currentUser.uid,
         supplierName: supplierName,
         locationName: name,
         description: description,
@@ -830,11 +830,11 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
 
   Future<void> _updateSupplierLocation(LatLng newLocation) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null || _supplierLocation == null) return;
+      final currentUser = user;
+      if (currentUser == null || _supplierLocation == null) return;
       
       await _supplierLocationService.updateSupplierLocation(
-        supplierId: user.uid,
+        supplierId: currentUser.uid,
         newLocation: newLocation,
       );
       
@@ -854,103 +854,18 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     }
   }
 
-  void _showRateSupplierDialog(BuildContext context, SupplierLocation supplier) {
+  Future<void> _showRateSupplierDialog(BuildContext context, SupplierLocation supplier) async {
     int rating = 5;
     TextEditingController commentController = TextEditingController();
-    final user = FirebaseAuth.instance.currentUser;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Rate ${supplier.supplierName}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 16),
-            TextField(
-              controller: commentController,
-              decoration: const InputDecoration(
-                labelText: 'Comment (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (user == null) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('You must be logged in to rate.')),
-                );
-                return;
-              }
-              // Fetch user role and block if not buyer or is supplier
-              final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-              final userRole = userDoc.data()?['role'] ?? '';
-              if (userRole != 'buyer' || user.uid == supplier.supplierId) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Only buyers can rate suppliers.')),
-                );
-                return;
-              }
-              // Save rating to Firestore
-              final ratingsRef = FirebaseFirestore.instance.collection('supplier_ratings');
-              await ratingsRef.add({
-                'supplierId': supplier.supplierId,
-                'buyerId': user.uid,
-                'rating': rating,
-                'comment': commentController.text.trim(),
-                'timestamp': FieldValue.serverTimestamp(),
-              });
-              // Recalculate average and update supplier_locations
-              final query = await ratingsRef.where('supplierId', isEqualTo: supplier.supplierId).get();
-              double avg = 0;
-              if (query.docs.isNotEmpty) {
-                double sum = 0;
-                for (var doc in query.docs) {
-                  sum += (doc['rating'] ?? 0) is int ? (doc['rating'] ?? 0).toDouble() : (doc['rating'] ?? 0);
-                }
-                avg = sum / query.docs.length;
-              }
-              // Update supplier_locations
-              final locQuery = await FirebaseFirestore.instance
-                  .collection('supplier_locations')
-                  .where('supplierId', isEqualTo: supplier.supplierId)
-                  .limit(1)
-                  .get();
-              if (locQuery.docs.isNotEmpty) {
-                await locQuery.docs.first.reference.update({'rating': avg});
-              }
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Thank you for your review!')),
-              );
-            },
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSupplierModal(SupplierLocation? supplier) async {
-    if (supplier == null) return;
-    final user = FirebaseAuth.instance.currentUser;
+    final currentUser = user;
     String? userRole;
     bool isBuyer = false;
     bool isNotSupplier = false;
-    if (user != null) {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    if (currentUser != null) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       userRole = userDoc.data()?['role'] ?? '';
       isBuyer = userRole == 'buyer';
-      isNotSupplier = user.uid != supplier.supplierId;
+      isNotSupplier = currentUser.uid != supplier.supplierId;
     }
     showModalBottomSheet(
       context: context,
@@ -1031,6 +946,123 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                   ),
                   onPressed: () {
                     // Optionally show more details or navigate
+                    Navigator.pop(context);
+                  },
+                  child: const Text('View Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (isBuyer && isNotSupplier)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () {
+                      _showRateSupplierDialog(context, supplier);
+                    },
+                    child: const Text('Rate Supplier', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSupplierModal(SupplierLocation? supplier) async {
+    if (supplier == null) return;
+    final currentUser = user;
+    String? userRole;
+    bool isBuyer = false;
+    bool isNotSupplier = false;
+    if (currentUser != null) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+      userRole = userDoc.data()?['role'] ?? '';
+      isBuyer = userRole == 'buyer';
+      isNotSupplier = currentUser.uid != supplier.supplierId;
+    }
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
+                    child: const Icon(Icons.store, color: Color(0xFF6CA04A), size: 32),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(supplier.supplierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                        Row(
+                          children: [
+                            Icon(Icons.star, color: Colors.orange, size: 18),
+                            const SizedBox(width: 4),
+                            Text(supplier.rating != null ? supplier.rating!.toStringAsFixed(1) : 'N/A', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            if (supplier.isNearest ?? false) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF6CA04A).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text('Nearest', style: TextStyle(color: Color(0xFF6CA04A), fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: Color(0xFF6CA04A), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(supplier.address, style: const TextStyle(fontSize: 15))),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Icon(Icons.payments, color: Color(0xFF6CA04A), size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Cash on Pick Up', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 16),
+                  Icon(Icons.qr_code, color: Color(0xFF6CA04A), size: 20),
+                  const SizedBox(width: 8),
+                  const Text('GCash', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF6CA04A),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
                     Navigator.pop(context);
                   },
                   child: const Text('View Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -1590,7 +1622,6 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     
     try {
       // Use OpenStreetMap-based external map service
-      final url = 'https://www.openstreetmap.org/?mlat=${farm.latitude}&mlon=${farm.longitude}&zoom=16&layers=M';
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

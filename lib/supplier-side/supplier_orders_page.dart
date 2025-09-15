@@ -1,13 +1,13 @@
 // ignore_for_file: deprecated_member_use, avoid_print
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/supplier_location_service.dart';
 import 'package:veggieconnect/services/navigation_manager.dart';
 import 'package:veggieconnect/services/notification_service.dart';
+import 'package:veggieconnect/services/auth_state_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'supplier_chat_page.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -43,6 +43,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     'this_month',
     'last_month',
   ];
+
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -489,7 +493,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   }
 
   Stream<QuerySnapshot> _getOrdersStream(String status) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user == null) {
       return Stream.empty();
     }
@@ -1408,7 +1412,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     }
     
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUser = _authService.currentUser;
       if (currentUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('You must be logged in to chat')),

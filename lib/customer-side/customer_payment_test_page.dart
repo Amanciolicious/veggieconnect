@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/payment_completion_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../services/auth_state_service.dart';
 
 class PaymentTestPage extends StatefulWidget {
   const PaymentTestPage({super.key});
@@ -16,6 +16,9 @@ class _PaymentTestPageState extends State<PaymentTestPage> {
   String _orderId = '';
   String _status = '';
   bool _isLoading = false;
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +248,6 @@ class _PaymentTestPageState extends State<PaymentTestPage> {
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         setState(() {
           _status = 'No user logged in';
@@ -256,7 +258,7 @@ class _PaymentTestPageState extends State<PaymentTestPage> {
       // Get all cart items for the user
       final cartQuery = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(user!.uid)
           .collection('cart')
           .get();
 
@@ -295,7 +297,6 @@ class _PaymentTestPageState extends State<PaymentTestPage> {
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         setState(() {
           _status = 'No user logged in';
@@ -306,12 +307,12 @@ class _PaymentTestPageState extends State<PaymentTestPage> {
       // Get all cart items for the user
       final cartQuery = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(user!.uid)
           .collection('cart')
           .get();
 
       String debugInfo = 'Cart Debug Info:\n';
-      debugInfo += 'User ID: ${user.uid}\n';
+      debugInfo += 'User ID: ${user!.uid}\n';
       debugInfo += 'Cart items count: ${cartQuery.docs.length}\n\n';
       
       for (final cartDoc in cartQuery.docs) {

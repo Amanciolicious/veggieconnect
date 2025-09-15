@@ -1,12 +1,13 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/customer-side/customer_checkout_summary_page.dart'; // Added import for CheckoutSummaryPage
 import 'package:veggieconnect/customer-side/customer_payment_processing_page.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../authentication/login_page.dart';
+import '../services/auth_state_service.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -16,8 +17,11 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  User? get user => _auth.currentUser;
+  final AuthStateService _authService = AuthStateService();
+  
+  // Use custom auth service instead of Firebase Auth directly
+  AuthUser? get user => _authService.currentUser;
+  
   late CollectionReference<Map<String, dynamic>> _cartRef;
   bool _isProcessing = false;
   String _selectedPaymentMethod = 'cash_on_pickup';
@@ -25,10 +29,25 @@ class _CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
-    _cartRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .collection('cart');
+    
+    // Check if user is authenticated
+    if (user != null) {
+      _cartRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .collection('cart');
+    } else {
+      // User is not authenticated, redirect to login
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _redirectToLogin();
+      });
+    }
+  }
+
+  void _redirectToLogin() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
   }
 
   Future<void> _updateQuantity(String docId, int newQty) async {

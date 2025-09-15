@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_state_service.dart';
 import '../services/paymongo_gcash_service.dart';
 import 'customer_digital_receipt_page.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -36,6 +36,9 @@ class PaymentProcessingPage extends StatefulWidget {
 }
 
 class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
+  final AuthStateService _authService = AuthStateService();
+  AuthUser? get user => _authService.currentUser;
+
   bool _isProcessing = false;
   String? _errorMessage;
   Timer? _autoCompleteTimer;
@@ -232,13 +235,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
 
   Future<void> _storeTemporaryOrderData() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
       // Resolve buyer name for supplier views
-      String buyerName = user.displayName ?? '';
+      String buyerName = user?.displayName ?? '';
       try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
         if (userDoc.exists) {
           buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
         }
@@ -247,7 +247,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       // Store temporary order data for webhook processing
       await FirebaseFirestore.instance.collection('temp_orders').doc(widget.orderId).set({
         'orderId': widget.orderId,
-        'buyerId': user.uid,
+        'buyerId': user?.uid,
         'buyerName': buyerName,
         'amount': widget.total,
         'cartItems': widget.cartItems.map((doc) => {
@@ -272,13 +272,10 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
 
   Future<void> _storeOrderToFirestore() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
       // Resolve buyer name for supplier views
-      String buyerName = user.displayName ?? '';
+      String buyerName = user?.displayName ?? '';
       try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
         if (userDoc.exists) {
           buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
         }
@@ -294,7 +291,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
         final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
 
         batch.set(orderDoc, {
-          'buyerId': user.uid,
+          'buyerId': user?.uid,
           'buyerName': buyerName,
           'productId': data['productId'],
           'sellerId': data['sellerId'],

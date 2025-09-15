@@ -2,10 +2,10 @@
 
 import 'package:flutter/material.dart';
 // Removed AppLoader to avoid using Lottie in notifications loading state
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_service.dart';
 import '../customer-side/customer_navigation_screen.dart';
 import './lottie_loading_widget.dart';
+import '../services/auth_state_service.dart';
 
 class NotificationCenter extends StatefulWidget {
   const NotificationCenter({super.key});
@@ -16,7 +16,9 @@ class NotificationCenter extends StatefulWidget {
 
 class _NotificationCenterState extends State<NotificationCenter> {
   final NotificationService _notificationService = NotificationService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -30,7 +32,6 @@ class _NotificationCenterState extends State<NotificationCenter> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final user = _auth.currentUser;
     
     if (user == null) {
       return Scaffold(
@@ -89,6 +90,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
                         assetPath: 'assets/lottie-loading-json/Grocery shopping bag pickup and delivery.json',
                         width: 100,
                         height: 100,
+                        showText: false,
                       ),
                     ),
                     SizedBox(height: 16),

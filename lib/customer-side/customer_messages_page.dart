@@ -1,10 +1,11 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:veggieconnect/services/auth_state_service.dart';
 import 'customer_chat_page.dart';
 import '../widgets/lottie_loading_widget.dart';
 
@@ -17,14 +18,15 @@ class CustomerMessagesPage extends StatefulWidget {
 
 class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
   final ChatService _chatService = ChatService();
+  final AuthStateService _authService = AuthStateService();
   final Set<String> _selectedConversations = {};
   bool _isSelectionMode = false;
 
+  AuthUser? get user => _authService.currentUser;
+
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     
     if (user == null) {
       return Scaffold(
@@ -75,7 +77,7 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _chatService.streamBuyerConversations(user.uid),
+        stream: _chatService.streamBuyerConversations(user!.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -183,7 +185,7 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
               final lastMessage = data['lastMessage'] ?? '';
               final lastMessageTime = data['lastMessageTime'] as Timestamp?;
               final lastSenderId = data['lastMessageSenderId'];
-              final showUnread = lastSenderId != null && lastSenderId != user.uid && (lastMessage?.toString().isNotEmpty ?? false);
+              final showUnread = lastSenderId != null && lastSenderId != user?.uid && (lastMessage?.toString().isNotEmpty ?? false);
               final isSelected = _selectedConversations.contains(conversationId);
 
               return Container(
@@ -305,8 +307,8 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
                           builder: (context) => BuyerChatPage(
                             supplierId: data['supplierId'] ?? '',
                             supplierName: supplierName,
-                            buyerId: user.uid,
-                            buyerName: user.displayName ?? 'Customer',
+                            buyerId: user?.uid,
+                            buyerName: user?.displayName ?? 'Customer',
                           ),
                         ),
                       );
@@ -343,9 +345,6 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
   }
 
   Future<void> _deleteSelectedConversations() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -373,7 +372,7 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
         for (final conversationId in _selectedConversations) {
           await _chatService.hideConversationForBuyer(
             conversationId: conversationId,
-            buyerId: user.uid,
+            buyerId: user!.uid,
           );
         }
         setState(() {

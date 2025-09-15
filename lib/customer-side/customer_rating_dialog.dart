@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/auth_state_service.dart';
 import '../widgets/star_rating_widget.dart';
 import '../widgets/lottie_loading_widget.dart';
 
@@ -26,9 +26,12 @@ class RatingDialog extends StatefulWidget {
 }
 
 class _RatingDialogState extends State<RatingDialog> {
+  final AuthStateService _authService = AuthStateService();
   int _rating = 0;
   final TextEditingController _feedbackController = TextEditingController();
   bool _isSubmitting = false;
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void dispose() {
@@ -52,14 +55,13 @@ class _RatingDialogState extends State<RatingDialog> {
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
       // Prevent duplicate rating submission for the same order by the same buyer
       final existing = await FirebaseFirestore.instance
           .collection('order_ratings')
           .where('orderId', isEqualTo: widget.orderId)
-          .where('buyerId', isEqualTo: user.uid)
+          .where('buyerId', isEqualTo: user?.uid)
           .limit(1)
           .get();
       if (existing.docs.isNotEmpty) {
@@ -77,8 +79,8 @@ class _RatingDialogState extends State<RatingDialog> {
       // Create rating document for order_ratings collection
       final orderRatingData = {
         'orderId': widget.orderId,
-        'buyerId': user.uid,
-        'buyerName': user.displayName ?? 'Customer',
+        'buyerId': user?.uid,
+        'buyerName': user?.displayName ?? 'Customer',
         'supplierId': widget.supplierId,
         'supplierName': widget.supplierName,
         'rating': _rating,
@@ -102,7 +104,7 @@ class _RatingDialogState extends State<RatingDialog> {
           final existingProductRating = await FirebaseFirestore.instance
               .collection('product_ratings')
               .where('productId', isEqualTo: productId)
-              .where('buyerId', isEqualTo: user.uid)
+              .where('buyerId', isEqualTo: user?.uid)
               .limit(1)
               .get();
           
@@ -115,8 +117,8 @@ class _RatingDialogState extends State<RatingDialog> {
             final productRatingData = {
               'productId': productId,
               'supplierId': widget.supplierId,
-              'buyerId': user.uid,
-              'buyerName': user.displayName ?? 'Customer',
+              'buyerId': user?.uid,
+              'buyerName': user?.displayName ?? 'Customer',
               'rating': _rating,
               'feedback': _feedbackController.text.trim(),
               'productName': product['name'] ?? 'Unknown Product',
@@ -139,7 +141,7 @@ class _RatingDialogState extends State<RatingDialog> {
       final ordersQuery = await FirebaseFirestore.instance
           .collection('orders')
           .where('orderId', isEqualTo: widget.orderId)
-          .where('buyerId', isEqualTo: user.uid)
+          .where('buyerId', isEqualTo: user?.uid)
           .get();
 
       if (ordersQuery.docs.isNotEmpty) {
@@ -366,12 +368,13 @@ class _RatingDialogState extends State<RatingDialog> {
           onPressed: _isSubmitting ? null : _submitRating,
           child: _isSubmitting
               ? const SizedBox(
-                  width: 24,
                   height: 24,
+                  width: 24,
                   child: LottieLoadingWidget(
-                    assetPath: 'assets/lottie-loading-json/Grocery shopping bag pickup and delivery.json',
+                    assetPath: 'assets/lottie-loading-json/loading.json',
                     width: 24,
                     height: 24,
+                    showText: false,
                   ),
                 )
               : Text(

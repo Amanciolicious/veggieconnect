@@ -1,9 +1,9 @@
 // ignore_for_file: deprecated_member_use, avoid_print
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'star_rating_widget.dart';
 import '../services/product_rating_service.dart';
+import '../services/auth_state_service.dart';
 import './lottie_loading_widget.dart';
 
 class ProductRatingDialog extends StatefulWidget {
@@ -25,9 +25,12 @@ class ProductRatingDialog extends StatefulWidget {
 }
 
 class _ProductRatingDialogState extends State<ProductRatingDialog> {
+  final AuthStateService _authService = AuthStateService();
   int _rating = 0;
   final TextEditingController _feedbackController = TextEditingController();
   bool _isSubmitting = false;
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -63,7 +66,6 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
       // Check if user has already rated this product
@@ -328,8 +330,10 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                           ? const SizedBox(
                               height: 24,
                               width: 24,
-                              child: GroceryLoadingWidget(
-                                size: 24,
+                              child: LottieLoadingWidget(
+                                assetPath: 'assets/lottie-loading-json/loading.json',
+                                width: 24,
+                                height: 24,
                                 showText: false,
                               ),
                             )

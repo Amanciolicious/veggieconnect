@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_state_service.dart';
 
 class RevenueService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final AuthStateService _authService = AuthStateService();
+
+  static AuthUser? get _currentUser => _authService.currentUser;
 
   /// Get real-time stream of total revenue across all completed orders (Admin view)
   static Stream<double> getTotalRevenueStream() {
@@ -13,7 +16,7 @@ class RevenueService {
         .map((snapshot) {
       double totalRevenue = 0.0;
       for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         totalRevenue += (data['totalPrice'] ?? 0).toDouble();
       }
       return totalRevenue;
@@ -30,7 +33,7 @@ class RevenueService {
         .map((snapshot) {
       double supplierRevenue = 0.0;
       for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         supplierRevenue += (data['totalPrice'] ?? 0).toDouble();
       }
       return supplierRevenue;
@@ -39,7 +42,7 @@ class RevenueService {
 
   /// Get real-time stream of current user's revenue (for logged-in supplier)
   static Stream<double> getCurrentUserRevenueStream() {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = _currentUser;
     if (currentUser == null) {
       return Stream.value(0.0);
     }
@@ -66,7 +69,7 @@ class RevenueService {
       double lastYearRevenue = 0.0;
 
       for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
         final amount = (data['totalPrice'] ?? 0).toDouble();
         
@@ -123,7 +126,7 @@ class RevenueService {
       double thisYearRevenue = 0.0;
 
       for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
         final amount = (data['totalPrice'] ?? 0).toDouble();
         
@@ -156,7 +159,7 @@ class RevenueService {
 
   /// Get current user's revenue analytics stream
   static Stream<Map<String, double>> getCurrentUserRevenueAnalyticsStream() {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = _currentUser;
     if (currentUser == null) {
       return Stream.value({
         'total': 0.0,

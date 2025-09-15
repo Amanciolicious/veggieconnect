@@ -1,34 +1,35 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:firebase_auth/firebase_auth.dart';
-import '../customer-side/customer_contact_info_page.dart';
 import 'package:flutter/material.dart';
-import 'package:veggieconnect/authentication/login_page.dart';
+import '../services/auth_state_service.dart';
+import 'login_page.dart';
+import '../customer-side/customer_contact_info_page.dart';
 import '../widgets/lottie_loading_widget.dart';
 
 class VerifyEmailPage extends StatefulWidget {
-  final String userId;
-  final String email;
-  const VerifyEmailPage({super.key, required this.userId, required this.email});
+  const VerifyEmailPage({super.key});
 
   @override
   State<VerifyEmailPage> createState() => _VerifyEmailPageState();
 }
 
 class _VerifyEmailPageState extends State<VerifyEmailPage> {
+  final AuthStateService _authService = AuthStateService();
   bool _isLoading = false;
+
+  AuthUser? get user => _authService.currentUser;
 
   Future<void> _checkVerified() async {
     setState(() {
       _isLoading = true;
     });
-    await FirebaseAuth.instance.currentUser?.reload();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.emailVerified) {
+    await _authService.reloadUser();
+    final currentUser = user;
+    if (currentUser != null && currentUser.emailVerified) {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => ContactInfoPage(userId: widget.userId),
+          builder: (_) => ContactInfoPage(userId: currentUser.uid),
         ),
       );
     } else {
@@ -43,14 +44,22 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
       _isLoading = true;
     });
     try {
-      await FirebaseAuth.instance.currentUser?.sendEmailVerification();
+      await user?.sendEmailVerification();
       setState(() {
         _isLoading = false;
       });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verification email sent!')),
+      );
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -144,7 +153,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        widget.email,
+                        user?.email ?? '',
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.green,
@@ -204,8 +213,10 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                             ? const SizedBox(
                                 height: 24,
                                 width: 24,
-                                child: GroceryLoadingWidget(
-                                  size: 24,
+                                child: LottieLoadingWidget(
+                                  assetPath: 'assets/lottie-loading-json/loading.json',
+                                  width: 24,
+                                  height: 24,
                                   showText: false,
                                 ),
                               )

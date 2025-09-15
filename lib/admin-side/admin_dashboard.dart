@@ -1,8 +1,7 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously, unrelated_type_equality_checks
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, unrelated_type_equality_checks, avoid_print
 import 'dart:async';
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,6 +13,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:veggieconnect/admin-side/admin_farm_map_page.dart';
 import 'package:veggieconnect/services/tax_service.dart';
+import 'package:veggieconnect/widgets/notification_center.dart';
 import '../services/revenue_service.dart';
 import '../authentication/login_page.dart';
 import '../services/cloudinary_service.dart';
@@ -25,7 +25,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../widgets/modern_app_bar.dart';
 import '../widgets/modern_card.dart';
 import '../widgets/modern_wave_drawer.dart';
-import '../widgets/notification_center.dart';
+import '../services/auth_state_service.dart';
 import '../services/notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -47,6 +47,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   bool _isOnline = true;
   StreamSubscription? _connectivitySubscription;
   String? _localProfileImagePath;
+  final AuthStateService _authService = AuthStateService();
+  final NotificationService _notificationService = NotificationService();
+
+  AuthUser? get user => _authService.currentUser;
 
   Widget _expandableCard({required String title, required Widget child, bool initiallyExpanded = false}) {
     return Card(
@@ -72,10 +76,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     _tabController = TabController(length: 5, vsync: this);
     _initializeConnectivity();
     _loadLocalProfileImage();
+    _verifyAdminUsers();
   }
 
   Future<void> _loadLocalProfileImage() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user != null) {
       final localPath = await CloudinaryService.getProfileImage(user.uid);
       if (localPath != null) {
@@ -199,7 +204,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   Future<void> _uploadViaCloudinary() async {
     Navigator.pop(context);
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user == null) return;
       if (kIsWeb) {
         // Pick bytes on web
@@ -230,7 +235,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   }
 
   Future<void> _uploadToCloudinaryAndSave({File? file, Uint8List? bytes}) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user == null) return;
 
     try {
@@ -289,7 +294,42 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     return null;
   }
 
-
+  Future<void> _verifyAdminUsers() async {
+    try {
+      print('🔍 Verifying admin users in database...');
+      
+      // Check for users with admin role
+      final adminSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'admin')
+          .get();
+      
+      print('👥 Found ${adminSnapshot.docs.length} admin users');
+      
+      for (final doc in adminSnapshot.docs) {
+        final userData = doc.data();
+        print('👤 Admin: ${userData['email']} (ID: ${doc.id})');
+        print('   - FCM Token: ${userData['fcmToken'] != null ? "✅ Present" : "❌ Missing"}');
+        print('   - Role: ${userData['role']}');
+      }
+      
+      if (adminSnapshot.docs.isEmpty) {
+        print('⚠️ No admin users found! Creating test admin...');
+        
+        // Get current user from AuthStateService
+        final currentUser = _authService.currentUser;
+        if (currentUser != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .update({'role': 'admin'});
+          print('✅ Current user promoted to admin');
+        }
+      }
+    } catch (e) {
+      print('❌ Error verifying admin users: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -299,14 +339,68 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       appBar: ModernAppBar(
         title: Text(
           'Admin Dashboard',
-          style: GoogleFonts.inter(
-            fontSize: MediaQuery.of(context).size.width < 380 ? 20 : 24,
+          style: GoogleFonts.quicksand(
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1A1A1A),
           ),
         ),
         showSearch: false,
         onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+        actions: [
+          // Notification Bell with Badge
+          StreamBuilder<int>(
+            stream: _notificationService.getUnreadCountStream(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications,
+                      color: Color(0xFF1A1A1A),
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationCenter(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       drawer: _buildModernDrawer(),
       body: IndexedStack(
@@ -341,13 +435,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _buildModernDrawer() {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseAuth.instance.currentUser != null 
-        ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+      stream: _authService.currentUser != null 
+        ? FirebaseFirestore.instance.collection('users').doc(_authService.currentUser!.uid).snapshots()
         : null,
       builder: (context, snapshot) {
         final userData = snapshot.data?.data() as Map<String, dynamic>?;
-        final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Admin';
-        final email = FirebaseAuth.instance.currentUser?.email ?? 'admin@email.com';
+        final displayName = userData?['name'] ?? _authService.currentUser?.displayName ?? 'Admin';
+        final email = _authService.currentUser?.email ?? 'admin@email.com';
         final profileImageUrl = userData?['profileImageUrl'] as String?;
         
         return ModernWaveDrawer(
@@ -388,7 +482,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               index: -1,
               isDestructive: true,
               onTap: () async {
-                await FirebaseAuth.instance.signOut();
+                await _authService.signOut();
                 if (!mounted) return;
                 
                 Navigator.of(context).pushAndRemoveUntil(
@@ -411,7 +505,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         children: [
           Text(
             'System Overview',
-            style: GoogleFonts.inter(
+            style: GoogleFonts.quicksand(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1A1A1A),
@@ -1135,7 +1229,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   }
 
   Widget _buildProfileTab() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     
     return StreamBuilder<DocumentSnapshot>(

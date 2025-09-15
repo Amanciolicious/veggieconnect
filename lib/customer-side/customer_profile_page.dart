@@ -1,8 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
-
 import 'dart:io';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:veggieconnect/customer-side/customer_order_history_page.dart';
 import 'package:veggieconnect/services/cloudinary_service.dart';
+import 'package:veggieconnect/services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -24,6 +22,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _localAvatarPath;
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final AuthStateService _authService = AuthStateService();
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -39,7 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadLocalProfileImage() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user != null) {
       // No longer using local profile images - all images are now stored on Cloudinary
       // This method is kept for compatibility but does nothing
@@ -100,7 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _uploadViaCloudinaryWeb() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user == null) return;
       final bytes = await CloudinaryService.pickImageFromWeb();
       if (bytes == null) return;
@@ -122,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _uploadViaCloudinaryMobile() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user == null) return;
       
       final picker = ImagePicker();
@@ -155,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _promptImageUrlInput() async {
     final controller = TextEditingController(text: _avatarUrl ?? '');
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user == null) return;
 
     final confirmed = await showDialog<bool>(
@@ -213,7 +213,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _pickImageFromSource(ImageSource source) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user == null) return;
 
       final picker = ImagePicker();
@@ -298,7 +298,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF6CA04A)),
                   onPressed: () async {
-                    await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).update({'name': _nameController.text.trim()});
+                    await FirebaseFirestore.instance.collection('users').doc(_authService.currentUser!.uid).update({'name': _nameController.text.trim()});
                     
                     Navigator.pop(context);
                     setState(() {});
@@ -343,7 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     
     if (user == null) {
       return Scaffold(

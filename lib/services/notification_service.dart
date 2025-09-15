@@ -3,13 +3,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import '../services/auth_state_service.dart';
 import 'deep_link_service.dart';
 import '../customer-side/customer_navigation_screen.dart';
 
@@ -17,6 +17,11 @@ class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final AuthStateService _authService = AuthStateService();
+
+  static AuthUser? get _currentUser => _authService.currentUser;
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
@@ -189,9 +194,9 @@ class NotificationService {
   // Save FCM token to Firestore
   Future<void> _saveFcmToken() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _currentUser;
       if (user != null && _fcmToken != null) {
-        await FirebaseFirestore.instance
+        await _firestore
             .collection('users')
             .doc(user.uid)
             .update({
@@ -229,7 +234,7 @@ class NotificationService {
       try {
         final recipientId = message.data['recipientId'] as String?;
         if (recipientId != null && recipientId.isNotEmpty) {
-          FirebaseFirestore.instance
+          _firestore
               .collection('users')
               .doc(recipientId)
               .collection('notifications')
@@ -471,7 +476,7 @@ class NotificationService {
   }) async {
     // Check if notification should be filtered by user role
     if (targetUserId != null) {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUser = _currentUser;
       if (currentUser == null) return;
       
       // Only send to the specific user if targetUserId matches current user
@@ -480,7 +485,7 @@ class NotificationService {
       // If targetUserRole is specified, check if current user has that role
       if (targetUserRole != null) {
         try {
-          final userDoc = await FirebaseFirestore.instance
+          final userDoc = await _firestore
               .collection('users')
               .doc(currentUser.uid)
               .get();
@@ -512,9 +517,9 @@ class NotificationService {
 
     // Save to Firestore for persistence
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUser = _currentUser;
       if (currentUser != null) {
-        await FirebaseFirestore.instance
+        await _firestore
             .collection('users')
             .doc(currentUser.uid)
             .collection('notifications')
@@ -787,7 +792,7 @@ class NotificationService {
       // Persist to Firestore so it appears in in-app notification lists (drives badges)
       try {
         final notificationId = DateTime.now().millisecondsSinceEpoch.toString();
-        await FirebaseFirestore.instance
+        await _firestore
             .collection('users')
             .doc(recipientId)
             .collection('notifications')
@@ -811,7 +816,7 @@ class NotificationService {
 
       // Try to send the push notification via FCM if token exists
       try {
-        final userDoc = await FirebaseFirestore.instance
+        final userDoc = await _firestore
             .collection('users')
             .doc(recipientId)
             .get();
@@ -869,12 +874,32 @@ class NotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      final usersSnapshot = await FirebaseFirestore.instance
+      print('🔍 Searching for users with role: $role');
+      
+      final usersSnapshot = await _firestore
           .collection('users')
           .where('role', isEqualTo: role)
           .get();
       
+      print('🔍 Found ${usersSnapshot.docs.length} users with role: $role');
+      
+      if (usersSnapshot.docs.isEmpty) {
+        print('⚠️ No users found with role: $role. Checking all users...');
+        
+        // Debug: Check all users and their roles
+        final allUsersSnapshot = await _firestore.collection('users').get();
+        print('📊 Total users in database: ${allUsersSnapshot.docs.length}');
+        
+        for (final doc in allUsersSnapshot.docs.take(5)) { // Show first 5 users
+          final userData = doc.data();
+          print('👤 User ${doc.id}: role = "${userData['role']}", email = "${userData['email']}"');
+        }
+        
+        return;
+      }
+      
       final recipientIds = usersSnapshot.docs.map((doc) => doc.id).toList();
+      print('📤 Sending notifications to admin users: $recipientIds');
       
       await sendFCMNotificationToMultiple(
         recipientIds: recipientIds,
@@ -883,8 +908,11 @@ class NotificationService {
         type: type,
         data: data,
       );
+      
+      print('✅ Admin notifications sent successfully');
     } catch (e) {
-      debugPrint('Error sending FCM notification to role $role: $e');
+      print('❌ Error sending FCM notification to role $role: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -975,12 +1003,12 @@ class NotificationService {
 
   // Get notification history stream from Firestore
   Stream<List<NotificationData>> getNotificationHistory() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _currentUser;
     if (user == null) {
       return Stream.value([]);
     }
 
-    return FirebaseFirestore.instance
+    return _firestore
         .collection('users')
         .doc(user.uid)
         .collection('notifications')
@@ -1004,12 +1032,12 @@ class NotificationService {
 
   // Get unread notifications count from Firestore
   Stream<int> getUnreadCountStream() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _currentUser;
     if (user == null) {
       return Stream.value(0);
     }
 
-    return FirebaseFirestore.instance
+    return _firestore
         .collection('users')
         .doc(user.uid)
         .collection('notifications')
@@ -1020,11 +1048,11 @@ class NotificationService {
 
   // Mark notification as read
   Future<void> markAsRead(String notificationId) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _currentUser;
     if (user == null) return;
 
     try {
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('notifications')
@@ -1039,12 +1067,12 @@ class NotificationService {
 
   // Mark all notifications as read
   Future<void> markAllAsRead() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _currentUser;
     if (user == null) return;
 
     try {
-      final batch = FirebaseFirestore.instance.batch();
-      final unreadNotifications = await FirebaseFirestore.instance
+      final batch = _firestore.batch();
+      final unreadNotifications = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('notifications')
@@ -1309,7 +1337,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     try {
       final recipientId = message.data['recipientId'] as String?;
       if (recipientId != null && recipientId.isNotEmpty) {
-        await FirebaseFirestore.instance
+        FirebaseFirestore.instance
             .collection('users')
             .doc(recipientId)
             .collection('notifications')

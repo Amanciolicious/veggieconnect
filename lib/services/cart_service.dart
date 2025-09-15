@@ -1,18 +1,23 @@
 // ignore_for_file: avoid_print
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_state_service.dart';
 
 class CartService {
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final AuthStateService _authService = AuthStateService();
+
+  static AuthUser? get _currentUser => _authService.currentUser;
+
   static Future<void> clearCart(List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _currentUser;
       if (user == null) return;
 
       // Clear cart from Firestore
-      final cartBatch = FirebaseFirestore.instance.batch();
+      final cartBatch = _firestore.batch();
       for (final doc in cartItems) {
-        cartBatch.delete(FirebaseFirestore.instance
+        cartBatch.delete(_firestore
             .collection('users')
             .doc(user.uid)
             .collection('cart')
@@ -28,19 +33,19 @@ class CartService {
 
   static Future<void> clearCartByOrderId(String orderId) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _currentUser;
       if (user == null) return;
 
       // Get all orders with the same orderId
-      final ordersQuery = await FirebaseFirestore.instance
+      final ordersQuery = await _firestore
           .collection('orders')
           .where('orderId', isEqualTo: orderId)
           .get();
 
       if (ordersQuery.docs.isNotEmpty) {
         // Clear all cart items for this user
-        final cartBatch = FirebaseFirestore.instance.batch();
-        final cartQuery = await FirebaseFirestore.instance
+        final cartBatch = _firestore.batch();
+        final cartQuery = await _firestore
             .collection('users')
             .doc(user.uid)
             .collection('cart')

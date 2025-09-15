@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
@@ -82,7 +84,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(-300 * (1 - _slideAnimation.value), 0),
-          child: Container(
+          child: SizedBox(
             width: 300,
             height: MediaQuery.of(context).size.height,
             child: Stack(
@@ -97,7 +99,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
                   ),
                 ),
                 // Drawer content
-                Container(
+                SizedBox(
                   width: 280,
                   child: Column(
                     children: [
@@ -118,7 +120,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
                                 margin: const EdgeInsets.symmetric(vertical: 4),
                                 child: _buildDrawerItem(item, isSelected, index),
                               );
-                            }).toList(),
+                            }),
                             if (widget.additionalItems != null) ...[
                               const SizedBox(height: 20),
                               const Divider(height: 1, color: Colors.grey),
@@ -132,7 +134,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
                                   margin: const EdgeInsets.symmetric(vertical: 4),
                                   child: _buildDrawerItem(item, false, index),
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ],
                         ),

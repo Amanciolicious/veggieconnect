@@ -1,9 +1,9 @@
 // ignore_for_file: avoid_print, deprecated_member_use
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:veggieconnect/services/auth_state_service.dart';
 import 'package:intl/intl.dart';
 import '../widgets/lottie_loading_widget.dart';
 
@@ -20,8 +20,10 @@ class SupplierChatPage extends StatefulWidget {
 class _SupplierChatPageState extends State<SupplierChatPage> {
   final _controller = TextEditingController();
   final ChatService _chatService = ChatService();
-  final user = FirebaseAuth.instance.currentUser;
+  final AuthStateService _authService = AuthStateService();
   List<Map<String, dynamic>> _localMessages = [];
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {

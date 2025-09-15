@@ -234,15 +234,83 @@ class NavigationManager {
       return;
     }
 
+    // Check if locations are very close (less than 50 meters)
+    final distance = _distanceMeters(start, end);
+    if (distance < 50) {
+      print('Locations are very close ($distance meters), creating direct route');
+      // Create a simple direct route for very close locations
+      _state = _state.copyWith(
+        routePoints: [start, end],
+        distanceMeters: distance,
+        durationSeconds: distance / 1.4, // Walking speed ~1.4 m/s
+        steps: [
+          NavigationStep(
+            instruction: 'Walk directly to destination',
+            distanceMeters: distance,
+            durationSeconds: distance / 1.4,
+          ),
+        ],
+      );
+      _updateTraveledPolyline();
+      _emit();
+      
+      // Check for immediate arrival if very close
+      if (distance <= 30) {
+        _state = _state.copyWith(arrived: true);
+        _emit();
+        _sendArrivalNotification();
+      }
+      return;
+    }
+
     try {
       print('Fetching route from OSRM: start=(${start.latitude}, ${start.longitude}), end=(${end.latitude}, ${end.longitude})');
       final response = await _fetchRouteFromOsrm(start, end, _state.mode);
-      if (response == null) return;
+      if (response == null) {
+        print('OSRM response is null, creating fallback route');
+        // Create fallback route
+        _state = _state.copyWith(
+          routePoints: [start, end],
+          distanceMeters: distance,
+          durationSeconds: distance / 1.4,
+          steps: [
+            NavigationStep(
+              instruction: 'Navigate to destination',
+              distanceMeters: distance,
+              durationSeconds: distance / 1.4,
+            ),
+          ],
+        );
+        _updateTraveledPolyline();
+        _emit();
+        return;
+      }
 
       final geometry = response['routes'][0]['geometry'] as String;
-      print('OSRM geometry received: ${geometry.substring(0, 50)}...');
+      print('OSRM geometry received: ${geometry.length} characters');
+      
+      // Check if geometry is too short (likely malformed for close distances)
+      if (geometry.length < 10) {
+        print('Geometry too short, creating direct route');
+        _state = _state.copyWith(
+          routePoints: [start, end],
+          distanceMeters: distance,
+          durationSeconds: distance / 1.4,
+          steps: [
+            NavigationStep(
+              instruction: 'Walk directly to destination',
+              distanceMeters: distance,
+              durationSeconds: distance / 1.4,
+            ),
+          ],
+        );
+        _updateTraveledPolyline();
+        _emit();
+        return;
+      }
+      
       final points = _decodeOsrmPolyline(geometry);
-      final distance = (response['routes'][0]['distance'] as num).toDouble();
+      final routeDistance = (response['routes'][0]['distance'] as num).toDouble();
       final duration = (response['routes'][0]['duration'] as num).toDouble();
       final steps = _parseOsrmSteps(response);
 
@@ -255,14 +323,14 @@ class NavigationManager {
         final fallbackRoute = [start, end];
         _state = _state.copyWith(
           routePoints: fallbackRoute,
-          distanceMeters: distance,
+          distanceMeters: routeDistance,
           durationSeconds: duration,
           steps: steps,
         );
       } else {
         _state = _state.copyWith(
           routePoints: validRoute,
-          distanceMeters: distance,
+          distanceMeters: routeDistance,
           durationSeconds: duration,
           steps: steps,
         );
@@ -271,6 +339,21 @@ class NavigationManager {
       _emit();
     } catch (e) {
       print('OSRM routing failed: $e');
+      // Create fallback route on any error
+      _state = _state.copyWith(
+        routePoints: [start, end],
+        distanceMeters: distance,
+        durationSeconds: distance / 1.4,
+        steps: [
+          NavigationStep(
+            instruction: 'Navigate to destination',
+            distanceMeters: distance,
+            durationSeconds: distance / 1.4,
+          ),
+        ],
+      );
+      _updateTraveledPolyline();
+      _emit();
     }
   }
 
@@ -286,41 +369,61 @@ class NavigationManager {
   }
 
   List<LatLng> _decodeOsrmPolyline(String encoded) {
-    // Polyline6 decoder
+    // Polyline6 decoder with proper bounds checking
     int index = 0, lat = 0, lng = 0;
     final List<LatLng> coordinates = [];
 
-    while (index < encoded.length) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
-      lat += dlat;
+    try {
+      while (index < encoded.length) {
+        int b, shift = 0, result = 0;
+        
+        // Decode latitude with bounds checking
+        do {
+          if (index >= encoded.length) {
+            print('Polyline decoding error: index $index exceeds string length ${encoded.length}');
+            return coordinates; // Return what we have so far
+          }
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20 && index < encoded.length);
+        
+        int dlat = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+        lat += dlat;
 
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
-      lng += dlng;
+        shift = 0;
+        result = 0;
+        
+        // Decode longitude with bounds checking
+        do {
+          if (index >= encoded.length) {
+            print('Polyline decoding error: index $index exceeds string length ${encoded.length}');
+            return coordinates; // Return what we have so far
+          }
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20 && index < encoded.length);
+        
+        int dlng = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+        lng += dlng;
 
-      final decodedLat = lat / 1e6;
-      final decodedLng = lng / 1e6;
-      
-      // Validate coordinates before adding
-      if (_isValidCoordinate(decodedLat, decodedLng)) {
-        coordinates.add(LatLng(decodedLat, decodedLng));
-      } else {
-        print('Invalid coordinate detected in polyline: lat=$decodedLat, lng=$decodedLng - skipping');
-        print('Raw values: lat=$lat, lng=$lng, encoded=$encoded');
+        final decodedLat = lat / 1e6;
+        final decodedLng = lng / 1e6;
+        
+        // Validate coordinates before adding
+        if (_isValidCoordinate(decodedLat, decodedLng)) {
+          coordinates.add(LatLng(decodedLat, decodedLng));
+        } else {
+          print('Invalid coordinate detected in polyline: lat=$decodedLat, lng=$decodedLng - skipping');
+        }
       }
+    } catch (e) {
+      print('Error decoding polyline: $e');
+      print('Encoded string length: ${encoded.length}, current index: $index');
+      // Return coordinates decoded so far instead of empty list
     }
+    
     return coordinates;
   }
 
@@ -533,5 +636,3 @@ class NavigationManager {
     stop();
   }
 }
-
-

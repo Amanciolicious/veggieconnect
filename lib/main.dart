@@ -16,6 +16,7 @@ import 'customer-side/customer_navigation_screen.dart';
 import 'widgets/app_loader.dart';
 import 'screens/preboarding_screen.dart';
 import 'screens/lottie_demo_screen.dart';
+import 'services/auth_state_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,9 @@ void main() async {
   // Initialize services
   await NotificationService().initialize();
   await PerformanceService().initialize();
+  
+  // Initialize AuthStateService
+  await AuthStateService().initialize();
 
   // Run one-time migrations
   await MigrationService.migrateDeliveredToPickedUp();

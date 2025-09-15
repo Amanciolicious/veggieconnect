@@ -83,7 +83,7 @@ class AutoApprovalService {
     try {
       final notificationService = NotificationService();
       
-      // Send FCM notification to supplier only
+      // Send single unified notification (FCM + in-app)
       await notificationService.sendFCMNotification(
         recipientId: supplierId,
         title: 'Product Approved',
@@ -96,26 +96,9 @@ class AutoApprovalService {
         },
       );
       
-      // Add notification to Firestore for supplier only
-      await FirebaseFirestore.instance.collection('notifications').add({
-        'userId': supplierId,
-        'title': 'Product Approved!',
-        'body': 'Your product "$productName" has been approved and is now visible to buyers.',
-        'type': 'product_approved',
-        'productName': productName,
-        'timestamp': FieldValue.serverTimestamp(),
-        'read': false,
-        'targetRole': 'supplier', // Ensure only suppliers see this
-      });
-      
-      // Send in-app notification with role filtering
-      notificationService.sendProductApprovalNotification(
-        productName: productName,
-        status: 'approved',
-        supplierId: supplierId,
-      );
+      debugPrint('✅ Product approval notification sent to supplier $supplierId');
     } catch (e) {
-      debugPrint('Error sending approval notification: $e');
+      debugPrint('❌ Error sending approval notification: $e');
     }
   }
 

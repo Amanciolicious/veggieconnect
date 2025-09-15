@@ -12,6 +12,7 @@ class LottieLoadingWidget extends StatelessWidget {
   final Color? backgroundColor;
   final BoxFit fit;
   final Alignment alignment;
+  final bool showText;
 
   const LottieLoadingWidget({
     super.key,
@@ -25,6 +26,7 @@ class LottieLoadingWidget extends StatelessWidget {
     this.backgroundColor,
     this.fit = BoxFit.contain,
     this.alignment = Alignment.center,
+    required this.showText,
   }) : assert(assetPath != null || networkUrl != null, 
               'Either assetPath or networkUrl must be provided');
 
@@ -104,6 +106,7 @@ class GroceryLoadingWidget extends StatelessWidget {
           width: size,
           height: size,
           backgroundColor: backgroundColor,
+          showText: showText,
         ),
         if (showText) ...[
           const SizedBox(height: 16),
@@ -149,6 +152,7 @@ class FullScreenLoadingOverlay extends StatelessWidget {
               networkUrl: networkUrl,
               width: animationSize,
               height: animationSize,
+              showText: false,
             ),
             if (loadingText != null) ...[
               const SizedBox(height: 24),

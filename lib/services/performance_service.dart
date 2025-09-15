@@ -23,7 +23,6 @@ class PerformanceService {
 
   // Cache settings
   static const int _maxCacheSize = 100 * 1024 * 1024; // 100MB
-  static const int _maxCacheAge = 7 * 24 * 60 * 60; // 7 days
 
   // Stream controllers
   final StreamController<bool> _connectivityController = StreamController<bool>.broadcast();

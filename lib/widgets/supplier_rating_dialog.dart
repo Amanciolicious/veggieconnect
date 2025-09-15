@@ -2,19 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/auth_state_service.dart';
 
 class SupplierRatingDialog extends StatefulWidget {
-  final String orderId;
   final String supplierId;
+  final String orderId;
   final String supplierName;
   final String orderNumber;
 
   const SupplierRatingDialog({
     super.key,
-    required this.orderId,
     required this.supplierId,
+    required this.orderId,
     required this.supplierName,
     required this.orderNumber,
   });
@@ -25,11 +25,14 @@ class SupplierRatingDialog extends StatefulWidget {
 
 class _SupplierRatingDialogState extends State<SupplierRatingDialog>
     with TickerProviderStateMixin {
-  int _rating = 0;
+  final AuthStateService _authService = AuthStateService();
   final TextEditingController _feedbackController = TextEditingController();
+  int _rating = 0;
   bool _isSubmitting = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -70,7 +73,6 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         throw Exception('User not logged in');
       }
@@ -79,7 +81,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
       final existingRating = await FirebaseFirestore.instance
           .collection('order_ratings')
           .where('orderId', isEqualTo: widget.orderId)
-          .where('buyerId', isEqualTo: user.uid)
+          .where('buyerId', isEqualTo: user?.uid)
           .limit(1)
           .get();
 
@@ -95,7 +97,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
       await FirebaseFirestore.instance.collection('order_ratings').add({
         'orderId': widget.orderId,
         'supplierId': widget.supplierId,
-        'buyerId': user.uid,
+        'buyerId': user?.uid,
         'rating': _rating,
         'feedback': _feedbackController.text.trim(),
         'orderNumber': widget.orderNumber,

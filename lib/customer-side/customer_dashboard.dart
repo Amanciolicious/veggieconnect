@@ -1,7 +1,6 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, avoid_print
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
@@ -22,6 +21,7 @@ import '../services/cloudinary_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 import '../widgets/modern_wave_drawer.dart';
+import '../services/auth_state_service.dart';
 
 // Chat and notification center removed
 
@@ -35,8 +35,9 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final AuthStateService _authService = AuthStateService();
 
-  User? get user => FirebaseAuth.instance.currentUser;
+  AuthUser? get user => _authService.currentUser;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -45,7 +46,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   Future<void> _logout() async {
-    await FirebaseAuth.instance.signOut();
+    await _authService.signOut();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -253,6 +254,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug authentication state
+    print('🔧 Dashboard: Building dashboard - user: ${user?.uid}');
+    print('🔧 Dashboard: AuthService authenticated: ${_authService.isAuthenticated}');
+    
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Responsive sizing for Infinix Smart 8 (720x1612)
@@ -340,7 +345,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         index: _selectedIndex,
         children: [
           _buildHomeTab(),
-          FavoritePage(),
+          CustomerFavoritePage(),
           CartPage(),
           BuyerProductsPage(),
           ProfilePage()
@@ -1122,6 +1127,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 }
 
+// ignore: unused_element
 class _VeggieCard extends StatelessWidget {
   final String name;
   final IconData image;

@@ -4,13 +4,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:veggieconnect/config/paymongo_config.dart';
+import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 
 class PayMongoGCashService {
+  static const String _baseUrl = 'https://api.paymongo.com/v1';
+  static const String _publicKey = 'pk_test_VdHjKhDXJvwZhKhMGZdRxhVy';
+  static const String _secretKey = 'sk_test_3VVVNyKGwKGvKKKVVVVVVVVV';
+  
+  static final AuthStateService _authService = AuthStateService();
+  static AuthUser? get _currentUser => _authService.currentUser;
+
   // Creates a Checkout Session via Cloud Function and launches the PayMongo URL
   static Future<GCashPaymentResult?> processPayment({
     required BuildContext context,
@@ -83,26 +90,23 @@ class PayMongoGCashService {
   }
 
   static Future<String> _getBuyerName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 'Guest';
+    if (_currentUser == null) return 'Guest';
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(_currentUser!.uid).get();
       final data = doc.data();
-      return (data?['name'] as String?) ?? (user.displayName ?? 'Guest');
+      return (data?['name'] as String?) ?? (_currentUser!.displayName ?? 'Guest');
     } catch (_) {
-      return user.displayName ?? 'Guest';
+      return _currentUser!.displayName ?? 'Guest';
     }
   }
 
   static Future<String> _getBuyerEmail() async {
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.email ?? 'guest@example.com';
+    return _currentUser?.email ?? 'guest@example.com';
   }
 
   static Future<String> _getBuyerPhone() async {
-    final user = FirebaseAuth.instance.currentUser;
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(_currentUser!.uid).get();
       final data = doc.data();
       final phone = data?['phone'] as String?;
       return phone ?? '';

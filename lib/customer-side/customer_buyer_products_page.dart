@@ -1,11 +1,11 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/product_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'customer_product_details_page.dart'; // Import ProductDetailsPage
 import '../widgets/lottie_loading_widget.dart';
+import '../services/auth_state_service.dart';
 
 class BuyerProductsPage extends StatefulWidget {
   final String? supplierId;
@@ -40,7 +40,8 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
   ];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  final user = FirebaseAuth.instance.currentUser;
+  final AuthStateService _authService = AuthStateService();
+  AuthUser? get user => _authService.currentUser;
   final ScrollController _categoryScrollController = ScrollController();
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;

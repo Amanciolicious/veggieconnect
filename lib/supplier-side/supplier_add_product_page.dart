@@ -1,22 +1,22 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:veggieconnect/services/product_rating_service.dart';
+import '../services/auth_state_service.dart';
 import '../services/cloudinary_service.dart';
 import '../services/content_filter_service.dart';
 import '../services/tax_service.dart';
-import '../services/product_rating_service.dart';
 import '../services/notification_service.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../widgets/lottie_loading_widget.dart';
 import 'supplier_dashboard.dart';
 import 'supplier_chat_list_page.dart';
-import 'supplier_map_page.dart' show SupplierLocationPage;
+import 'supplier_map_page.dart';
 
 class AddProductPage extends StatefulWidget {
   final Map<String, dynamic>? product;
@@ -28,6 +28,7 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
+  final AuthStateService _authService = AuthStateService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
@@ -316,7 +317,7 @@ class _AddProductPageState extends State<AddProductPage> {
         if (confirm != true) return;
       }
       setState(() => _isUploading = true);
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Not logged in!')),
@@ -456,6 +457,25 @@ class _AddProductPageState extends State<AddProductPage> {
             });
           }
 
+          // Send admin notification for new product submission
+          try {
+            final notificationService = NotificationService();
+            print('🔔 Attempting to send admin notification for product: $name');
+            print('🔔 Supplier: $supplierName (ID: ${user.uid})');
+            
+            await notificationService.sendNewProductSubmissionNotification(
+              productName: name,
+              supplierName: supplierName,
+              supplierId: user.uid,
+              productId: productId,
+            );
+            
+            print('🔔 Admin notification sent successfully');
+          } catch (e) {
+            print('❌ Error sending admin notification: $e');
+            print('❌ Stack trace: ${StackTrace.current}');
+          }
+
         } else {
           // Edit existing product (not rejected)
           // Get current product status to preserve approval for already-approved products
@@ -552,7 +572,7 @@ class _AddProductPageState extends State<AddProductPage> {
           // Navigate back to SupplierDashboard with the selected tab
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => SupplierDashboard(initialIndex: index),
+              builder: (_) => const SupplierDashboard(),
             ),
           );
         },
@@ -1077,7 +1097,7 @@ class _AddProductPageState extends State<AddProductPage> {
   void _goToTab(BuildContext context, int index) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => SupplierDashboard(initialIndex: index),
+        builder: (_) => const SupplierDashboard(),
       ),
     );
   }

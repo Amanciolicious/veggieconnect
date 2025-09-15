@@ -1,10 +1,11 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
+import 'package:veggieconnect/services/auth_state_service.dart';
 import 'supplier_chat_page.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -23,16 +24,20 @@ class SupplierChatListPage extends StatefulWidget {
 
 class _SupplierChatListPageState extends State<SupplierChatListPage> {
   final ChatService _chatService = ChatService();
+  final AuthStateService _authService = AuthStateService();
   final Set<String> _selectedConversations = {};
   bool _isSelectionMode = false;
 
+  AuthUser? get user => _authService.currentUser;
+
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     
     if (user == null) {
-      return const Scaffold(body: Center(child: Text('Not logged in')));
+      return Scaffold(
+        body: Center(child: Text('Not logged in.')),
+      );
     }
 
     // Optimized for Infinix Smart 8 (720x1612)
@@ -41,15 +46,15 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
       appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
         title: Text(
           _isSelectionMode ? '${_selectedConversations.length} selected' : 'Messages',
           style: GoogleFonts.quicksand(
-            color: Colors.white,
             fontSize: screenWidth * 0.045,
             fontWeight: FontWeight.w400,
+            color: Colors.white,
           ),
         ),
+        backgroundColor: Color(0xFF6CA04A),
         elevation: 0,
         foregroundColor: Colors.white,
         actions: [
@@ -71,13 +76,13 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
         ],
       ),
       drawer: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseAuth.instance.currentUser != null 
-          ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+        stream: user != null 
+          ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
           : null,
         builder: (context, snapshot) {
           final userData = snapshot.data?.data() as Map<String, dynamic>?;
-          final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Supplier';
-          final email = FirebaseAuth.instance.currentUser?.email ?? 'supplier@email.com';
+          final displayName = userData?['name'] ?? user?.displayName ?? 'Supplier';
+          final email = user?.email ?? 'supplier@email.com';
           final profileImageUrl = userData?['avatarUrl'] as String?;
           
           return ModernWaveDrawer(
@@ -87,7 +92,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SupplierDashboard(initialIndex: index),
+                  builder: (_) => const SupplierDashboard(),
                 ),
               );
             },
@@ -155,18 +160,18 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
       ),
       bottomNavigationBar: CurvedNavigationBar(
         index: 0, // default to home tab when coming from messages page
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: Color(0xFF4CAF50),
         color: Colors.white,
         height: 60,
-        animationDuration: const Duration(milliseconds: 300),
+        animationDuration: Duration(milliseconds: 300),
         onTap: (index) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => SupplierDashboard(initialIndex: index),
+              builder: (_) => const SupplierDashboard(),
             ),
           );
         },
-        items: const [
+        items: [
           Icon(Icons.home, size: 30, color: Colors.green),
           Icon(Icons.inventory, size: 30, color: Colors.green),
           Icon(Icons.inventory_2, size: 30, color: Colors.green),
@@ -175,7 +180,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _chatService.getConversations(user.uid),
+        stream: _chatService.getConversations(user!.uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -190,7 +195,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
           }
 
           if (!snapshot.hasData) {
-            return const Center(
+            return Center(
               child: GroceryLoadingWidget(
                 size: 120,
                 showText: true,
@@ -331,7 +336,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
                               fontWeight: FontWeight.w400,
                             ),
                           ),
-                        if (conversation['lastMessageSenderId'] != null && conversation['lastMessageSenderId'] != user.uid && (conversation['lastMessage']?.toString().isNotEmpty ?? false))
+                        if (conversation['lastMessageSenderId'] != null && conversation['lastMessageSenderId'] != user!.uid && (conversation['lastMessage']?.toString().isNotEmpty ?? false))
                           Container(
                             margin: EdgeInsets.only(top: 4),
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -374,9 +379,6 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
   }
 
   Future<void> _deleteSelectedConversations() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -404,7 +406,7 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
         for (final conversationId in _selectedConversations) {
           await _chatService.hideConversationForSupplier(
             conversationId: conversationId,
-            supplierId: user.uid,
+            supplierId: user!.uid,
           );
         }
         setState(() {
@@ -490,16 +492,16 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
 
   Future<void> _hideConversation(String conversationId) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await ChatService().hideConversation(conversationId, user.uid);
+      final currentUser = user;
+      if (currentUser != null) {
+        await ChatService().hideConversation(conversationId, currentUser.uid);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Conversation hidden')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to hide conversation: $e')),
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }

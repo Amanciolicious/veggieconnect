@@ -1,22 +1,24 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../widgets/product_image_widget.dart';
-import 'customer_product_details_page.dart';
-import '../widgets/lottie_loading_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../services/auth_state_service.dart';
+import 'customer_product_details_page.dart';
+import '../widgets/product_image_widget.dart';
+import '../widgets/lottie_loading_widget.dart';
 
-class FavoritePage extends StatefulWidget {
-  const FavoritePage({super.key});
+class CustomerFavoritePage extends StatefulWidget {
+  const CustomerFavoritePage({super.key});
 
   @override
-  State<FavoritePage> createState() => _FavoritePageState();
+  State<CustomerFavoritePage> createState() => _CustomerFavoritePageState();
 }
 
-class _FavoritePageState extends State<FavoritePage> {
-  final user = FirebaseAuth.instance.currentUser;
+class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   Widget build(BuildContext context) {

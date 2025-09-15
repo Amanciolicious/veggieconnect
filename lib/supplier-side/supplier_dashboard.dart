@@ -1,30 +1,28 @@
-// ignore_for_file: deprecated_member_use, empty_catches, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:veggieconnect/supplier-side/supplier_orders_page.dart';
-import '../authentication/login_page.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:veggieconnect/services/cloudinary_service.dart';
+import 'package:veggieconnect/authentication/login_page.dart';
+import 'package:veggieconnect/supplier-side/supplier_add_product_page.dart';
+import 'package:veggieconnect/supplier-side/supplier_orders_page.dart';
+import 'package:veggieconnect/supplier-side/supplier_chat_list_page.dart';
+import 'package:veggieconnect/supplier-side/supplier_map_page.dart';
+import '../widgets/modern_wave_drawer.dart';
+import '../services/cloudinary_service.dart';
+import '../services/auth_state_service.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:veggieconnect/services/revenue_service.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/notification_center.dart';
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'supplier_chat_list_page.dart';
-import 'supplier_add_product_page.dart';
-import 'package:veggieconnect/supplier-side/supplier_map_page.dart' show SupplierLocationPage;
-import '../widgets/lottie_loading_widget.dart';
-import '../widgets/modern_wave_drawer.dart';
+import 'package:veggieconnect/widgets/lottie_loading_widget.dart';
 
 class SupplierDashboard extends StatefulWidget {
-  const SupplierDashboard({super.key, this.initialIndex});
-
-  final int? initialIndex;
+  const SupplierDashboard({super.key});
 
   @override
   State<SupplierDashboard> createState() => _SupplierDashboardState();
@@ -34,15 +32,18 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   int _selectedIndex = 0;
   String? _localProfileImagePath;
 
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
+
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.initialIndex ?? 0;
     _loadLocalProfileImage();
   }
 
   Future<void> _loadLocalProfileImage() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user != null) {
       final localPath = await CloudinaryService.getProfileImage(user.uid);
       if (localPath != null) {
@@ -146,7 +147,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         imageQuality: 75,
       );
       
-      if (image != null && FirebaseAuth.instance.currentUser != null) {
+      if (image != null && _authService.currentUser != null) {
         // Upload picked file to Cloudinary (mobile/desktop)
         await _uploadToCloudinaryAndSave(file: File(image.path));
       }
@@ -163,7 +164,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   Future<void> _uploadViaCloudinary() async {
     Navigator.pop(context);
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
       if (user == null) return;
       if (kIsWeb) {
         // Pick bytes on web
@@ -194,7 +195,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   }
 
   Future<void> _uploadToCloudinaryAndSave({File? file, Uint8List? bytes}) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user == null) return;
 
     try {
@@ -329,13 +330,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         ],
       ),
       drawer: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseAuth.instance.currentUser != null 
-          ? FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).snapshots()
+        stream: _authService.currentUser != null 
+          ? FirebaseFirestore.instance.collection('users').doc(_authService.currentUser!.uid).snapshots()
           : null,
         builder: (context, snapshot) {
           final userData = snapshot.data?.data() as Map<String, dynamic>?;
-          final displayName = userData?['name'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'Supplier';
-          final email = FirebaseAuth.instance.currentUser?.email ?? 'supplier@email.com';
+          final displayName = userData?['name'] ?? _authService.currentUser?.displayName ?? 'Supplier';
+          final email = _authService.currentUser?.email ?? 'supplier@email.com';
           final profileImageUrl = userData?['profileImageUrl'] as String?;
           
           return ModernWaveDrawer(
@@ -399,7 +400,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                 index: -1,
                 isDestructive: true,
                 onTap: () async {
-                  await FirebaseAuth.instance.signOut();
+                  await _authService.signOut();
                   if (!mounted) return;
              
                   Navigator.of(context).pushAndRemoveUntil(
@@ -445,7 +446,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   Widget _buildOverviewTab(BorderRadius cardRadius) {
   
     
-    if (FirebaseAuth.instance.currentUser == null) {
+    if (_authService.currentUser == null) {
       return const Center(child: Text('Not logged in.'));
     }
     return SingleChildScrollView(
@@ -474,7 +475,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('products')
-                    .where('sellerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                    .where('sellerId', isEqualTo: _authService.currentUser!.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
@@ -485,7 +486,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('orders')
-                    .where('sellerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                    .where('sellerId', isEqualTo: _authService.currentUser!.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return _buildStatCard(cardRadius, 'Active Orders', '0', Icons.shopping_cart, Colors.green);
@@ -516,7 +517,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('orders')
-                    .where('sellerId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                    .where('sellerId', isEqualTo: _authService.currentUser!.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
@@ -684,7 +685,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   }
 
   Widget _buildProductList() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     
     Query baseQuery = FirebaseFirestore.instance
         .collection('products')
@@ -880,7 +881,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   }
 
   Widget _buildStockOverview() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     
     if (user == null) {
       return const Center(child: Text('Not logged in.'));
@@ -956,7 +957,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   }
 
   Widget _buildStockList() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     
     if (user == null) {
       return Center(child: Text('Not logged in.', style: GoogleFonts.quicksand(fontSize: 16)));
@@ -1181,7 +1182,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   }
 
   Widget _buildProfileTab() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     
     return StreamBuilder<DocumentSnapshot>(

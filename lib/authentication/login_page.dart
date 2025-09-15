@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously, deprecated_member_use
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_page.dart';
+import 'forgot_password_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../customer-side/customer_dashboard.dart';
 import '../customer-side/customer_onboarding_page.dart';
@@ -10,6 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import '../services/ban_service.dart';
 import '../models/ban_model.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import '../services/auth_state_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -37,37 +41,109 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
     try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      // First attempt Firebase Auth login
+      UserCredential? credential;
+      bool useFirestoreAuth = false;
+      Map<String, dynamic>? firestoreAuthResult;
       
-      // Check Firestore for verification and role
-      final doc = await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).get();
-      final data = doc.data();
-      if (data == null || data['verified'] != true) {
-        await FirebaseAuth.instance.signOut();
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+      try {
+        credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+      } on FirebaseAuthException catch (e) {
+        // If Firebase Auth fails, try Firestore password (for reset users)
+        if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+          firestoreAuthResult = await _tryFirestoreAuthentication(
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+          );
+          
+          if (firestoreAuthResult['success']) {
+            // Create a custom session for Firestore auth
+            useFirestoreAuth = true;
+            // We'll handle this user differently
+          } else {
+            rethrow; // Re-throw original Firebase error
+          }
+        } else {
+          rethrow;
+        }
+      }
+      
+      String userId;
+      Map<String, dynamic>? userData;
+      
+      if (useFirestoreAuth) {
+        // Handle Firestore-authenticated user
+        userId = firestoreAuthResult!['userId'];
+        userData = firestoreAuthResult['userData'];
+        
+        print(' Login: Setting Firestore auth user - ID: $userId, Email: ${userData?['email']}');
+        
+        // Set the user in our custom auth state service
+        await AuthStateService().setFirestoreAuthUser(userId, userData!);
+        
+        print(' Login: AuthStateService state after setting user:');
+        print('  - isAuthenticated: ${AuthStateService().isAuthenticated}');
+        print('  - currentUserId: ${AuthStateService().currentUserId}');
+        print('  - currentUser: ${AuthStateService().currentUser?.uid}');
+      } else {
+        // Handle Firebase-authenticated user
+        userId = credential!.user!.uid;
+        
+        // Check Firestore for verification and role
+        final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        userData = doc.data();
+        
+        if (userData == null || userData['verified'] != true) {
+          await FirebaseAuth.instance.signOut();
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+        
+        // Check for password reset flags
+        final forceReauth = userData['forceReauth'] ?? false;
+        final oldAuthDisabled = userData['oldAuthDisabled'] ?? false;
+        
+        if (forceReauth || oldAuthDisabled) {
+          // User needs to use new password, sign them out
+          await FirebaseAuth.instance.signOut();
+          setState(() {
+            _isLoading = false;
+          });
+          _showErrorDialog('Authentication Required', 
+            'Please use your new password to login. Your old password is no longer valid.');
+          return;
+        }
+        
+        print(' Login: Setting Firebase auth user in AuthStateService - ID: $userId');
+        
+        // Set the user in our custom auth state service for Firebase users too
+        await AuthStateService().setFirestoreAuthUser(userId, userData);
+        
+        print(' Login: AuthStateService state after setting Firebase user:');
+        print('  - isAuthenticated: ${AuthStateService().isAuthenticated}');
+        print('  - currentUserId: ${AuthStateService().currentUserId}');
       }
 
       // Check if user is banned - First check user document directly
-      final isBanned = data['isBanned'] ?? false;
+      final isBanned = userData['isBanned'] ?? false;
       print('User ban status from Firestore: $isBanned'); // Debug log
       
       if (isBanned) {
         // User is marked as banned in Firestore, check ban details
-        final banType = data['banType'] ?? '';
-        final banExpiresAt = data['banExpiresAt'] as Timestamp?;
+        final banType = userData['banType'] ?? '';
+        final banExpiresAt = userData['banExpiresAt'] as Timestamp?;
         
         // Check if temporary ban has expired
         if (banType == 'temporary' && banExpiresAt != null) {
           final expiryDate = banExpiresAt.toDate();
           if (DateTime.now().isAfter(expiryDate)) {
             // Ban has expired, remove it
-            await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).update({
+            await FirebaseFirestore.instance.collection('users').doc(userId).update({
               'isBanned': false,
               'banType': FieldValue.delete(),
               'banExpiresAt': FieldValue.delete(),
@@ -75,7 +151,9 @@ class _LoginPageState extends State<LoginPage> {
             print('Temporary ban expired and removed'); // Debug log
           } else {
             // Ban is still active
-            await FirebaseAuth.instance.signOut();
+            if (!useFirestoreAuth) {
+              await FirebaseAuth.instance.signOut();
+            }
             setState(() {
               _isLoading = false;
             });
@@ -84,7 +162,9 @@ class _LoginPageState extends State<LoginPage> {
           }
         } else if (banType == 'permanent') {
           // Permanent ban
-          await FirebaseAuth.instance.signOut();
+          if (!useFirestoreAuth) {
+            await FirebaseAuth.instance.signOut();
+          }
           setState(() {
             _isLoading = false;
           });
@@ -94,21 +174,39 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       // Additional check using BanService for comprehensive ban validation
-      final banStatus = await BanService.checkUserBanStatus(credential.user!.uid);
-      if (banStatus != null) {
-        print('Ban found via BanService: ${banStatus.banStatusText}'); // Debug log
-        await FirebaseAuth.instance.signOut();
-        setState(() {
-          _isLoading = false;
-        });
-        _showBanDialogFromBanStatus(banStatus);
-        return;
+      if (!useFirestoreAuth) {
+        final banStatus = await BanService.checkUserBanStatus(userId);
+        if (banStatus != null) {
+          print('Ban found via BanService: ${banStatus.banStatusText}'); // Debug log
+          await FirebaseAuth.instance.signOut();
+          setState(() {
+            _isLoading = false;
+          });
+          _showBanDialogFromBanStatus(banStatus);
+          return;
+        }
       }
       
       if (!mounted) return;
       
+      // Clear password reset flags after successful login
+      if (useFirestoreAuth) {
+        await FirebaseFirestore.instance.collection('users').doc(userId).update({
+          'forceReauth': FieldValue.delete(),
+          'oldAuthDisabled': FieldValue.delete(),
+          'requirePasswordReset': FieldValue.delete(),
+          'lastLoginAt': DateTime.now(),
+          'loginMethod': 'firestore_auth',
+        });
+      } else {
+        await FirebaseFirestore.instance.collection('users').doc(userId).update({
+          'lastLoginAt': DateTime.now(),
+          'loginMethod': 'firebase_auth',
+        });
+      }
+      
       // Route based on user role
-      final userRole = data['role'] ?? 'buyer';
+      final userRole = userData['role'] ?? 'buyer';
       
       if (userRole == 'admin') {
         // Admins go directly to admin dashboard
@@ -126,13 +224,13 @@ class _LoginPageState extends State<LoginPage> {
         final onboardingDone = prefs.getBool('onboarding_complete') ?? false;
         
         // Check if user is newly registered and needs onboarding
-        final isNewlyRegistered = data['isNewlyRegistered'] ?? false;
-        final onboardingCompleted = data['onboardingCompleted'] ?? false;
+        final isNewlyRegistered = userData['isNewlyRegistered'] ?? false;
+        final onboardingCompleted = userData['onboardingCompleted'] ?? false;
         
         if ((isNewlyRegistered && !onboardingCompleted) || !onboardingDone) {
           // Show onboarding for newly registered users
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => OnboardingPage(userId: credential.user!.uid)),
+            MaterialPageRoute(builder: (_) => OnboardingPage(userId: userId)),
           );
         } else {
           // Navigate based on user role for existing users
@@ -161,6 +259,56 @@ class _LoginPageState extends State<LoginPage> {
       });
       _showErrorDialog('Error', 'An unexpected error occurred. Please try again.');
     }
+  }
+
+  /// Try authentication using Firestore password (for password reset users)
+  Future<Map<String, dynamic>> _tryFirestoreAuthentication(String email, String password) async {
+    try {
+      // Hash the entered password
+      final hashedPassword = _hashPassword(password);
+      
+      // Query Firestore for user with matching email and password
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email.toLowerCase().trim())
+          .where('password', isEqualTo: hashedPassword)
+          .get();
+      
+      if (userQuery.docs.isNotEmpty) {
+        final userDoc = userQuery.docs.first;
+        final userData = userDoc.data();
+        
+        // Check if this user has reset their password recently
+        final authMethod = userData['authMethod'];
+        final oldAuthDisabled = userData['oldAuthDisabled'] ?? false;
+        
+        if (authMethod == 'password_reset' || oldAuthDisabled) {
+          return {
+            'success': true,
+            'userId': userDoc.id,
+            'userData': userData,
+          };
+        }
+      }
+      
+      return {
+        'success': false,
+        'message': 'Invalid credentials',
+      };
+    } catch (e) {
+      print('Firestore auth error: $e');
+      return {
+        'success': false,
+        'message': 'Authentication error',
+      };
+    }
+  }
+
+  /// Hash password using SHA-256 (same as password reset service)
+  String _hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   void _showBanDialog(String banType, Timestamp? expiresAt, String reason) {
@@ -562,7 +710,10 @@ class _LoginPageState extends State<LoginPage> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {
-                          // TODO: Implement forgot password
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ForgotPasswordPage()),
+                          );
                         },
                         child: Text(
                           'Forgot Password?',

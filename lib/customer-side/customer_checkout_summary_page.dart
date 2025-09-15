@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/models/promo_model.dart';
 import '../services/payment_service.dart';
@@ -10,6 +9,7 @@ import 'customer_payment_processing_page.dart';
 import 'customer_digital_receipt_page.dart';
 import '../services/promo_service.dart';
 import '../services/notification_service.dart';
+import '../services/auth_state_service.dart';
 // Added for debugPrint
 
 class CheckoutSummaryPage extends StatefulWidget {
@@ -29,6 +29,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
   bool _hasAvailablePromo = false;
   bool _applyPromo = false;
   CustomerPromo? _customerPromo;
+  final AuthStateService _authService = AuthStateService();
+
+  AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
@@ -43,10 +46,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
   }
 
   Future<void> _checkPromoAvailability() async {
-    final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final hasPromo = await PromoService.hasAvailableFirstTimePromo(user.uid);
-      final customerPromo = await PromoService.getCustomerPromo(user.uid);
+      final hasPromo = await PromoService.hasAvailableFirstTimePromo(user!.uid);
+      final customerPromo = await PromoService.getCustomerPromo(user!.uid);
       setState(() {
         _hasAvailablePromo = hasPromo;
         _customerPromo = customerPromo;
@@ -213,12 +215,10 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
     setState(() => isProcessing = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('Not logged in');
       // Resolve buyer name for supplier views
-      String buyerName = user.displayName ?? '';
+      String buyerName = user?.displayName ?? '';
       try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
         if (userDoc.exists) {
           buyerName = (userDoc.data() as Map<String, dynamic>)['name'] ?? buyerName;
         }
@@ -277,7 +277,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
 
         batch.set(orderDoc, {
-          'buyerId': user.uid,
+          'buyerId': user?.uid,
           'buyerName': buyerName,
           'productId': data['productId'],
           'sellerId': data['sellerId'],
@@ -341,7 +341,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         try {
           final userDoc = await FirebaseFirestore.instance
               .collection('users')
-              .doc(user.uid)
+              .doc(user?.uid)
               .get();
           final userData = userDoc.data();
           final customerName = userData?['name'] ?? userData?['email'] ?? 'Unknown Customer';
@@ -365,12 +365,12 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         // Mark first-time promo as used if it was applied
         if (_applyPromo && _hasAvailablePromo && _customerPromo != null && !_customerPromo!.hasUsedFirstTimePromo) {
           try {
-            await PromoService.markFirstTimePromoAsUsed(user.uid);
-            print('First-time promo marked as used for customer: ${user.uid}');
+            await PromoService.markFirstTimePromoAsUsed(user!.uid);
+            print('First-time promo marked as used for customer: ${user?.uid}');
             
             // Send promo usage notification
             await notificationService.sendFCMNotification(
-              recipientId: user.uid,
+              recipientId: user!.uid,
               title: 'Promo Applied Successfully',
               body: 'Your first-time customer discount has been applied to this order',
               type: 'promo',
@@ -388,7 +388,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
 
         // Send order confirmation notification to customer
         await notificationService.sendFCMNotification(
-          recipientId: user.uid,
+          recipientId: user!.uid,
           title: 'Order Placed',
           body: 'Your order #$orderId has been placed successfully',
           type: 'order_update',
@@ -404,7 +404,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
         for (final doc in widget.cartItems) {
           cartBatch.delete(FirebaseFirestore.instance
               .collection('users')
-              .doc(user.uid)
+              .doc(user?.uid)
               .collection('cart')
               .doc(doc.id));
         }

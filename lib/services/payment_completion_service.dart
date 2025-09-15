@@ -1,24 +1,28 @@
 // ignore_for_file: avoid_print
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_state_service.dart';
 import 'notification_service.dart';
 
 class PaymentCompletionService {
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final AuthStateService _authService = AuthStateService();
+
+  static AuthUser? get _currentUser => _authService.currentUser;
+
   static Future<void> completeOrder(String orderId) async {
     print('PaymentCompletionService.completeOrder called with orderId: $orderId');
     
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      if (_currentUser == null) {
         print('No user found, cannot complete order');
         return;
       }
 
-      print('User found: ${user.uid}');
+      print('User found: ${_currentUser!.uid}');
 
       // First check if there's a temporary order that needs to be processed
-      final tempOrderDoc = await FirebaseFirestore.instance
+      final tempOrderDoc = await _firestore
           .collection('temp_orders')
           .doc(orderId)
           .get();
@@ -28,8 +32,8 @@ class PaymentCompletionService {
         final tempOrderData = tempOrderDoc.data()!;
         
         // Create individual orders for each cart item
-        final batch = FirebaseFirestore.instance.batch();
-        final ordersRef = FirebaseFirestore.instance.collection('orders');
+        final batch = _firestore.batch();
+        final ordersRef = _firestore.collection('orders');
 
         for (final item in tempOrderData['cartItems']) {
           final orderDoc = ordersRef.doc();
@@ -70,11 +74,11 @@ class PaymentCompletionService {
 
         // Remove items from cart
         if (tempOrderData['cartItems'] != null && tempOrderData['cartItems'] is List) {
-          final cartBatch = FirebaseFirestore.instance.batch();
+          final cartBatch = _firestore.batch();
           
           for (final item in tempOrderData['cartItems']) {
             if (item['cartDocId'] != null) {
-              final cartDocRef = FirebaseFirestore.instance
+              final cartDocRef = _firestore
                   .collection('users')
                   .doc(tempOrderData['buyerId'])
                   .collection('cart')
@@ -89,7 +93,7 @@ class PaymentCompletionService {
         }
 
         // Delete temporary order
-        await FirebaseFirestore.instance
+        await _firestore
             .collection('temp_orders')
             .doc(orderId)
             .delete();
@@ -100,7 +104,7 @@ class PaymentCompletionService {
 
       // Find all orders with the same orderId
       print('Searching for orders with orderId: $orderId');
-      final ordersQuery = await FirebaseFirestore.instance
+      final ordersQuery = await _firestore
           .collection('orders')
           .where('orderId', isEqualTo: orderId)
           .get();
@@ -109,7 +113,7 @@ class PaymentCompletionService {
 
       if (ordersQuery.docs.isNotEmpty) {
         // Update all orders with the same orderId to completed
-        final batch = FirebaseFirestore.instance.batch();
+        final batch = _firestore.batch();
         
         for (final orderDoc in ordersQuery.docs) {
           print('Updating order: ${orderDoc.id}');
@@ -129,7 +133,7 @@ class PaymentCompletionService {
         
         // Clear cart after successful order completion
         print('Clearing cart for order: $orderId');
-        await _clearCartForOrder(orderId, user.uid);
+        await _clearCartForOrder(orderId, _currentUser!.uid);
       } else {
         print('No orders found with orderId: $orderId');
       }
@@ -140,7 +144,7 @@ class PaymentCompletionService {
 
   static Future<bool> isOrderCompleted(String orderId) async {
     try {
-      final orderDoc = await FirebaseFirestore.instance
+      final orderDoc = await _firestore
           .collection('orders')
           .doc(orderId)
           .get();
@@ -159,7 +163,7 @@ class PaymentCompletionService {
   static Future<void> _clearCartForOrder(String orderId, String userId) async {
     try {
       // Get all cart items for the user
-      final cartQuery = await FirebaseFirestore.instance
+      final cartQuery = await _firestore
           .collection('users')
           .doc(userId)
           .collection('cart')
@@ -169,7 +173,7 @@ class PaymentCompletionService {
       
       if (cartQuery.docs.isNotEmpty) {
         // Clear all cart items
-        final cartBatch = FirebaseFirestore.instance.batch();
+        final cartBatch = _firestore.batch();
         
         for (final cartDoc in cartQuery.docs) {
           print('Deleting cart item: ${cartDoc.id}');
@@ -189,7 +193,7 @@ class PaymentCompletionService {
   // Debug method to check cart status
   static Future<void> debugCartStatus(String userId) async {
     try {
-      final cartQuery = await FirebaseFirestore.instance
+      final cartQuery = await _firestore
           .collection('users')
           .doc(userId)
           .collection('cart')

@@ -1,13 +1,13 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously, avoid_types_as_parameter_names
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import '../widgets/product_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'customer_chat_page.dart';
 import 'customer_dashboard.dart';
+import '../services/auth_state_service.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -26,7 +26,8 @@ class ProductDetailsPage extends StatefulWidget {
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
   int _qty = 1;
   bool _readMore = false;
-  final user = FirebaseAuth.instance.currentUser;
+  final AuthStateService _authService = AuthStateService();
+  AuthUser? get user => _authService.currentUser;
 
   void _addToCart() async {
     if (user == null) {
@@ -744,7 +745,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   Icon(Icons.trending_up, color: Color(0xFF6CA04A), size: screenWidth * 0.05),
                                   SizedBox(width: screenWidth * 0.02),
                                   Text(
-                                    '${soldCount} sold',
+                                    '$soldCount sold',
                                     style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.04,
                                       color: Color(0xFF6CA04A),
