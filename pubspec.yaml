@@ -40,7 +40,7 @@ dependencies:
   firebase_auth: ^6.0.1
   shared_preferences: ^2.5.3
   intl: ^0.20.2
-  connectivity_plus: ^6.1.5
+  connectivity_plus: ^7.0.0
   latlong2: ^0.9.1
   flutter_map: ^8.2.1
   image_picker: ^1.2.0
