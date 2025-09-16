@@ -1482,7 +1482,10 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
           children: [
             Icon(Icons.location_off, color: Colors.orange),
             SizedBox(width: 8),
-            Text('Location Services Disabled'),
+            Text(
+    'Location Services Disabled',
+    style: TextStyle(fontSize: 15),
+  ),
           ],
         ),
         content: Column(

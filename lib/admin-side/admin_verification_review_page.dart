@@ -86,7 +86,10 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
               stream: _getVerificationRequestsStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: LottieLoadingWidget(showText: true));
+                  return Center(child: LottieLoadingWidget(
+                    assetPath: 'assets/lottie-loading-json/Grocery shopping bag pickup and delivery.json',
+                    showText: true,
+                  ));
                 }
 
                 if (snapshot.hasError) {

@@ -83,73 +83,71 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
                   color: widget.backgroundColor,
                 ),
                 // Drawer content
-                SizedBox(
-                  width: 280,
-                  child: Column(
-                    children: [
-                      // Header section
-                      _buildHeader(),
-                      // Navigation items
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          children: [
-                            if (widget.sections != null) ...[
-                              ...widget.sections!.map((section) {
-                                return Column(
-                                  children: [
-                                    Text(
-                                      section.title,
-                                      style: GoogleFonts.quicksand(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF1A1A1A),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    ...section.items.map((item) {
-                                      final isSelected = widget.selectedIndex == item.index;
-                                      
-                                      return AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
-                                        margin: const EdgeInsets.symmetric(vertical: 4),
-                                        child: _buildDrawerItem(item, isSelected),
-                                      );
-                                    }),
+                Column(
+                  children: [
+                    // Header section
+                    _buildHeader(),
+                    // Navigation items
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        children: [
+                          if (widget.sections != null) ...[
+                            ...widget.sections!.asMap().entries.map((entry) {
+                              final sectionIndex = entry.key;
+                              final section = entry.value;
+                              
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Add divider before each section (except the first one)
+                                  if (sectionIndex > 0) ...[
+                                    const SizedBox(height: 12),
+                                    const Divider(height: 1, color: Colors.grey),
+                                    const SizedBox(height: 12),
                                   ],
-                                );
-                              }),
-                            ] else ...[
-                              ...widget.items.asMap().entries.map((entry) {
+                                  ...section.items.map((item) {
+                                    final isSelected = widget.selectedIndex == item.index;
+                                    
+                                    return AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      margin: const EdgeInsets.symmetric(vertical: 4),
+                                      child: _buildDrawerItem(item, isSelected),
+                                    );
+                                  }),
+                                ],
+                              );
+                            }),
+                          ] else ...[
+                            ...widget.items.asMap().entries.map((entry) {
+                              final item = entry.value;
+                              final isSelected = widget.selectedIndex == item.index;
+                              
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: _buildDrawerItem(item, isSelected),
+                              );
+                            }),
+                            if (widget.additionalItems != null) ...[
+                              const SizedBox(height: 20),
+                              const Divider(height: 1, color: Colors.grey),
+                              const SizedBox(height: 10),
+                              ...widget.additionalItems!.asMap().entries.map((entry) {
                                 final item = entry.value;
-                                final isSelected = widget.selectedIndex == item.index;
                                 
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   margin: const EdgeInsets.symmetric(vertical: 4),
-                                  child: _buildDrawerItem(item, isSelected),
+                                  child: _buildDrawerItem(item, false),
                                 );
                               }),
-                              if (widget.additionalItems != null) ...[
-                                const SizedBox(height: 20),
-                                const Divider(height: 1, color: Colors.grey),
-                                const SizedBox(height: 10),
-                                ...widget.additionalItems!.asMap().entries.map((entry) {
-                                  final item = entry.value;
-                                  
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.symmetric(vertical: 4),
-                                    child: _buildDrawerItem(item, false),
-                                  );
-                                }),
-                              ],
                             ],
                           ],
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -142,7 +142,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           ),
         ),
         backgroundColor: Color(0xFF6CA04A),
-        duration: Duration(seconds: 8),
+        duration: Duration(seconds: 5),
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
@@ -380,7 +380,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const NotificationCenter(),
+                          builder: (context) => const NotificationCenter(),
                         ),
                       );
                     },
