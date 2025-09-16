@@ -315,7 +315,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
     if (autoApprovalScheduledAt == null) return '';
     
     final scheduledTime = autoApprovalScheduledAt.toDate();
-    final now = DateTime.now();
+    final now = _now;
     final difference = scheduledTime.difference(now);
     
     if (difference.isNegative) {
@@ -324,11 +324,14 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
     
     final hours = difference.inHours;
     final minutes = difference.inMinutes % 60;
+    final seconds = difference.inSeconds % 60;
     
     if (hours > 0) {
-      return 'Auto-approval in ${hours}h ${minutes}m';
+      return 'Auto-approval in ${hours}h ${minutes}m ${seconds}s';
+    } else if (minutes > 0) {
+      return 'Auto-approval in ${minutes}m ${seconds.toString().padLeft(2, '0')}s';
     } else {
-      return 'Auto-approval in ${minutes}m';
+      return 'Auto-approval in ${seconds}s';
     }
   }
 
@@ -748,6 +751,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
           'autoApprovalScheduledAt': FieldValue.delete(),
         });
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product approved and now visible to buyers!')),
         );
@@ -774,6 +778,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
           'autoApprovalScheduledAt': FieldValue.delete(),
         });
         
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product rejected.')),
         );
@@ -784,6 +789,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error verifying product: $e')),
       );

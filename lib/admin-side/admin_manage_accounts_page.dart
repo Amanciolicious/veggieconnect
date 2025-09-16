@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:path/path.dart';
 import '../services/supplier_report_service.dart';
 import '../models/supplier_report_model.dart';
@@ -17,11 +18,27 @@ class AdminManageAccountsPage extends StatefulWidget {
 
 class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
   final TextEditingController _searchController = TextEditingController();
+  DateTime _now = DateTime.now();
+  late final Ticker _ticker;
 
   @override
   void dispose() {
+    _ticker.stop();
+    _ticker.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Ticker((_) {
+      final current = DateTime.now();
+      if (current.second != _now.second) {
+        setState(() => _now = current);
+      }
+    });
+    _ticker.start();
   }
 
   @override
@@ -396,11 +413,14 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                     children: [
                       Icon(Icons.schedule, size: screenWidth * 0.04, color: Colors.red),
                       SizedBox(width: screenWidth * 0.02),
-                      Text(
-                        'Ban expires: ${_formatBanExpiry(user['banExpiresAt'] as Timestamp)}',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.035,
-                          color: Colors.red,
+                      Expanded(
+                        child: Text(
+                          _formatBanCountdown(user['banExpiresAt'] as Timestamp),
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -891,6 +911,20 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
   String _formatBanExpiry(Timestamp timestamp) {
     final date = timestamp.toDate();
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatBanCountdown(Timestamp timestamp) {
+    final target = timestamp.toDate();
+    final diff = target.difference(_now);
+    if (diff.isNegative) return 'Ban expired';
+    final d = diff.inDays;
+    final h = diff.inHours % 24;
+    final m = diff.inMinutes % 60;
+    if (d > 0) return 'Ban expires in ${d}d ${h}h ${m}m';
+    if (h > 0) return 'Ban expires in ${h}h ${m}m';
+    final s = diff.inSeconds % 60;
+    if (m > 0) return 'Ban expires in ${m}m ${s.toString().padLeft(2, '0')}s';
+    return 'Ban expires in ${s}s';
   }
 
   Future<void> _applyTemporaryBan(BuildContext context, String userId, String daysText, String reason) async {

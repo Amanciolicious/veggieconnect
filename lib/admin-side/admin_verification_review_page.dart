@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/supplier_verification.dart';
 import '../services/supplier_verification_service.dart';
@@ -19,11 +20,27 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
   final AuthStateService _authService = AuthStateService();
   String _filterStatus = 'pending'; // 'all', 'pending', 'approved', 'rejected'
   final TextEditingController _reviewNotesController = TextEditingController();
+  DateTime _now = DateTime.now();
+  late final Ticker _ticker;
 
   @override
   void dispose() {
+    _ticker.stop();
+    _ticker.dispose();
     _reviewNotesController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Ticker((_) {
+      final current = DateTime.now();
+      if (current.second != _now.second) {
+        setState(() => _now = current);
+      }
+    });
+    _ticker.start();
   }
 
   @override
@@ -241,8 +258,32 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
               _buildInfoRow('Reviewed', _formatDateTime(verification.reviewedAt!)),
             if (verification.reviewedBy != null)
               _buildInfoRow('Reviewed By', verification.reviewedBy!),
-            if (verification.autoApprovalScheduledAt != null)
-              _buildInfoRow('Auto-approval', _formatDateTime(verification.autoApprovalScheduledAt!)),
+            if (verification.status == 'pending' && verification.autoApprovalScheduledAt != null) ...[
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.schedule, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _formatCountdown(verification.autoApprovalScheduledAt!),
+                        style: GoogleFonts.quicksand(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             
             SizedBox(height: 16),
             
@@ -744,5 +785,16 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatCountdown(DateTime target) {
+    final diff = target.difference(_now);
+    if (diff.isNegative) return 'Auto-approval overdue';
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    final s = diff.inSeconds % 60;
+    if (h > 0) return 'Auto-approval in ${h}h ${m}m ${s}s';
+    if (m > 0) return 'Auto-approval in ${m}m ${s.toString().padLeft(2, '0')}s';
+    return 'Auto-approval in ${s}s';
   }
 }

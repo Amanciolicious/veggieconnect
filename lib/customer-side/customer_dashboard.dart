@@ -1378,6 +1378,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
     return FirebaseFirestore.instance
         .collection('products')
         .where('status', isEqualTo: 'approved')
+        .orderBy('updatedAt', descending: true)
         .limit(20)
         .snapshots();
   }
@@ -1429,7 +1430,8 @@ class _QuickActionModalState extends State<QuickActionModal> {
               borderRadius: BorderRadius.circular(8),
               child: data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty
                   ? Image.network(
-                      data['imageUrls'][0],
+                      _versionedImageUrl(data['imageUrls'][0], data['updatedAt']),
+                      key: ValueKey(_versionedImageUrl(data['imageUrls'][0], data['updatedAt'])),
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
@@ -1499,6 +1501,22 @@ class _QuickActionModalState extends State<QuickActionModal> {
         ),
       ),
     );
+  }
+
+  String _versionedImageUrl(dynamic url, dynamic updatedAt) {
+    final base = (url ?? '').toString();
+    if (base.isEmpty) return base;
+    int version = 0;
+    try {
+      if (updatedAt is Timestamp) {
+        version = updatedAt.millisecondsSinceEpoch;
+      } else if (updatedAt is DateTime) {
+        version = updatedAt.millisecondsSinceEpoch;
+      }
+    } catch (_) {}
+    if (version == 0) return base;
+    final separator = base.contains('?') ? '&' : '?';
+    return '$base${separator}v=$version';
   }
 
   Widget _buildProductBadge(Map<String, dynamic> data) {
