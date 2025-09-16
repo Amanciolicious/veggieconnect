@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../services/content_filter_service.dart';
 import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -17,6 +18,8 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
   final ContentFilterService _contentFilterService = ContentFilterService();
   final AuthStateService _authService = AuthStateService();
   String _filterStatus = 'all'; // 'all', 'pending', 'flagged', 'approved', 'rejected'
+  late final Ticker _ticker;
+  DateTime _now = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -179,6 +182,28 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Ticker((_) {
+      // Force rebuild once per second for live countdown text
+      final current = DateTime.now();
+      if (current.second != _now.second) {
+        setState(() {
+          _now = current;
+        });
+      }
+    });
+    _ticker.start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.stop();
+    _ticker.dispose();
+    super.dispose();
   }
 
   Stream<QuerySnapshot> _getFilteredProductsStream() {

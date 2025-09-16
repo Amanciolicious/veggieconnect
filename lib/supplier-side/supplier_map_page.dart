@@ -1193,15 +1193,6 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                   onTap: () => _showTimeEstimates(farm),
                 ),
                 const SizedBox(height: 8),
-                
-                // External Maps
-                _buildNavigationOption(
-                  icon: Icons.map,
-                  title: 'Open in Maps App',
-                  subtitle: 'Open location in device maps',
-                  color: Colors.teal,
-                  onTap: () => _openInExternalMaps(farm),
-                ),
               ],
             ),
           ),
@@ -1600,31 +1591,6 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     }
   }
 
-  Future<void> _openInExternalMaps(FarmLocation farm) async {
-    Navigator.of(context).pop();
-    
-    try {
-      // Use OpenStreetMap-based external map service
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Opening ${farm.name} in OpenStreetMap...'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      // Note: In a real app, you would use url_launcher package to open the URL
-      // await launchUrl(Uri.parse(url));
-      
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error opening external maps: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1821,7 +1787,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 10,
                             ),
                             textAlign: TextAlign.center,
                           ),

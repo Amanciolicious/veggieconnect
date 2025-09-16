@@ -1266,3 +1266,264 @@ exports.unbanSupplier = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('internal', 'Failed to unban supplier');
   }
 });
+
+// Cloud Function: approve any pending products whose autoApprovalScheduledAt has arrived
+exports.autoApproveScheduledProducts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+  console.log('Running scheduled auto-approval for products with autoApprovalScheduledAt <= now...');
+
+  try {
+    const now = admin.firestore.Timestamp.now();
+
+    const dueProducts = await admin.firestore()
+      .collection('products')
+      .where('status', '==', 'pending')
+      .where('autoApprovalScheduledAt', '<=', now)
+      .get();
+
+    if (dueProducts.empty) {
+      console.log('No products due for scheduled auto-approval');
+      return null;
+    }
+
+    const batch = admin.firestore().batch();
+    const approved = [];
+
+    dueProducts.docs.forEach(doc => {
+      const data = doc.data();
+      batch.update(doc.ref, {
+        status: 'approved',
+        isVerified: true,
+        reviewedAt: now,
+        reviewedBy: 'system_auto_approval',
+        rejectionReason: '',
+        autoApproved: true,
+        updatedAt: now,
+        autoApprovalScheduledAt: admin.firestore.FieldValue.delete()
+      });
+      approved.push({ id: doc.id, name: data.name, supplierId: data.sellerId });
+    });
+
+    await batch.commit();
+    console.log(`Scheduled auto-approved ${approved.length} products`);
+
+    for (const product of approved) {
+      try {
+        const supplierDoc = await admin.firestore().collection('users').doc(product.supplierId).get();
+        if (supplierDoc.exists && supplierDoc.data().fcmToken) {
+          await admin.messaging().send({
+            token: supplierDoc.data().fcmToken,
+            notification: {
+              title: 'Product Approved!',
+              body: `Your product "${product.name || ''}" has been approved.`
+            },
+            data: { type: 'product_auto_approved', productId: product.id, screen: 'supplier_products' },
+            android: { notification: { channelId: 'products', priority: 'high', sound: 'default' } }
+          });
+        }
+      } catch (e) {
+        console.error(`Notify failed for product ${product.id}:`, e);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in autoApproveScheduledProducts:', error);
+    throw error;
+  }
+});
+
+// Trigger: when a product's content is cleared (contentFlagged: true -> false) and still pending, schedule short auto-approval (e.g., 2 minutes)
+exports.scheduleAutoApprovalOnContentCleared = functions.firestore
+  .document('products/{productId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+
+      if (!before || !after) return null;
+
+      const wasFlagged = !!before.contentFlagged;
+      const isFlagged = !!after.contentFlagged;
+      const isPending = after.status === 'pending' || !after.status;
+
+      if (wasFlagged && !isFlagged && isPending) {
+        const now = new Date();
+        const inTwoMinutes = new Date(now.getTime() + 2 * 60 * 1000);
+        await change.after.ref.update({
+          autoApprovalScheduledAt: admin.firestore.Timestamp.fromDate(inTwoMinutes),
+          updatedAt: admin.firestore.Timestamp.now()
+        });
+        console.log(`Scheduled auto-approval in 2 minutes for product ${context.params.productId}`);
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error scheduling auto-approval on content cleared:', error);
+      throw error;
+    }
+  });
+
+// Cron: approve pending verifications whose autoApprovalScheduledAt has arrived
+exports.autoApproveScheduledVerifications = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+  console.log('Running scheduled auto-approval for supplier verifications...');
+
+  try {
+    const now = admin.firestore.Timestamp.now();
+    const due = await admin.firestore()
+      .collection('supplier_verifications')
+      .where('status', '==', 'pending')
+      .where('autoApprovalScheduledAt', '<=', now)
+      .get();
+
+    if (due.empty) {
+      console.log('No verifications due for auto-approval');
+      return null;
+    }
+
+    const batch = admin.firestore().batch();
+    const toNotify = [];
+
+    due.docs.forEach(doc => {
+      const data = doc.data();
+      batch.update(doc.ref, {
+        status: 'approved',
+        reviewedAt: now,
+        reviewedBy: 'system_auto_approval',
+        reviewNotes: 'Automatically approved after timer elapsed',
+        autoApproved: true,
+        updatedAt: now,
+        autoApprovalScheduledAt: admin.firestore.FieldValue.delete()
+      });
+      batch.update(admin.firestore().collection('users').doc(data.supplierId), {
+        isVerified: true,
+        verificationStatus: 'approved',
+        verifiedAt: now,
+        updatedAt: now
+      });
+      toNotify.push({ supplierId: data.supplierId, supplierEmail: data.supplierEmail });
+    });
+
+    await batch.commit();
+    console.log(`Auto-approved ${toNotify.length} verifications by schedule`);
+
+    for (const item of toNotify) {
+      try {
+        const userDoc = await admin.firestore().collection('users').doc(item.supplierId).get();
+        if (userDoc.exists && userDoc.data().fcmToken) {
+          await admin.messaging().send({
+            token: userDoc.data().fcmToken,
+            notification: {
+              title: 'Verification Approved!',
+              body: 'Your supplier verification was approved.'
+            },
+            data: { type: 'verification_auto_approved', screen: 'supplier_profile' },
+            android: { notification: { channelId: 'verification', priority: 'high', sound: 'default' } }
+          });
+        }
+      } catch (e) {
+        console.error('Notify verification approval failed:', e);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in autoApproveScheduledVerifications:', error);
+    throw error;
+  }
+});
+
+// Cloud Function to ban a supplier (callable by admins) with optional durationDays for temporary ban
+exports.banSupplier = functions.https.onCall(async (data, context) => {
+  try {
+    if (!context.auth || !context.auth.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+    }
+
+    const adminDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    if (!adminDoc.exists || adminDoc.data().role !== 'admin') {
+      throw new functions.https.HttpsError('permission-denied', 'Must be admin');
+    }
+
+    const { supplierId, reason, durationDays } = data;
+    if (!supplierId || !reason) {
+      throw new functions.https.HttpsError('invalid-argument', 'supplierId and reason are required');
+    }
+
+    const now = admin.firestore.Timestamp.now();
+    const isTemporary = Number.isInteger(durationDays) && durationDays > 0;
+    const expiresAt = isTemporary ? admin.firestore.Timestamp.fromDate(new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)) : null;
+
+    const banRef = await admin.firestore().collection('user_bans').add({
+      userId: supplierId,
+      bannedBy: context.auth.uid,
+      reason,
+      bannedAt: now,
+      expiresAt: expiresAt,
+      isPermanent: !isTemporary,
+      isActive: true
+    });
+
+    await admin.firestore().collection('users').doc(supplierId).update({
+      isBanned: true,
+      banType: isTemporary ? 'temporary' : 'permanent',
+      banExpiresAt: expiresAt || admin.firestore.FieldValue.delete(),
+      updatedAt: now
+    });
+
+    const prods = await admin.firestore().collection('products').where('sellerId', '==', supplierId).get();
+    const batch = admin.firestore().batch();
+    prods.docs.forEach(doc => batch.update(doc.ref, { isActive: false, deactivatedAt: now, deactivationReason: 'Supplier banned by admin' }));
+    await batch.commit();
+
+    return { success: true, banId: banRef.id };
+  } catch (error) {
+    console.error('Error banning supplier:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to ban supplier');
+  }
+});
+
+// Scheduled job: unban users whose temporary bans have expired
+exports.unbanExpiredBans = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+  console.log('Running unbanExpiredBans...');
+  try {
+    const now = admin.firestore.Timestamp.now();
+    const usersSnap = await admin.firestore()
+      .collection('users')
+      .where('isBanned', '==', true)
+      .where('banType', '==', 'temporary')
+      .where('banExpiresAt', '<=', now)
+      .get();
+
+    if (usersSnap.empty) {
+      console.log('No expired bans found');
+      return null;
+    }
+
+    for (const userDoc of usersSnap.docs) {
+      const userId = userDoc.id;
+      const batch = admin.firestore().batch();
+
+      const activeBans = await admin.firestore()
+        .collection('user_bans')
+        .where('userId', '==', userId)
+        .where('isActive', '==', true)
+        .get();
+      activeBans.docs.forEach(b => batch.update(b.ref, { isActive: false }));
+
+      batch.update(admin.firestore().collection('users').doc(userId), {
+        isBanned: false,
+        banType: admin.firestore.FieldValue.delete(),
+        banExpiresAt: admin.firestore.FieldValue.delete(),
+        updatedAt: now
+      });
+
+      await batch.commit();
+      console.log(`Unbanned user ${userId} due to expired temporary ban`);
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in unbanExpiredBans:', error);
+    throw error;
+  }
+});
