@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:veggieconnect/authentication/login_page.dart';
@@ -30,18 +31,30 @@ class SupplierDashboard extends StatefulWidget {
   State<SupplierDashboard> createState() => _SupplierDashboardState();
 }
 
-class _SupplierDashboardState extends State<SupplierDashboard> {
+class _SupplierDashboardState extends State<SupplierDashboard> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   String? _localProfileImagePath;
   bool _showVerificationNotification = false;
+  late Ticker _ticker;
+  late ValueNotifier<DateTime> _nowNotifier;
 
   final AuthStateService _authService = AuthStateService();
+  final NotificationService _notificationService = NotificationService();
 
   AuthUser? get user => _authService.currentUser;
 
   @override
   void initState() {
     super.initState();
+    _nowNotifier = ValueNotifier<DateTime>(DateTime.now());
+    _ticker = createTicker((elapsed) {
+      _nowNotifier.value = DateTime.now();
+    });
+    _ticker.start();
+    
+    // Initialize notification service
+    _notificationService.initialize();
+    
     _loadLocalProfileImage();
     _checkVerificationStatus();
   }
@@ -368,7 +381,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         elevation: 0,
         actions: [
           StreamBuilder<int>(
-            stream: NotificationService().getUnreadCountStream(),
+            stream: _notificationService.getUnreadCountStream(),
             builder: (context, snapshot) {
               final unreadCount = snapshot.data ?? 0;
               return Stack(
@@ -376,7 +389,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                   IconButton(
                     onPressed: () async {
                       // Mark all notifications as read when opening notification center
-                      NotificationService().markAllAsRead();
+                      _notificationService.markAllAsRead();
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -948,6 +961,31 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                                 ),
                               ),
                             ),
+                            // Add Rejection Reason button for rejected products
+                            if (product['status'] == 'rejected') ...[
+                              SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () => _showRejectionReasonModal(context, product),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade50,
+                                  foregroundColor: Colors.red.shade700,
+                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  minimumSize: Size(0, 28),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    side: BorderSide(color: Colors.red.shade200),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'Rejection Reason',
+                                  style: GoogleFonts.quicksand(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -971,6 +1009,110 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
       default:
         return Colors.orange;
     }
+  }
+
+  void _showRejectionReasonModal(BuildContext context, Map<String, dynamic> product) {
+    final rejectionReason = product['rejectionReason'] ?? 'No reason provided';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade600, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'Rejection Reason',
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.red.shade700,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Product: ${product['name'] ?? 'Unknown Product'}',
+              style: GoogleFonts.quicksand(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                border: Border.all(color: Colors.red.shade200),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                rejectionReason,
+                style: GoogleFonts.quicksand(
+                  fontSize: 14,
+                  color: Colors.red.shade800,
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'You can edit and resubmit this product for review.',
+              style: GoogleFonts.quicksand(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Close',
+              style: GoogleFonts.quicksand(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to edit product page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddProductPage(
+                    product: product,
+                    docId: product['id'],
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF6CA04A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Edit Product',
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStockManagementTab() {

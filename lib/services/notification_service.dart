@@ -653,20 +653,38 @@ class NotificationService {
     );
   }
 
-  // Send product approval notification
-  void sendProductApprovalNotification({
+  // Send product approval notification with FCM
+  Future<void> sendProductApprovalNotification({
     required String productName,
     required String status,
     required String supplierId,
     String? reason,
-  }) {
-    String title = 'Product $status';
+  }) async {
+    String title = 'Product ${status == 'approved' ? 'Approved' : 'Rejected'}';
     String body = 'Your product "$productName" has been $status';
     
-    if (status.toLowerCase() == 'rejected' && reason != null) {
+    if (status.toLowerCase() == 'rejected' && reason != null && reason.isNotEmpty) {
       body += ': $reason';
+    } else if (status.toLowerCase() == 'approved') {
+      body += ' and is now visible to buyers!';
     }
 
+    // Send FCM notification to the specific supplier
+    await sendFCMNotification(
+      recipientId: supplierId,
+      title: title,
+      body: body,
+      type: 'product_approval',
+      data: {
+        'productName': productName,
+        'status': status,
+        'supplierId': supplierId,
+        'reason': reason,
+        'screen': 'products',
+      },
+    );
+
+    // Also send in-app notification for notification center
     sendInAppNotification(
       title: title,
       body: body,

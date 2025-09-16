@@ -10,7 +10,8 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "deploy-auto-approve": "firebase deploy --only functions --approve-within 5mins"
   },
   "dependencies": {
     "firebase-functions": "^4.8.2",
@@ -22,5 +23,3 @@
     "eslint-config-google": "^0.14.0"
   }
 }
-
-

@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../models/farm_location_request.dart';
 import '../services/farm_location_request_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import 'dart:async';
 
 class FarmLocationRequestsPage extends StatefulWidget {
   const FarmLocationRequestsPage({super.key});
@@ -24,6 +25,7 @@ class _FarmLocationRequestsPageState extends State<FarmLocationRequestsPage> {
   bool _isLoading = true;
   bool _isProcessing = false;
   String? _errorMessage;
+  Timer? _countdownTimer;
 
   @override
   void initState() {
@@ -31,6 +33,12 @@ class _FarmLocationRequestsPageState extends State<FarmLocationRequestsPage> {
     _loadPendingRequests();
     // Process auto-approvals when page loads
     _processAutoApprovals();
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadPendingRequests() async {
@@ -170,48 +178,161 @@ class _FarmLocationRequestsPageState extends State<FarmLocationRequestsPage> {
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isApproval ? 'Approve Request' : 'Reject Request'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Farm: ${request.farmName}'),
-            Text('Requested by: ${request.requesterName}'),
-            SizedBox(height: 16),
-            TextField(
-              controller: notesController,
-              decoration: InputDecoration(
-                labelText: 'Review Notes (Optional)',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Start countdown timer for the dialog
+          _countdownTimer?.cancel();
+          _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+            if (mounted) {
+              setDialogState(() {});
+            } else {
+              timer.cancel();
+            }
+          });
+
+          String getCountdownText() {
+            if (request.autoApprovalAt == null) return '';
+            
+            final now = DateTime.now();
+            final timeLeft = request.autoApprovalAt!.difference(now);
+            
+            if (timeLeft.isNegative) {
+              return 'Auto-approval overdue';
+            }
+            
+            final minutes = timeLeft.inMinutes;
+            final seconds = timeLeft.inSeconds % 60;
+            return '${minutes}m ${seconds}s';
+          }
+
+          return AlertDialog(
+            title: Stack(
+              children: [
+                Text(isApproval ? 'Approve Request' : 'Reject Request'),
+                // Countdown timer in upper right
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: request.autoApprovalAt != null && 
+                             request.autoApprovalAt!.difference(DateTime.now()).inMinutes < 1
+                          ? Colors.red.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: request.autoApprovalAt != null && 
+                               request.autoApprovalAt!.difference(DateTime.now()).inMinutes < 1
+                            ? Colors.red
+                            : Colors.orange,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.timer,
+                          size: 16,
+                          color: request.autoApprovalAt != null && 
+                                 request.autoApprovalAt!.difference(DateTime.now()).inMinutes < 1
+                              ? Colors.red
+                              : Colors.orange,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          getCountdownText(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: request.autoApprovalAt != null && 
+                                   request.autoApprovalAt!.difference(DateTime.now()).inMinutes < 1
+                                ? Colors.red
+                                : Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Farm: ${request.farmName}'),
+                Text('Requested by: ${request.requesterName}'),
+                if (request.autoApprovalAt != null) ...[
+                  SizedBox(height: 8),
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'This request will be auto-approved in ${getCountdownText()}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                SizedBox(height: 16),
+                TextField(
+                  controller: notesController,
+                  decoration: InputDecoration(
+                    labelText: 'Review Notes (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  _countdownTimer?.cancel();
+                  Navigator.of(context).pop();
+                },
+                child: Text('Cancel'),
               ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              if (isApproval) {
-                _approveRequest(request.id, notesController.text.trim());
-              } else {
-                _rejectRequest(request.id, notesController.text.trim());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isApproval ? Colors.green : Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(isApproval ? 'Approve' : 'Reject'),
-          ),
-        ],
+              ElevatedButton(
+                onPressed: () {
+                  _countdownTimer?.cancel();
+                  Navigator.of(context).pop();
+                  if (isApproval) {
+                    _approveRequest(request.id, notesController.text.trim());
+                  } else {
+                    _rejectRequest(request.id, notesController.text.trim());
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isApproval ? Colors.green : Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(isApproval ? 'Approve' : 'Reject'),
+              ),
+            ],
+          );
+        },
       ),
-    );
+    ).then((_) {
+      // Cancel timer when dialog is closed
+      _countdownTimer?.cancel();
+    });
   }
 
   String _getTimeRemaining(FarmLocationRequest request) {

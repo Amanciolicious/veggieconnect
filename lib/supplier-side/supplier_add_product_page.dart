@@ -13,6 +13,7 @@ import '../services/notification_service.dart';
 import '../services/supplier_verification_service.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/scheduler.dart';
 import '../widgets/lottie_loading_widget.dart';
 import 'supplier_dashboard.dart';
 import 'supplier_chat_list_page.dart';
@@ -40,6 +41,9 @@ class _AddProductPageState extends State<AddProductPage> {
   bool _isActive = true;
   String? _imageUrl;
   bool _isUploading = false;
+  late final Ticker _ticker;
+  final ValueNotifier<DateTime> _nowNotifier = ValueNotifier<DateTime>(DateTime.now());
+  Stream<QuerySnapshot>? _pendingProductStream;
 
   // Predefined categories and units
   static const List<String> _categories = [
@@ -66,6 +70,26 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   void initState() {
     super.initState();
+    // Start a light ticker that only updates a value notifier once per second
+    _ticker = Ticker((_) {
+      final current = DateTime.now();
+      if (current.second != _nowNotifier.value.second) {
+        _nowNotifier.value = current;
+      }
+    });
+    _ticker.start();
+
+    // Prepare stream for the latest pending product for this supplier
+    final user = _authService.currentUser;
+    if (user != null) {
+      _pendingProductStream = FirebaseFirestore.instance
+          .collection('products')
+          .where('sellerId', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'pending')
+          .orderBy('autoApprovalScheduledAt', descending: true)
+          .limit(1)
+          .snapshots();
+    }
     if (widget.product != null) {
       _nameController.text = widget.product!['name'] ?? '';
       _descController.text = widget.product!['description'] ?? '';
@@ -90,6 +114,9 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   void dispose() {
+    _ticker.stop();
+    _ticker.dispose();
+    _nowNotifier.dispose();
     _nameController.dispose();
     _descController.dispose();
     _priceController.dispose();
@@ -584,6 +611,47 @@ class _AddProductPageState extends State<AddProductPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Pending auto-approval countdown banner (if applicable)
+                    if (_pendingProductStream != null)
+                      StreamBuilder<QuerySnapshot>(
+                        stream: _pendingProductStream,
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return SizedBox.shrink();
+                          }
+                          final doc = snapshot.data!.docs.first;
+                          final data = doc.data() as Map<String, dynamic>;
+                          final scheduled = data['autoApprovalScheduledAt'] as Timestamp?;
+                          if (scheduled == null) return SizedBox.shrink();
+                          return Container(
+                            margin: EdgeInsets.only(bottom: 12),
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.schedule, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: ValueListenableBuilder<DateTime>(
+                                    valueListenable: _nowNotifier,
+                                    builder: (_, now, _) => Text(
+                                      _formatCountdown(scheduled, now),
+                                      style: GoogleFonts.quicksand(
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.orange,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     // Image Section
                     GestureDetector(
                       onTap: _pickImage,
@@ -1015,6 +1083,18 @@ class _AddProductPageState extends State<AddProductPage> {
         ),
       );
     }
+  }
+
+  String _formatCountdown(Timestamp ts, DateTime now) {
+    final target = ts.toDate();
+    final diff = target.difference(now);
+    if (diff.isNegative) return 'Auto-approval overdue';
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    final s = diff.inSeconds % 60;
+    if (h > 0) return 'Auto-approval in ${h}h ${m}m ${s}s';
+    if (m > 0) return 'Auto-approval in ${m}m ${s.toString().padLeft(2, '0')}s';
+    return 'Auto-approval in ${s}s';
   }
 
   Drawer _buildSupplierDrawer(BuildContext context) {

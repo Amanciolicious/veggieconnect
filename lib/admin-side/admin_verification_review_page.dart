@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/scheduler.dart';
@@ -20,13 +22,14 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
   final AuthStateService _authService = AuthStateService();
   String _filterStatus = 'pending'; // 'all', 'pending', 'approved', 'rejected'
   final TextEditingController _reviewNotesController = TextEditingController();
-  DateTime _now = DateTime.now();
   late final Ticker _ticker;
+  final ValueNotifier<DateTime> _nowNotifier = ValueNotifier<DateTime>(DateTime.now());
 
   @override
   void dispose() {
     _ticker.stop();
     _ticker.dispose();
+    _nowNotifier.dispose();
     _reviewNotesController.dispose();
     super.dispose();
   }
@@ -36,8 +39,8 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
     super.initState();
     _ticker = Ticker((_) {
       final current = DateTime.now();
-      if (current.second != _now.second) {
-        setState(() => _now = current);
+      if (current.second != _nowNotifier.value.second) {
+        _nowNotifier.value = current;
       }
     });
     _ticker.start();
@@ -214,40 +217,120 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with supplier info and status
-            Row(
+            // Header with supplier info, status, and countdown timer
+            Stack(
               children: [
-                CircleAvatar(
-                  backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
-                  child: Icon(
-                    Icons.person,
-                    color: Color(0xFF6CA04A),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        verification.supplierName,
-                        style: GoogleFonts.quicksand(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2E2E2E),
-                        ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
+                      child: Icon(
+                        Icons.person,
+                        color: Color(0xFF6CA04A),
                       ),
-                      Text(
-                        verification.supplierEmail,
-                        style: GoogleFonts.quicksand(
-                          fontSize: 14,
-                          color: Color(0xFF666666),
-                        ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            verification.supplierName,
+                            style: GoogleFonts.quicksand(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2E2E2E),
+                            ),
+                          ),
+                          Text(
+                            verification.supplierEmail,
+                            style: GoogleFonts.quicksand(
+                              fontSize: 14,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    _buildStatusChip(verification.status),
+                  ],
                 ),
-                _buildStatusChip(verification.status),
+                // Live countdown timer in upper right corner
+                if (verification.status == 'pending')
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: ValueListenableBuilder<DateTime>(
+                      valueListenable: _nowNotifier,
+                      builder: (_, now, _) {
+                        final DateTime target = (verification.autoApprovalScheduledAt ?? verification.submittedAt.add(Duration(hours: 24)));
+                        final timeLeft = target.difference(now);
+                        
+                        if (timeLeft.isNegative) {
+                          return Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.red, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.warning, size: 16, color: Colors.red),
+                                SizedBox(width: 4),
+                                Text(
+                                  'OVERDUE',
+                                  style: GoogleFonts.quicksand(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        final hours = timeLeft.inHours;
+                        final minutes = timeLeft.inMinutes % 60;
+                        final seconds = timeLeft.inSeconds % 60;
+                        
+                        final isUrgent = timeLeft.inHours < 1;
+                        
+                        return Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isUrgent ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isUrgent ? Colors.red : Colors.orange,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer,
+                                size: 16,
+                                color: isUrgent ? Colors.red : Colors.orange,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m ${seconds}s',
+                                style: GoogleFonts.quicksand(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isUrgent ? Colors.red : Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
               ],
             ),
             SizedBox(height: 16),
@@ -258,7 +341,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
               _buildInfoRow('Reviewed', _formatDateTime(verification.reviewedAt!)),
             if (verification.reviewedBy != null)
               _buildInfoRow('Reviewed By', verification.reviewedBy!),
-            if (verification.status == 'pending' && verification.autoApprovalScheduledAt != null) ...[
+            if (verification.status == 'pending') ...[
               SizedBox(height: 8),
               Container(
                 padding: EdgeInsets.all(12),
@@ -272,12 +355,32 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
                     Icon(Icons.schedule, color: Colors.orange),
                     SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        _formatCountdown(verification.autoApprovalScheduledAt!),
-                        style: GoogleFonts.quicksand(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.orange,
-                        ),
+                      child: ValueListenableBuilder<DateTime>(
+                        valueListenable: _nowNotifier,
+                        builder: (_, now, _) {
+                          final DateTime target = (verification.autoApprovalScheduledAt ?? verification.submittedAt.add(Duration(hours: 24)));
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Auto-approval scheduled for 24 hours after submission',
+                                style: GoogleFonts.quicksand(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade700,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                _formatCountdown(target, now),
+                                style: GoogleFonts.quicksand(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -394,7 +497,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
                   SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _approveVerification(verification),
+                      onPressed: () => _showApprovalDialog(context, verification),
                       icon: Icon(Icons.check, color: Colors.white),
                       label: Text(
                         'Approve',
@@ -653,6 +756,206 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
     );
   }
 
+  Future<void> _showApprovalDialog(BuildContext context, SupplierVerification verification) async {
+    Timer? countdownTimer;
+    
+    return showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            // Start countdown timer for the dialog
+            countdownTimer ??= Timer.periodic(Duration(seconds: 1), (timer) {
+              if (mounted) {
+                setState(() {});
+              }
+            });
+            
+            return AlertDialog(
+              title: Stack(
+                children: [
+                  Text('Approve Verification'),
+                  // Live countdown timer in upper right corner
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: ValueListenableBuilder<DateTime>(
+                      valueListenable: _nowNotifier,
+                      builder: (_, now, _) {
+                        final DateTime target = (verification.autoApprovalScheduledAt ?? verification.submittedAt.add(Duration(hours: 24)));
+                        final timeLeft = target.difference(now);
+                        
+                        if (timeLeft.isNegative) {
+                          return Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.red, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.warning, size: 16, color: Colors.red),
+                                SizedBox(width: 4),
+                                Text(
+                                  'OVERDUE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        final hours = timeLeft.inHours;
+                        final minutes = timeLeft.inMinutes % 60;
+                        final seconds = timeLeft.inSeconds % 60;
+                        
+                        final isUrgent = timeLeft.inHours < 1;
+                        
+                        return Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isUrgent ? Colors.red.withOpacity(0.15) : Colors.green.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isUrgent ? Colors.red : Colors.green,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isUrgent ? Colors.red : Colors.green).withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer,
+                                size: 18,
+                                color: isUrgent ? Colors.red : Colors.green,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m ${seconds}s',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: isUrgent ? Colors.red : Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Are you sure you want to approve this supplier verification?'),
+                  SizedBox(height: 16),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.schedule, color: Colors.green),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: ValueListenableBuilder<DateTime>(
+                            valueListenable: _nowNotifier,
+                            builder: (_, now, _) {
+                              final DateTime target = (verification.autoApprovalScheduledAt ?? verification.submittedAt.add(Duration(hours: 24)));
+                              final timeLeft = target.difference(now);
+                              
+                              String countdownText;
+                              if (timeLeft.isNegative) {
+                                countdownText = 'Auto-approval overdue - will be approved immediately';
+                              } else {
+                                final hours = timeLeft.inHours;
+                                final minutes = timeLeft.inMinutes % 60;
+                                final seconds = timeLeft.inSeconds % 60;
+                                
+                                if (hours > 0) {
+                                  countdownText = 'Auto-approval in ${hours}h ${minutes}m ${seconds}s';
+                                } else if (minutes > 0) {
+                                  countdownText = 'Auto-approval in ${minutes}m ${seconds.toString().padLeft(2, '0')}s';
+                                } else {
+                                  countdownText = 'Auto-approval in ${seconds}s';
+                                }
+                              }
+                              
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Manual approval will prevent auto-approval',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    countdownText,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    countdownTimer?.cancel();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  onPressed: () async {
+                    countdownTimer?.cancel();
+                    Navigator.of(context).pop();
+                    await _approveVerification(verification);
+                  },
+                  child: Text('Approve', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      countdownTimer?.cancel();
+    });
+  }
+
+
   Future<void> _approveVerification(SupplierVerification verification) async {
     try {
       final user = _authService.currentUser;
@@ -787,8 +1090,8 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  String _formatCountdown(DateTime target) {
-    final diff = target.difference(_now);
+  String _formatCountdown(DateTime target, DateTime now) {
+    final diff = target.difference(now);
     if (diff.isNegative) return 'Auto-approval overdue';
     final h = diff.inHours;
     final m = diff.inMinutes % 60;
