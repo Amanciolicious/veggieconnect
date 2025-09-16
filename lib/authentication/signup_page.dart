@@ -6,7 +6,6 @@ import 'package:veggieconnect/customer-side/customer_contact_info_page.dart';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:veggieconnect/services/promo_service.dart';
-import 'package:veggieconnect/services/notification_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -29,7 +28,6 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String _selectedRole = 'buyer';
-  final bool _acceptTerms = false;
 
   @override
   void dispose() {

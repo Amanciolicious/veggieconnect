@@ -20,6 +20,7 @@ import '../services/cloudinary_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 import 'admin_verify_listings_page.dart';
 import 'admin_manage_accounts_page.dart';
+import 'admin_verification_review_page.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../widgets/modern_app_bar.dart';
@@ -38,12 +39,8 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
-  final String _searchQuery = '';
-  String? _roleFilter; // e.g., 'Supplier', 'Customer', 'Admin'
-  String? _statusFilter; // e.g., 'Active', 'Pending', 'Suspended'
   bool _isOnline = true;
   StreamSubscription? _connectivitySubscription;
   String? _localProfileImagePath;
@@ -73,7 +70,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex ?? 0;
-    _tabController = TabController(length: 5, vsync: this);
     _initializeConnectivity();
     _loadLocalProfileImage();
     _verifyAdminUsers();
@@ -456,40 +452,66 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           headerEmail: email,
           headerAvatarUrl: profileImageUrl,
           onHeaderTap: _showProfileImageOptions,
-          items: [
-            DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
-            DrawerItem(icon: Icons.analytics, title: 'Analytics', index: 1),
-            DrawerItem(icon: Icons.location_on, title: 'Farm Locations', index: 2),
-            DrawerItem(icon: Icons.verified, title: 'Verify Listings', index: 3),
-            DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
-          ],
-          additionalItems: [
-            DrawerItem(
-              icon: Icons.manage_accounts,
-              title: 'Manage Accounts',
-              index: -1,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
-                );
-              },
+          items: [], // Empty since we're using sections
+          sections: [
+            DrawerSection(
+              title: 'MAIN NAVIGATION',
+              items: [
+                DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
+                DrawerItem(icon: Icons.analytics, title: 'Analytics', index: 1),
+                DrawerItem(icon: Icons.location_on, title: 'Farm Locations', index: 2),
+                DrawerItem(icon: Icons.verified, title: 'Verify Listings', index: 3),
+                DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
+              ],
             ),
-            DrawerItem(
-              icon: Icons.logout,
-              title: 'Logout',
-              index: -1,
-              isDestructive: true,
-              onTap: () async {
-                await _authService.signOut();
-                if (!mounted) return;
-                
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              },
+            DrawerSection(
+              title: 'ADMIN TOOLS',
+              items: [
+                DrawerItem(
+                  icon: Icons.manage_accounts,
+                  title: 'Manage Accounts',
+                  index: -1,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
+                    );
+                  },
+                ),
+                DrawerItem(
+                  icon: Icons.verified_user,
+                  title: 'Supplier Verification',
+                  index: -1,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminVerificationReviewPage()),
+                    );
+                  },
+                ),
+              ],
+            ),
+            DrawerSection(
+              title: 'ACCOUNT',
+              items: [
+                DrawerItem(
+                  icon: Icons.logout,
+                  title: 'Logout',
+                  index: -1,
+                  isDestructive: true,
+                  onTap: () async {
+                    await _authService.signOut();
+                    if (!mounted) return;
+                    
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         );
@@ -625,6 +647,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             },
           ),
           ActionCard(
+            title: 'Supplier Verification',
+            subtitle: 'Review supplier ID verification requests',
+            icon: Icons.verified_user,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminVerificationReviewPage()),
+              );
+            },
+          ),
+          ActionCard(
             title: 'Verify Listings',
             subtitle: 'Review pending product listings',
             icon: Icons.verified,
@@ -755,358 +788,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 );
               }
               final now = DateTime.now();
-              final firstDayThisMonth = DateTime(now.year, now.month, 1);
-              final firstDayLastMonth = DateTime(now.year, now.month - 1, 1);
-              int totalOrders = 0, thisMonthOrders = 0, lastMonthOrders = 0;
-              double totalOrderValue = 0;
-              int totalOrderProducts = 0;
-              if (orderSnap.hasData) {
-                for (var doc in orderSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-                  final value = (data['totalPrice'] ?? 0).toDouble();
-                  final quantity = (data['quantity'] ?? 1) as int;
-                  totalOrders++;
-                  totalOrderValue += value;
-                  totalOrderProducts += quantity;
-                  if (createdAt != null) {
-                    if (createdAt.isAfter(firstDayThisMonth)) thisMonthOrders++;
-                    if (createdAt.isAfter(firstDayLastMonth) && createdAt.isBefore(firstDayThisMonth)) lastMonthOrders++;
-                  }
-                }
-              }
-              double avgOrderValue = totalOrders > 0 ? totalOrderValue / totalOrders : 0;
-              double avgProductsPerOrder = totalOrders > 0 ? totalOrderProducts / totalOrders : 0;
-              return _expandableCard(
-                title: 'Order Metrics',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: _buildAnalyticsItem('Total Orders', totalOrders.toString(), '')),
-                        Expanded(child: _buildAnalyticsItem('This Month', thisMonthOrders.toString(), '')),
-                        Expanded(child: _buildAnalyticsItem('Last Month', lastMonthOrders.toString(), '')),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(child: _buildAnalyticsItem('Avg Order Value', '₱${avgOrderValue.toStringAsFixed(0)}', '')),
-                        Expanded(child: _buildAnalyticsItem('Avg Products/Order', avgProductsPerOrder.toStringAsFixed(2), '')),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          // Top Products (real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('products').snapshots(),
-            builder: (context, productSnap) {
-              if (productSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                  ),
-                );
-              }
-              // Aggregate top products by total quantity sold (from orders)
-              return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-                builder: (context, orderSnap) {
-                  if (orderSnap.connectionState == ConnectionState.waiting) {
-                    return const SizedBox();
-                  }
-                  // Map productId to total quantity sold
-                  final Map<String, int> productSales = {};
-                  if (orderSnap.hasData) {
-                    for (var doc in orderSnap.data!.docs) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final productId = data['productId'] ?? '';
-                      final quantity = (data['quantity'] ?? 1) as int;
-                      productSales[productId] = (productSales[productId] ?? 0) + quantity;
-                    }
-                  }
-                  // Get product details
-                  final products = productSnap.data?.docs ?? [];
-                  final topProducts = products
-                      .map((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final id = doc.id;
-                        return {
-                          'id': id,
-                          'name': data['name'] ?? '',
-                          'imageUrl': data['imageUrl'] ?? '',
-                          'quantitySold': productSales[id] ?? 0,
-                        };
-                      })
-                      .where((p) => p['quantitySold'] > 0)
-                      .toList();
-                  topProducts.sort((a, b) => (b['quantitySold'] as int).compareTo(a['quantitySold'] as int));
-                  final top5 = topProducts.take(5).toList();
-                  return _expandableCard(
-                    title: 'Top 5 Products (by sales)',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (top5.isEmpty)
-                          const Text('No product sales yet.'),
-                        for (var p in top5)
-                          ListTile(
-                            leading: p['imageUrl'] != null && (p['imageUrl'] as String).isNotEmpty
-                                ? Image.network(p['imageUrl'], width: 40, height: 40, fit: BoxFit.cover)
-                                : const Icon(Icons.shopping_basket, size: 40),
-                            title: Text(p['name'] ?? ''),
-                            trailing: Text('Sold: ${p['quantitySold']}'),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          // Sales by Category (real-time) using product category mapping
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('products').snapshots(),
-            builder: (context, productSnap) {
-              if (productSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                  ),
-                );
-              }
-              final Map<String, String> productIdToCategory = {};
-              if (productSnap.hasData) {
-                for (var doc in productSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final category = (data['category'] ?? 'Uncategorized').toString();
-                  productIdToCategory[doc.id] = category.isEmpty ? 'Uncategorized' : category;
-                }
-              }
-              return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-                builder: (context, orderSnap) {
-                  if (orderSnap.connectionState == ConnectionState.waiting) {
-                    return const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                      ),
-                    );
-                  }
-                  final Map<String, double> categorySales = {};
-                  if (orderSnap.hasData) {
-                    for (var doc in orderSnap.data!.docs) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final productId = data['productId'] ?? '';
-                      final amount = (data['totalPrice'] ?? 0).toDouble();
-                      final category = productIdToCategory[productId] ?? 'Uncategorized';
-                      categorySales[category] = (categorySales[category] ?? 0) + amount;
-                    }
-                  }
-                  final sortedCategories = categorySales.entries.toList()
-                    ..sort((a, b) => b.value.compareTo(a.value));
-                  return _expandableCard(
-                    title: 'Sales by Category',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (sortedCategories.isEmpty)
-                          const Text('No sales data.'),
-                        if (sortedCategories.isNotEmpty)
-                          SizedBox(
-                            height: 200,
-                            child: BarChart(
-                              BarChartData(
-                                titlesData: FlTitlesData(
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                    ),
-                                  ),
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        final idx = value.toInt();
-                                        if (idx < 0 || idx >= sortedCategories.length) return const SizedBox();
-                                        return Text(sortedCategories[idx].key, style: const TextStyle(fontSize: 10));
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                barGroups: [
-                                  for (int i = 0; i < sortedCategories.length; i++)
-                                    BarChartGroupData(
-                                      x: i,
-                                      barRods: [
-                                        BarChartRodData(
-                                          toY: sortedCategories[i].value,
-                                          color: Colors.blue,
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          // Top Suppliers by Sales (real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-            builder: (context, orderSnap) {
-              if (orderSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                  ),
-                );
-              }
-              final Map<String, double> supplierSales = {};
-              final Map<String, String> supplierNames = {};
-              if (orderSnap.hasData) {
-                for (var doc in orderSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final supplierId = data['sellerId'] ?? '';
-                  final supplierName = data['supplierName'] ?? 'Unknown';
-                  final amount = (data['totalPrice'] ?? 0).toDouble();
-                  supplierSales[supplierId] = (supplierSales[supplierId] ?? 0) + amount;
-                  supplierNames[supplierId] = supplierName;
-                }
-              }
-              final topSuppliers = supplierSales.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value));
-              final top5 = topSuppliers.take(5).toList();
-              return _expandableCard(
-                title: 'Top 5 Suppliers (by sales)',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (top5.isEmpty)
-                      const Text('No supplier sales yet.'),
-                    for (var entry in top5)
-                      ListTile(
-                        title: Text(supplierNames[entry.key] ?? 'Unknown'),
-                        trailing: Text('₱${entry.value.toStringAsFixed(0)}'),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          // Customer Lifetime Value (CLV) for Top 5 Buyers (real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-            builder: (context, orderSnap) {
-              if (orderSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                  ),
-                );
-              }
-              final Map<String, double> buyerCLV = {};
-              final Map<String, String> buyerNames = {};
-              if (orderSnap.hasData) {
-                for (var doc in orderSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final buyerId = data['buyerId'] ?? '';
-                  final buyerName = data['buyerName'] ?? 'Unknown';
-                  final amount = (data['totalPrice'] ?? 0).toDouble();
-                  buyerCLV[buyerId] = (buyerCLV[buyerId] ?? 0) + amount;
-                  buyerNames[buyerId] = buyerName;
-                }
-              }
-              final topBuyers = buyerCLV.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value));
-              final top5 = topBuyers.take(5).toList();
-              return _expandableCard(
-                title: 'Top 5 Buyers (Customer Lifetime Value)',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (top5.isEmpty)
-                      const Text('No buyer data yet.'),
-                    for (var entry in top5)
-                      ListTile(
-                        title: Text(buyerNames[entry.key] ?? 'Unknown'),
-                        trailing: Text('₱${entry.value.toStringAsFixed(0)}'),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          // Daily/Weekly Sales Trend (last 7/30 days, real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').where('status', isEqualTo: 'completed').snapshots(),
-            builder: (context, orderSnap) {
-              if (orderSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                  ),
-                );
-              }
-              final now = DateTime.now();
-              final last7Days = List.generate(7, (i) => now.subtract(Duration(days: i)));
-              final last30Days = List.generate(30, (i) => now.subtract(Duration(days: i)));
               final Map<String, double> dailySales = {};
               final Map<String, double> weeklySales = {};
               if (orderSnap.hasData) {

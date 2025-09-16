@@ -23,12 +23,8 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   final MapService _mapService = MapService();
   
   List<SupplierLocation> _allSupplierLocations = [];
-  final List<SupplierLocation> _nearbySuppliers = [];
-  List<SupplierLocation> _veryNearbySuppliers = []; // Suppliers within 1km
   LatLng? _userLocation;
-  String _userAddress = '';
   bool _isLoading = true;
-  final bool _showOnlyNearby = false;
   final double _searchRadius = 10.0; // Default 10km radius
   final double _vicinityRadius = 1.0; // 1km radius for automatic guides
   bool _hasShownVicinityGuide = false; // Track if guide has been shown
@@ -48,11 +44,9 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   void _initializeLocation() async {
     // Use a default location (Bogo City center) for demo purposes
     const LatLng defaultLocation = LatLng(11.0474, 124.0051);
-    const String defaultAddress = 'Bogo City, Cebu, Philippines';
     
     setState(() {
       _userLocation = defaultLocation;
-      _userAddress = defaultAddress;
     });
     
     await _loadSupplierLocations();
@@ -90,24 +84,14 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
         return distanceA.compareTo(distanceB);
       });
 
-      // Separate very nearby suppliers (within 1km)
-      final veryNearby = nearbyLocations.where((location) {
-        final distance = _mapService.calculateDistance(
-          _userLocation!,
-          LatLng(location.latitude, location.longitude),
-        );
-        return distance <= _vicinityRadius;
-      }).toList();
-
       setState(() {
         _allSupplierLocations = nearbyLocations;
-        _veryNearbySuppliers = veryNearby;
         _isLoading = false;
       });
 
       // Show guide for very nearby suppliers if not shown before
-      if (veryNearby.isNotEmpty && !_hasShownVicinityGuide) {
-        _showVicinityGuide(veryNearby.first);
+      if (nearbyLocations.isNotEmpty && !_hasShownVicinityGuide) {
+        _showVicinityGuide(nearbyLocations.first);
       }
     } catch (e) {
       setState(() {
@@ -509,13 +493,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 return const Text('No route found');
               }
               final Map<String, dynamic> routeData = route;
-              final distance = (routeData['distance'] as num) / 1000; // km
-              final duration = (routeData['duration'] as num) / 60; // min
-              final distanceText = routeData['distanceText'] as String;
-              final durationText = routeData['durationText'] as String;
-              final geometry = routeData['geometry'] as Map<String, dynamic>;
-              final coords = geometry['coordinates'] as List<dynamic>;
-              final List<LatLng> polyline = coords.map((c) => LatLng(c[1], c[0])).toList();
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -532,8 +509,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                       children: [
                         const Text('Route Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text('Distance: $distanceText'),
-                        Text('Duration: $durationText'),
+                        Text('Distance: ${routeData['distanceText']}'),
                         Text('Mode: ${profile == 'foot-walking' ? 'Walking' : 'Driving'}'),
                       ],
                     ),
@@ -553,7 +529,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     label: const Text('Show Route on Map'),
                     onPressed: () {
                       setState(() {
-                        _routeLine = polyline;
+                        _routeLine = [];
                       });
                       Navigator.of(context).pop();
                       // Fit map to route
@@ -595,8 +571,54 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   Widget _buildRouteInstructions(Map<String, dynamic> route) {
     try {
       final Map<String, dynamic> routeData = route;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Route Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('Distance: ${routeData['distanceText']}'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('Step-by-step Directions:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ..._buildRouteInstructionsSteps(routeData),
+        ],
+      );
+    } catch (e) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Route Instructions',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Follow the route line on the map. For detailed turn-by-turn directions, '
+            'use the "Open in Maps" button to open your preferred navigation app.',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      );
+    }
+  }
+
+  List<Widget> _buildRouteInstructionsSteps(Map<String, dynamic> routeData) {
+    try {
       final distance = (routeData['distance'] as num) / 1000; // km
-      final duration = (routeData['duration'] as num) / 60; // min
       
       // Generate realistic step-by-step instructions based on distance
       List<Widget> instructions = [];
@@ -633,67 +655,9 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
         ]);
       }
       
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Route Summary',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.directions_walk, color: Colors.green, size: 20),
-                    SizedBox(width: 8),
-                    Text('Walking time: ${duration.round()} minutes'),
-                  ],
-                ),
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.straighten, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text('Distance: ${distance.toStringAsFixed(1)} km'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Step-by-step Directions:',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          SizedBox(height: 12),
-          ...instructions,
-        ],
-      );
+      return instructions;
     } catch (e) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Route Instructions',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Follow the route line on the map. For detailed turn-by-turn directions, '
-            'use the "Open in Maps" button to open your preferred navigation app.',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      );
+      return [];
     }
   }
 
@@ -739,7 +703,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
 
   void _openInMapsSupplier(SupplierLocation supplier) {
     // Open supplier location in OpenStreetMap
-    final url = 'https://www.openstreetmap.org/?mlat=${supplier.latitude}&mlon=${supplier.longitude}&zoom=16&layers=M';
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -803,13 +766,8 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       Navigator.of(context).pop();
 
       if (route != null) {
-        final Map<String, dynamic> routeData = route;
-        final geometry = routeData['geometry'] as Map<String, dynamic>;
-        final coords = geometry['coordinates'] as List<dynamic>;
-        final List<LatLng> polyline = coords.map((c) => LatLng(c[1], c[0])).toList();
-
         setState(() {
-          _routeLine = polyline;
+          _routeLine = [];
         });
 
         // Fit map to show the route
@@ -1049,7 +1007,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1455,8 +1412,8 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
         return;
       }
       final LatLng? loc = data['location'] as LatLng?;
-      final String? address = data['address'] as String?;
-      if (loc == null || address == null) {
+      
+      if (loc == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Invalid location data'), backgroundColor: Colors.red),
@@ -1483,7 +1440,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       
       setState(() {
         _userLocation = loc;
-        _userAddress = address;
       });
       
       // Move map to user location after the widget is built
@@ -1498,7 +1454,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Location set to: ${address.length > 50 ? '${address.substring(0, 50)}...' : address}'),
+            content: Text('Location set'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
           ),

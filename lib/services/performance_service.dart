@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../widgets/lottie_loading_widget.dart';
 
 class PerformanceService {
   static final PerformanceService _instance = PerformanceService._internal();
@@ -311,7 +310,6 @@ class OptimizedImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final performanceService = PerformanceService();
-    final imageQuality = performanceService.getOptimalImageQuality();
 
     return CachedNetworkImage(
       imageUrl: imageUrl,
@@ -324,9 +322,8 @@ class OptimizedImage extends StatelessWidget {
           Container(
             color: Colors.grey.withOpacity(0.2),
             child: const Center(
-              child: GroceryLoadingWidget(
-                size: 48,
-                showText: false,
+              child: CircularProgressIndicator(
+                color: Color(0xFF4CAF50),
               ),
             ),
           ),

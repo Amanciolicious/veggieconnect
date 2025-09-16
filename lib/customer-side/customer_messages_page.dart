@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
@@ -331,19 +330,6 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
     );
   }
 
-  void _toggleSelection(String conversationId) {
-    setState(() {
-      if (_selectedConversations.contains(conversationId)) {
-        _selectedConversations.remove(conversationId);
-        if (_selectedConversations.isEmpty) {
-          _isSelectionMode = false;
-        }
-      } else {
-        _selectedConversations.add(conversationId);
-      }
-    });
-  }
-
   Future<void> _deleteSelectedConversations() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -408,56 +394,6 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
       return '${difference.inMinutes}m ago';
     } else {
       return 'Just now';
-    }
-  }
-
-  Future<void> _deleteConversation(String conversationId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Conversation', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
-        content: Text('Are you sure you want to delete this conversation? This action cannot be undone.', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Delete', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await ChatService().deleteConversation(conversationId);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Conversation deleted successfully')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete conversation: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _hideConversation(String conversationId) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await ChatService().hideConversation(conversationId, user.uid);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Conversation hidden')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to hide conversation: $e')),
-      );
     }
   }
 }

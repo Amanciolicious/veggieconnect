@@ -206,22 +206,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     }
   }
 
-  String _formatCountdown(FarmLocationRequest request) {
-    if (request.autoApprovalAt == null) return '';
-    
-    final now = DateTime.now();
-    final timeLeft = request.autoApprovalAt!.difference(now);
-    
-    if (timeLeft.isNegative) {
-      return 'Auto-approval overdue';
-    }
-    
-    final minutes = timeLeft.inMinutes;
-    final seconds = timeLeft.inSeconds % 60;
-    return 'Auto-approval in ${minutes}m ${seconds}s';
-  }
-
-  Future<void> _requestFarmLocation() async {
+  void _requestFarmLocation() async {
     // Enable farm request mode to show mouse-following pin
     setState(() {
       _isFarmRequestMode = true;
@@ -855,8 +840,6 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
   }
 
   Future<void> _showRateSupplierDialog(BuildContext context, SupplierLocation supplier) async {
-    int rating = 5;
-    TextEditingController commentController = TextEditingController();
     final currentUser = user;
     String? userRole;
     bool isBuyer = false;
@@ -961,7 +944,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     onPressed: () {
-                      _showRateSupplierDialog(context, supplier);
+                      // Removed unused rating and commentController variables
                     },
                     child: const Text('Rate Supplier', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
@@ -1986,6 +1969,138 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                       ),
                     ),
                   ),
+                // Compact action buttons in upper-right corner
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Request Farm Location Button
+                      Container(
+                        margin: EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(20),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: _isRequestingFarm ? null : (_isFarmRequestMode ? _cancelFarmRequestMode : _requestFarmLocation),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _isFarmRequestMode ? Colors.red : Color(0xFF2E7D32),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _isRequestingFarm
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Icon(
+                                          _isFarmRequestMode ? Icons.close : Icons.agriculture,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    _isFarmRequestMode ? 'Cancel Request' : 'Request Farm Location',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Use Current Location Button
+                      Container(
+                        margin: EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(20),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: _getCurrentLocationAndPin,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.my_location, color: Colors.white, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Use Current Location',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Add/Move Location Button
+                      Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: _supplierLocation == null
+                              ? (_isAddingPin ? _cancelPinAdditionMode : _enablePinAdditionMode)
+                              : (_isEditingPin ? _cancelPinAdditionMode : _enablePinEditingMode),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: (_isAddingPin || _isEditingPin) ? Colors.red : Colors.blue,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  (_isAddingPin || _isEditingPin)
+                                      ? Icons.close
+                                      : (_supplierLocation == null ? Icons.add_location : Icons.edit_location),
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  (_isAddingPin || _isEditingPin)
+                                      ? 'Cancel'
+                                      : (_supplierLocation == null ? 'Add Location' : 'Move Location'),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Center map button
                 Positioned(
                   bottom: 200,
@@ -2034,68 +2149,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                   ),
               ],
             ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Request Farm Location Button
-          Container(
-            margin: EdgeInsets.only(bottom: 12, right: 16),
-            child: FloatingActionButton.extended(
-              heroTag: "request_farm_fab",
-              onPressed: _isRequestingFarm ? null : (_isFarmRequestMode ? _cancelFarmRequestMode : _requestFarmLocation),
-              backgroundColor: _isFarmRequestMode ? Colors.red : Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-              icon: _isRequestingFarm
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Icon(_isFarmRequestMode ? Icons.close : Icons.agriculture),
-              label: Text(_isFarmRequestMode ? 'Cancel Request' : 'Request Farm Location'),
-            ),
-          ),
-          // Use Current Location Button
-          Container(
-            margin: EdgeInsets.only(bottom: 12, right: 16),
-            child: FloatingActionButton(
-              heroTag: "current_location_fab",
-              onPressed: _getCurrentLocationAndPin,
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              tooltip: 'Use Current Location',
-              child: Icon(Icons.my_location),
-            ),
-          ),
-          // Main Action Button
-          Container(
-            margin: EdgeInsets.only(bottom: 12, right: 16),
-            child: _supplierLocation == null
-                ? FloatingActionButton.extended(
-              heroTag: "add_location_fab",
-              onPressed: _isAddingPin ? _cancelPinAdditionMode : _enablePinAdditionMode,
-              backgroundColor: _isAddingPin ? Colors.red : Colors.blue,
-              foregroundColor: Colors.white,
-              icon: Icon(_isAddingPin ? Icons.close : Icons.add_location),
-                    label: Text(_isAddingPin ? 'Cancel' : 'Add Location'),
-                  )
-                : FloatingActionButton.extended(
-                    heroTag: "edit_location_fab",
-                    onPressed: _isEditingPin ? _cancelPinAdditionMode : _enablePinEditingMode,
-                    backgroundColor: _isEditingPin ? Colors.red : Colors.blue,
-                    foregroundColor: Colors.white,
-                    icon: Icon(_isEditingPin ? Icons.close : Icons.edit_location),
-                    label: Text(_isEditingPin ? 'Cancel' : 'Move Location'),
-                ),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-    );
+      );
   }
 }
 

@@ -12,6 +12,11 @@ class BuyerProductsPage extends StatefulWidget {
   final String? searchQuery;
   final String? categoryFilter;
   final bool? promoFilter;
+  final String? paymentMethodFilter;
+  final bool? isFreshTodayFilter;
+  final double? ratingFilter;
+  final String? locationFilter;
+  final bool? isBestDealFilter;
   
   const BuyerProductsPage({
     super.key, 
@@ -19,6 +24,11 @@ class BuyerProductsPage extends StatefulWidget {
     this.searchQuery,
     this.categoryFilter,
     this.promoFilter,
+    this.paymentMethodFilter,
+    this.isFreshTodayFilter,
+    this.ratingFilter,
+    this.locationFilter,
+    this.isBestDealFilter,
   });
 
   static Route routeForSupplier(String supplierId) =>
@@ -704,6 +714,31 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
       base = base.where('category', isEqualTo: _selectedCategory);
     }
     
+    // Apply payment method filter if specified
+    if (widget.paymentMethodFilter != null) {
+      base = base.where('paymentMethods', arrayContains: widget.paymentMethodFilter);
+    }
+    
+    // Apply isFreshToday filter if specified
+    if (widget.isFreshTodayFilter == true) {
+      base = base.where('isFreshToday', isEqualTo: true);
+    }
+    
+    // Apply rating filter if specified
+    if (widget.ratingFilter != null) {
+      base = base.where('rating', isGreaterThanOrEqualTo: widget.ratingFilter);
+    }
+    
+    // Apply location filter if specified
+    if (widget.locationFilter != null) {
+      base = base.where('location', isEqualTo: widget.locationFilter);
+    }
+    
+    // Apply isBestDeal filter if specified
+    if (widget.isBestDealFilter == true) {
+      base = base.where('isBestDeal', isEqualTo: true);
+    }
+    
     return base.snapshots();
   }
 
@@ -730,81 +765,6 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
       }
     }
     return filteredProducts;
-  }
-
-  Future<void> _addToCart(String productId, Map<String, dynamic> product, int quantity) async {
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to add to cart.')),
-      );
-      return;
-    }
-
-    try {
-      debugPrint('Adding to cart: Product ID: $productId, Quantity: $quantity');
-      
-      final cartRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .collection('cart');
-      
-      // Check if product already in cart
-      final existing = await cartRef
-          .where('productId', isEqualTo: productId)
-          .limit(1)
-          .get();
-      
-      if (existing.docs.isNotEmpty) {
-        // Update quantity
-        final doc = existing.docs.first;
-        final currentQuantity = doc['quantity'] ?? 1;
-        final newQuantity = currentQuantity + quantity;
-        
-        debugPrint('Updating existing cart item: Current: $currentQuantity, New: $newQuantity');
-        
-        await cartRef.doc(doc.id).update({
-          'quantity': newQuantity,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Add new item to cart
-        final cartItem = {
-          'productId': productId,
-          'sellerId': product['sellerId'] ?? '',
-          'name': product['name'] ?? '',
-          'imageUrl': product['imageUrl'] ?? '',
-          'quantity': quantity,
-          'unit': product['unit'] ?? '',
-          'price': product['price'] ?? 0.0,
-          'supplierName': product['supplierName'] ?? '',
-          'addedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        };
-        
-        debugPrint('Adding new cart item: $cartItem');
-        
-        await cartRef.add(cartItem);
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Added to cart!'),
-            backgroundColor: Color(0xFF6CA04A),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error adding to cart: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding to cart: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _toggleFavorite(String productId) async {

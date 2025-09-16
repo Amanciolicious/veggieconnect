@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../authentication/pin_verify_page.dart';
+import '../authentication/email_pin_verify_page.dart';
 import 'package:flutter/material.dart';
 import '../widgets/lottie_loading_widget.dart';
 

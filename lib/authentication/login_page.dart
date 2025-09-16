@@ -23,7 +23,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -218,6 +217,9 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const SupplierDashboard()),
         );
+        
+        // Show verification notification for unverified suppliers
+        _showVerificationNotificationIfNeeded(userId, userData);
       } else {
         // Buyers follow normal flow
         final prefs = await SharedPreferences.getInstance();
@@ -583,6 +585,103 @@ class _LoginPageState extends State<LoginPage> {
       default:
         return 'Login failed. Please check your credentials and try again.';
     }
+  }
+
+  /// Show verification notification for unverified suppliers
+  void _showVerificationNotificationIfNeeded(String userId, Map<String, dynamic> userData) {
+    // Check if supplier is verified
+    final isVerified = userData['isVerified'] ?? false;
+    final verificationStatus = userData['verificationStatus'] ?? '';
+    
+    if (!isVerified && verificationStatus != 'pending_verification') {
+      // Show floating notification after a short delay to ensure UI is ready
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) {
+          _showVerificationFloatingNotification();
+        }
+      });
+    }
+  }
+
+  void _showVerificationFloatingNotification() {
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry;
+    
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 20,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Color(0xFF6CA04A),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.verified_user,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Get Verified',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Complete ID verification to unlock all supplier features',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => overlayEntry.remove(),
+                  icon: Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    
+    overlay.insert(overlayEntry);
+    
+    // Auto-remove after 5 seconds
+    Future.delayed(Duration(seconds: 5), () {
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    });
   }
 
   @override

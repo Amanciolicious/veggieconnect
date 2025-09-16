@@ -386,3 +386,883 @@ exports.paymongoWebhook = functions.https.onRequest(async (req, res) => {
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
+
+// Cloud Function for 24-hour auto-approval of supplier verification requests
+exports.autoApproveVerifications = functions.pubsub.schedule('every 1 hours').onRun(async (context) => {
+  console.log('Running auto-approval check for supplier verifications...');
+  
+  try {
+    const now = admin.firestore.Timestamp.now();
+    const twentyFourHoursAgo = new Date(now.toDate().getTime() - (24 * 60 * 60 * 1000));
+    
+    // Query for pending verification requests older than 24 hours
+    const pendingVerifications = await admin.firestore()
+      .collection('supplier_verifications')
+      .where('status', '==', 'pending')
+      .where('submittedAt', '<=', admin.firestore.Timestamp.fromDate(twentyFourHoursAgo))
+      .get();
+    
+    console.log(`Found ${pendingVerifications.docs.length} verification requests eligible for auto-approval`);
+    
+    const batch = admin.firestore().batch();
+    const autoApprovedVerifications = [];
+    
+    for (const doc of pendingVerifications.docs) {
+      const verificationData = doc.data();
+      
+      // Auto-approve the verification
+      batch.update(doc.ref, {
+        status: 'approved',
+        reviewedAt: now,
+        reviewedBy: 'system_auto_approval',
+        reviewNotes: 'Automatically approved after 24 hours without admin review',
+        autoApproved: true,
+        updatedAt: now
+      });
+      
+      // Update supplier's verification status in users collection
+      batch.update(admin.firestore().collection('users').doc(verificationData.supplierId), {
+        isVerified: true,
+        verificationStatus: 'approved',
+        verifiedAt: now,
+        updatedAt: now
+      });
+      
+      autoApprovedVerifications.push({
+        id: doc.id,
+        supplierId: verificationData.supplierId,
+        supplierName: verificationData.supplierName,
+        supplierEmail: verificationData.supplierEmail
+      });
+    }
+    
+    // Commit all updates
+    if (autoApprovedVerifications.length > 0) {
+      await batch.commit();
+      console.log(`Auto-approved ${autoApprovedVerifications.length} verification requests`);
+      
+      // Send notifications to auto-approved suppliers
+      for (const verification of autoApprovedVerifications) {
+        try {
+          // Get supplier's FCM token
+          const supplierDoc = await admin.firestore()
+            .collection('users')
+            .doc(verification.supplierId)
+            .get();
+          
+          if (supplierDoc.exists) {
+            const supplierData = supplierDoc.data();
+            const fcmToken = supplierData.fcmToken;
+            
+            if (fcmToken) {
+              const message = {
+                token: fcmToken,
+                notification: {
+                  title: 'Verification Approved!',
+                  body: 'Your supplier verification has been automatically approved. You can now manage products and access all supplier features.'
+                },
+                data: {
+                  type: 'verification_auto_approved',
+                  verificationId: verification.id,
+                  screen: 'supplier_profile'
+                },
+                android: {
+                  notification: {
+                    channelId: 'verification',
+                    priority: 'high',
+                    sound: 'default',
+                  },
+                },
+                apns: {
+                  payload: {
+                    aps: {
+                      alert: {
+                        title: 'Verification Approved!',
+                        body: 'Your supplier verification has been automatically approved. You can now manage products and access all supplier features.'
+                      },
+                      sound: 'default',
+                      badge: 1,
+                    },
+                  },
+                },
+              };
+              
+              await admin.messaging().send(message);
+              console.log(`Auto-approval notification sent to supplier: ${verification.supplierEmail}`);
+            }
+            
+            // Also create in-app notification
+            await admin.firestore()
+              .collection('users')
+              .doc(verification.supplierId)
+              .collection('notifications')
+              .add({
+                title: 'Verification Approved!',
+                body: 'Your supplier verification has been automatically approved. You can now manage products and access all supplier features.',
+                type: 'verification_auto_approved',
+                data: {
+                  verificationId: verification.id,
+                  screen: 'supplier_profile'
+                },
+                isRead: false,
+                createdAt: now
+              });
+          }
+        } catch (notificationError) {
+          console.error(`Error sending auto-approval notification to ${verification.supplierEmail}:`, notificationError);
+          // Continue with other notifications even if one fails
+        }
+      }
+      
+      // Send notification to admins about auto-approvals
+      try {
+        const adminUsers = await admin.firestore()
+          .collection('users')
+          .where('role', '==', 'admin')
+          .get();
+        
+        const adminTokens = [];
+        const adminNotifications = [];
+        
+        adminUsers.docs.forEach(doc => {
+          const adminData = doc.data();
+          if (adminData.fcmToken) {
+            adminTokens.push(adminData.fcmToken);
+          }
+          
+          // Create in-app notification for each admin
+          adminNotifications.push(
+            admin.firestore()
+              .collection('users')
+              .doc(doc.id)
+              .collection('notifications')
+              .add({
+                title: 'Auto-Approval Summary',
+                body: `${autoApprovedVerifications.length} supplier verification${autoApprovedVerifications.length > 1 ? 's' : ''} automatically approved after 24 hours.`,
+                type: 'admin_auto_approval_summary',
+                data: {
+                  count: autoApprovedVerifications.length,
+                  screen: 'verification_requests'
+                },
+                isRead: false,
+                createdAt: now
+              })
+          );
+        });
+        
+        // Send FCM to all admins
+        if (adminTokens.length > 0) {
+          const adminMessage = {
+            tokens: adminTokens,
+            notification: {
+              title: 'Auto-Approval Summary',
+              body: `${autoApprovedVerifications.length} supplier verification${autoApprovedVerifications.length > 1 ? 's' : ''} automatically approved after 24 hours.`
+            },
+            data: {
+              type: 'admin_auto_approval_summary',
+              count: autoApprovedVerifications.length.toString(),
+              screen: 'verification_requests'
+            },
+            android: {
+              notification: {
+                channelId: 'admin',
+                priority: 'default',
+                sound: 'default',
+              },
+            },
+          };
+          
+          await admin.messaging().sendMulticast(adminMessage);
+          console.log(`Auto-approval summary sent to ${adminTokens.length} admins`);
+        }
+        
+        // Create in-app notifications for admins
+        await Promise.all(adminNotifications);
+        
+      } catch (adminNotificationError) {
+        console.error('Error sending admin auto-approval notifications:', adminNotificationError);
+      }
+    } else {
+      console.log('No verification requests found for auto-approval');
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in auto-approval function:', error);
+    throw error;
+  }
+});
+
+// Trigger to schedule auto-approval when verification is submitted
+exports.scheduleAutoApproval = functions.firestore
+  .document('supplier_verifications/{verificationId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const verificationData = snap.data();
+      const verificationId = context.params.verificationId;
+      
+      // Calculate auto-approval time (24 hours from submission)
+      const submittedAt = verificationData.submittedAt;
+      const autoApprovalTime = new Date(submittedAt.toDate().getTime() + (24 * 60 * 60 * 1000));
+      
+      // Update the verification document with scheduled auto-approval time
+      await snap.ref.update({
+        autoApprovalScheduledAt: admin.firestore.Timestamp.fromDate(autoApprovalTime)
+      });
+      
+      console.log(`Auto-approval scheduled for verification ${verificationId} at ${autoApprovalTime.toISOString()}`);
+      
+      return null;
+    } catch (error) {
+      console.error('Error scheduling auto-approval:', error);
+      throw error;
+    }
+  });
+
+// Cancel auto-approval when verification is manually reviewed
+exports.cancelAutoApproval = functions.firestore
+  .document('supplier_verifications/{verificationId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+      const verificationId = context.params.verificationId;
+      
+      // Check if status changed from pending to approved/rejected (manual review)
+      if (before.status === 'pending' && 
+          (after.status === 'approved' || after.status === 'rejected') &&
+          after.reviewedBy !== 'system_auto_approval') {
+        
+        console.log(`Manual review completed for verification ${verificationId}, auto-approval cancelled`);
+        
+        // Update to remove auto-approval scheduling
+        await change.after.ref.update({
+          autoApprovalScheduledAt: admin.firestore.FieldValue.delete()
+        });
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error cancelling auto-approval:', error);
+      throw error;
+    }
+  });
+
+// Cloud Function for 24-hour auto-approval of product submissions
+exports.autoApproveProducts = functions.pubsub.schedule('every 1 hours').onRun(async (context) => {
+  console.log('Running auto-approval check for product submissions...');
+  
+  try {
+    const now = admin.firestore.Timestamp.now();
+    const twentyFourHoursAgo = new Date(now.toDate().getTime() - (24 * 60 * 60 * 1000));
+    
+    // Query for pending products older than 24 hours
+    const pendingProducts = await admin.firestore()
+      .collection('products')
+      .where('status', '==', 'pending')
+      .where('createdAt', '<=', admin.firestore.Timestamp.fromDate(twentyFourHoursAgo))
+      .get();
+    
+    console.log(`Found ${pendingProducts.docs.length} products eligible for auto-approval`);
+    
+    const batch = admin.firestore().batch();
+    const autoApprovedProducts = [];
+    
+    for (const doc of pendingProducts.docs) {
+      const productData = doc.data();
+      
+      // Auto-approve the product
+      batch.update(doc.ref, {
+        status: 'approved',
+        isVerified: true,
+        reviewedAt: now,
+        reviewedBy: 'system_auto_approval',
+        rejectionReason: '',
+        autoApproved: true,
+        updatedAt: now
+      });
+      
+      autoApprovedProducts.push({
+        id: doc.id,
+        name: productData.name,
+        supplierId: productData.sellerId,
+        supplierName: productData.supplierName
+      });
+    }
+    
+    // Commit all updates
+    if (autoApprovedProducts.length > 0) {
+      await batch.commit();
+      console.log(`Auto-approved ${autoApprovedProducts.length} products`);
+      
+      // Send notifications to suppliers about auto-approved products
+      for (const product of autoApprovedProducts) {
+        try {
+          // Get supplier's FCM token
+          const supplierDoc = await admin.firestore()
+            .collection('users')
+            .doc(product.supplierId)
+            .get();
+          
+          if (supplierDoc.exists) {
+            const supplierData = supplierDoc.data();
+            const fcmToken = supplierData.fcmToken;
+            
+            if (fcmToken) {
+              const message = {
+                token: fcmToken,
+                notification: {
+                  title: 'Product Approved!',
+                  body: `Your product "${product.name}" has been automatically approved and is now live for customers.`
+                },
+                data: {
+                  type: 'product_auto_approved',
+                  productId: product.id,
+                  screen: 'supplier_products'
+                },
+                android: {
+                  notification: {
+                    channelId: 'products',
+                    priority: 'high',
+                    sound: 'default',
+                  },
+                },
+                apns: {
+                  payload: {
+                    aps: {
+                      alert: {
+                        title: 'Product Approved!',
+                        body: `Your product "${product.name}" has been automatically approved and is now live for customers.`
+                      },
+                      sound: 'default',
+                      badge: 1,
+                    },
+                  },
+                },
+              };
+              
+              await admin.messaging().send(message);
+              console.log(`Auto-approval notification sent for product: ${product.name}`);
+            }
+            
+            // Also create in-app notification
+            await admin.firestore()
+              .collection('users')
+              .doc(product.supplierId)
+              .collection('notifications')
+              .add({
+                title: 'Product Approved!',
+                body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
+                type: 'product_auto_approved',
+                data: {
+                  productId: product.id,
+                  screen: 'supplier_products'
+                },
+                isRead: false,
+                createdAt: now
+              });
+          }
+        } catch (notificationError) {
+          console.error(`Error sending auto-approval notification for product ${product.name}:`, notificationError);
+        }
+      }
+      
+      // Send summary notification to admins
+      try {
+        const adminUsers = await admin.firestore()
+          .collection('users')
+          .where('role', '==', 'admin')
+          .get();
+        
+        const adminTokens = [];
+        const adminNotifications = [];
+        
+        adminUsers.docs.forEach(doc => {
+          const adminData = doc.data();
+          if (adminData.fcmToken) {
+            adminTokens.push(adminData.fcmToken);
+          }
+          
+          adminNotifications.push(
+            admin.firestore()
+              .collection('users')
+              .doc(doc.id)
+              .collection('notifications')
+              .add({
+                title: 'Product Auto-Approval Summary',
+                body: `${autoApprovedProducts.length} product${autoApprovedProducts.length > 1 ? 's' : ''} automatically approved after 24 hours.`,
+                type: 'admin_product_auto_approval',
+                data: {
+                  count: autoApprovedProducts.length,
+                  screen: 'admin_products'
+                },
+                isRead: false,
+                createdAt: now
+              })
+          );
+        });
+        
+        if (adminTokens.length > 0) {
+          const adminMessage = {
+            tokens: adminTokens,
+            notification: {
+              title: 'Product Auto-Approval Summary',
+              body: `${autoApprovedProducts.length} product${autoApprovedProducts.length > 1 ? 's' : ''} automatically approved after 24 hours.`
+            },
+            data: {
+              type: 'admin_product_auto_approval',
+              count: autoApprovedProducts.length.toString(),
+              screen: 'admin_products'
+            },
+            android: {
+              notification: {
+                channelId: 'admin',
+                priority: 'default',
+                sound: 'default',
+              },
+            },
+          };
+          
+          await admin.messaging().sendMulticast(adminMessage);
+          console.log(`Product auto-approval summary sent to ${adminTokens.length} admins`);
+        }
+        
+        await Promise.all(adminNotifications);
+        
+      } catch (adminNotificationError) {
+        console.error('Error sending admin product auto-approval notifications:', adminNotificationError);
+      }
+    } else {
+      console.log('No products found for auto-approval');
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in product auto-approval function:', error);
+    throw error;
+  }
+});
+
+// Trigger to schedule product auto-approval when product is submitted
+exports.scheduleProductAutoApproval = functions.firestore
+  .document('products/{productId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const productData = snap.data();
+      const productId = context.params.productId;
+      
+      // Only schedule auto-approval for pending products
+      if (productData.status === 'pending') {
+        const createdAt = productData.createdAt;
+        const autoApprovalTime = new Date(createdAt.toDate().getTime() + (24 * 60 * 60 * 1000));
+        
+        await snap.ref.update({
+          autoApprovalScheduledAt: admin.firestore.Timestamp.fromDate(autoApprovalTime)
+        });
+        
+        console.log(`Product auto-approval scheduled for ${productId} at ${autoApprovalTime.toISOString()}`);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error scheduling product auto-approval:', error);
+      throw error;
+    }
+  });
+
+// Cancel product auto-approval when manually reviewed
+exports.cancelProductAutoApproval = functions.firestore
+  .document('products/{productId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+      const productId = context.params.productId;
+      
+      // Check if status changed from pending to approved/rejected (manual review)
+      if (before.status === 'pending' && 
+          (after.status === 'approved' || after.status === 'rejected') &&
+          after.reviewedBy !== 'system_auto_approval') {
+        
+        console.log(`Manual review completed for product ${productId}, auto-approval cancelled`);
+        
+        await change.after.ref.update({
+          autoApprovalScheduledAt: admin.firestore.FieldValue.delete()
+        });
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error cancelling product auto-approval:', error);
+      throw error;
+    }
+  });
+
+// Cloud Function for real-time supplier ban management
+exports.processSupplierBan = functions.firestore
+  .document('supplier_reports/{reportId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const reportData = snap.data();
+      const supplierId = reportData.supplierId;
+      
+      console.log(`Processing new report for supplier: ${supplierId}`);
+      
+      // Count total reports for this supplier
+      const reportsSnapshot = await admin.firestore()
+        .collection('supplier_reports')
+        .where('supplierId', '==', supplierId)
+        .get();
+      
+      const reportCount = reportsSnapshot.docs.length;
+      console.log(`Supplier ${supplierId} now has ${reportCount} reports`);
+      
+      // Auto-ban if 3 or more reports
+      if (reportCount >= 3) {
+        const now = admin.firestore.Timestamp.now();
+        
+        // Update supplier status to banned
+        await admin.firestore()
+          .collection('users')
+          .doc(supplierId)
+          .update({
+            isBanned: true,
+            bannedAt: now,
+            banReason: `Automatically banned due to ${reportCount} customer reports`,
+            bannedBy: 'system_auto_ban',
+            updatedAt: now
+          });
+        
+        // Deactivate all supplier's products
+        const supplierProducts = await admin.firestore()
+          .collection('products')
+          .where('sellerId', '==', supplierId)
+          .get();
+        
+        const batch = admin.firestore().batch();
+        supplierProducts.docs.forEach(doc => {
+          batch.update(doc.ref, {
+            isActive: false,
+            deactivatedAt: now,
+            deactivationReason: 'Supplier banned due to multiple reports'
+          });
+        });
+        
+        await batch.commit();
+        console.log(`Banned supplier ${supplierId} and deactivated ${supplierProducts.docs.length} products`);
+        
+        // Send notification to banned supplier
+        try {
+          const supplierDoc = await admin.firestore()
+            .collection('users')
+            .doc(supplierId)
+            .get();
+          
+          if (supplierDoc.exists) {
+            const supplierData = supplierDoc.data();
+            const fcmToken = supplierData.fcmToken;
+            
+            if (fcmToken) {
+              const message = {
+                token: fcmToken,
+                notification: {
+                  title: 'Account Suspended',
+                  body: 'Your supplier account has been suspended due to multiple customer reports. Please contact support for assistance.'
+                },
+                data: {
+                  type: 'account_banned',
+                  reason: 'multiple_reports',
+                  screen: 'supplier_profile'
+                },
+                android: {
+                  notification: {
+                    channelId: 'account',
+                    priority: 'high',
+                    sound: 'default',
+                  },
+                },
+              };
+              
+              await admin.messaging().send(message);
+            }
+            
+            // Create in-app notification
+            await admin.firestore()
+              .collection('users')
+              .doc(supplierId)
+              .collection('notifications')
+              .add({
+                title: 'Account Suspended',
+                body: 'Your supplier account has been suspended due to multiple customer reports. Please contact support for assistance.',
+                type: 'account_banned',
+                data: {
+                  reason: 'multiple_reports',
+                  reportCount: reportCount,
+                  screen: 'supplier_profile'
+                },
+                isRead: false,
+                createdAt: now
+              });
+          }
+        } catch (notificationError) {
+          console.error('Error sending ban notification to supplier:', notificationError);
+        }
+        
+        // Notify admins about the auto-ban
+        try {
+          const adminUsers = await admin.firestore()
+            .collection('users')
+            .where('role', '==', 'admin')
+            .get();
+          
+          const adminTokens = [];
+          const adminNotifications = [];
+          
+          adminUsers.docs.forEach(doc => {
+            const adminData = doc.data();
+            if (adminData.fcmToken) {
+              adminTokens.push(adminData.fcmToken);
+            }
+            
+            adminNotifications.push(
+              admin.firestore()
+                .collection('users')
+                .doc(doc.id)
+                .collection('notifications')
+                .add({
+                  title: 'Supplier Auto-Banned',
+                  body: `Supplier ${reportData.supplierName || supplierId} has been automatically banned due to ${reportCount} reports.`,
+                  type: 'admin_supplier_banned',
+                  data: {
+                    supplierId: supplierId,
+                    reportCount: reportCount,
+                    screen: 'admin_reports'
+                  },
+                  isRead: false,
+                  createdAt: now
+                })
+            );
+          });
+          
+          if (adminTokens.length > 0) {
+            const adminMessage = {
+              tokens: adminTokens,
+              notification: {
+                title: 'Supplier Auto-Banned',
+                body: `Supplier ${reportData.supplierName || supplierId} has been automatically banned due to ${reportCount} reports.`
+              },
+              data: {
+                type: 'admin_supplier_banned',
+                supplierId: supplierId,
+                reportCount: reportCount.toString(),
+                screen: 'admin_reports'
+              },
+              android: {
+                notification: {
+                  channelId: 'admin',
+                  priority: 'high',
+                  sound: 'default',
+                },
+              },
+            };
+            
+            await admin.messaging().sendMulticast(adminMessage);
+            console.log(`Auto-ban notification sent to ${adminTokens.length} admins`);
+          }
+          
+          await Promise.all(adminNotifications);
+          
+        } catch (adminNotificationError) {
+          console.error('Error sending admin ban notifications:', adminNotificationError);
+        }
+      } else {
+        // Send warning notification to supplier if approaching ban threshold
+        if (reportCount === 2) {
+          try {
+            const supplierDoc = await admin.firestore()
+              .collection('users')
+              .doc(supplierId)
+              .get();
+            
+            if (supplierDoc.exists) {
+              const supplierData = supplierDoc.data();
+              const fcmToken = supplierData.fcmToken;
+              
+              if (fcmToken) {
+                const message = {
+                  token: fcmToken,
+                  notification: {
+                    title: 'Account Warning',
+                    body: 'You have received multiple customer reports. One more report may result in account suspension. Please review your service quality.'
+                  },
+                  data: {
+                    type: 'account_warning',
+                    reportCount: reportCount.toString(),
+                    screen: 'supplier_profile'
+                  },
+                  android: {
+                    notification: {
+                      channelId: 'account',
+                      priority: 'high',
+                      sound: 'default',
+                    },
+                  },
+                };
+                
+                await admin.messaging().send(message);
+              }
+              
+              // Create in-app notification
+              await admin.firestore()
+                .collection('users')
+                .doc(supplierId)
+                .collection('notifications')
+                .add({
+                  title: 'Account Warning',
+                  body: 'You have received multiple customer reports. One more report may result in account suspension. Please review your service quality.',
+                  type: 'account_warning',
+                  data: {
+                    reportCount: reportCount,
+                    screen: 'supplier_profile'
+                  },
+                  isRead: false,
+                  createdAt: admin.firestore.Timestamp.now()
+                });
+            }
+          } catch (warningError) {
+            console.error('Error sending warning notification:', warningError);
+          }
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error processing supplier ban:', error);
+      throw error;
+    }
+  });
+
+// Cloud Function to unban suppliers (callable by admins)
+exports.unbanSupplier = functions.https.onCall(async (data, context) => {
+  try {
+    // Verify admin authentication
+    if (!context.auth || !context.auth.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
+    }
+    
+    // Verify admin role
+    const adminDoc = await admin.firestore()
+      .collection('users')
+      .doc(context.auth.uid)
+      .get();
+    
+    if (!adminDoc.exists || adminDoc.data().role !== 'admin') {
+      throw new functions.https.HttpsError('permission-denied', 'Must be admin');
+    }
+    
+    const { supplierId, reason } = data;
+    
+    if (!supplierId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Supplier ID required');
+    }
+    
+    const now = admin.firestore.Timestamp.now();
+    
+    // Update supplier status
+    await admin.firestore()
+      .collection('users')
+      .doc(supplierId)
+      .update({
+        isBanned: false,
+        unbannedAt: now,
+        unbanReason: reason || 'Unbanned by admin',
+        unbannedBy: context.auth.uid,
+        updatedAt: now
+      });
+    
+    // Reactivate supplier's products
+    const supplierProducts = await admin.firestore()
+      .collection('products')
+      .where('sellerId', '==', supplierId)
+      .where('deactivationReason', '==', 'Supplier banned due to multiple reports')
+      .get();
+    
+    const batch = admin.firestore().batch();
+    supplierProducts.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        isActive: true,
+        reactivatedAt: now,
+        reactivationReason: 'Supplier unbanned by admin'
+      });
+    });
+    
+    await batch.commit();
+    
+    console.log(`Supplier ${supplierId} unbanned by admin ${context.auth.uid}`);
+    
+    // Send notification to unbanned supplier
+    try {
+      const supplierDoc = await admin.firestore()
+        .collection('users')
+        .doc(supplierId)
+        .get();
+      
+      if (supplierDoc.exists) {
+        const supplierData = supplierDoc.data();
+        const fcmToken = supplierData.fcmToken;
+        
+        if (fcmToken) {
+          const message = {
+            token: fcmToken,
+            notification: {
+              title: 'Account Restored',
+              body: 'Your supplier account has been restored. You can now access all supplier features and manage your products.'
+            },
+            data: {
+              type: 'account_unbanned',
+              screen: 'supplier_dashboard'
+            },
+            android: {
+              notification: {
+                channelId: 'account',
+                priority: 'high',
+                sound: 'default',
+              },
+            },
+          };
+          
+          await admin.messaging().send(message);
+        }
+        
+        // Create in-app notification
+        await admin.firestore()
+          .collection('users')
+          .doc(supplierId)
+          .collection('notifications')
+          .add({
+            title: 'Account Restored',
+            body: 'Your supplier account has been restored. You can now access all supplier features and manage your products.',
+            type: 'account_unbanned',
+            data: {
+              reason: reason || 'Unbanned by admin',
+              screen: 'supplier_dashboard'
+            },
+            isRead: false,
+            createdAt: now
+          });
+      }
+    } catch (notificationError) {
+      console.error('Error sending unban notification:', notificationError);
+    }
+    
+    return {
+      success: true,
+      message: 'Supplier unbanned successfully',
+      productsReactivated: supplierProducts.docs.length
+    };
+    
+  } catch (error) {
+    console.error('Error unbanning supplier:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to unban supplier');
+  }
+});

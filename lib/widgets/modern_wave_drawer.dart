@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:math' as math;
 
 class ModernWaveDrawer extends StatefulWidget {
   final int selectedIndex;
@@ -13,6 +12,7 @@ class ModernWaveDrawer extends StatefulWidget {
   final VoidCallback? onHeaderTap;
   final List<DrawerItem> items;
   final List<DrawerItem>? additionalItems;
+  final List<DrawerSection>? sections;
   final Color primaryColor;
   final Color backgroundColor;
 
@@ -26,6 +26,7 @@ class ModernWaveDrawer extends StatefulWidget {
     this.onHeaderTap,
     required this.items,
     this.additionalItems,
+    this.sections,
     this.primaryColor = const Color(0xFF4CAF50),
     this.backgroundColor = Colors.white,
   });
@@ -37,9 +38,7 @@ class ModernWaveDrawer extends StatefulWidget {
 class _ModernWaveDrawerState extends State<ModernWaveDrawer>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
-  late AnimationController _waveController;
   late Animation<double> _slideAnimation;
-  late Animation<double> _waveAnimation;
 
   @override
   void initState() {
@@ -50,30 +49,18 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
       vsync: this,
     );
     
-    _waveController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
     _slideAnimation = CurvedAnimation(
       parent: _slideController,
       curve: Curves.easeOutCubic,
     );
 
-    _waveAnimation = CurvedAnimation(
-      parent: _waveController,
-      curve: Curves.elasticOut,
-    );
-
     // Start animations
     _slideController.forward();
-    _waveController.forward();
   }
 
   @override
   void dispose() {
     _slideController.dispose();
-    _waveController.dispose();
     super.dispose();
   }
 
@@ -89,14 +76,11 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
             height: MediaQuery.of(context).size.height,
             child: Stack(
               children: [
-                // Wave background
-                CustomPaint(
-                  size: Size(300, MediaQuery.of(context).size.height),
-                  painter: WaveDrawerPainter(
-                    primaryColor: widget.primaryColor,
-                    backgroundColor: widget.backgroundColor,
-                    waveAnimation: _waveAnimation.value,
-                  ),
+                // Drawer background
+                Container(
+                  width: 300,
+                  height: MediaQuery.of(context).size.height,
+                  color: widget.backgroundColor,
                 ),
                 // Drawer content
                 SizedBox(
@@ -110,31 +94,56 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
                         child: ListView(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           children: [
-                            ...widget.items.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final item = entry.value;
-                              final isSelected = widget.selectedIndex == item.index;
-                              
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: _buildDrawerItem(item, isSelected, index),
-                              );
-                            }),
-                            if (widget.additionalItems != null) ...[
-                              const SizedBox(height: 20),
-                              const Divider(height: 1, color: Colors.grey),
-                              const SizedBox(height: 10),
-                              ...widget.additionalItems!.asMap().entries.map((entry) {
-                                final index = entry.key + widget.items.length;
+                            if (widget.sections != null) ...[
+                              ...widget.sections!.map((section) {
+                                return Column(
+                                  children: [
+                                    Text(
+                                      section.title,
+                                      style: GoogleFonts.quicksand(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF1A1A1A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ...section.items.map((item) {
+                                      final isSelected = widget.selectedIndex == item.index;
+                                      
+                                      return AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        margin: const EdgeInsets.symmetric(vertical: 4),
+                                        child: _buildDrawerItem(item, isSelected),
+                                      );
+                                    }),
+                                  ],
+                                );
+                              }),
+                            ] else ...[
+                              ...widget.items.asMap().entries.map((entry) {
                                 final item = entry.value;
+                                final isSelected = widget.selectedIndex == item.index;
                                 
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   margin: const EdgeInsets.symmetric(vertical: 4),
-                                  child: _buildDrawerItem(item, false, index),
+                                  child: _buildDrawerItem(item, isSelected),
                                 );
                               }),
+                              if (widget.additionalItems != null) ...[
+                                const SizedBox(height: 20),
+                                const Divider(height: 1, color: Colors.grey),
+                                const SizedBox(height: 10),
+                                ...widget.additionalItems!.asMap().entries.map((entry) {
+                                  final item = entry.value;
+                                  
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    child: _buildDrawerItem(item, false),
+                                  );
+                                }),
+                              ],
                             ],
                           ],
                         ),
@@ -249,9 +258,9 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
     );
   }
 
-  Widget _buildDrawerItem(DrawerItem item, bool isSelected, int animationIndex) {
+  Widget _buildDrawerItem(DrawerItem item, bool isSelected) {
     return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 300 + (animationIndex * 50)),
+      duration: const Duration(milliseconds: 300),
       tween: Tween(begin: 0.0, end: 1.0),
       builder: (context, value, child) {
         return Transform.translate(
@@ -357,89 +366,14 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
   }
 }
 
-class WaveDrawerPainter extends CustomPainter {
-  final Color primaryColor;
-  final Color backgroundColor;
-  final double waveAnimation;
+class DrawerSection {
+  final String title;
+  final List<DrawerItem> items;
 
-  WaveDrawerPainter({
-    required this.primaryColor,
-    required this.backgroundColor,
-    required this.waveAnimation,
+  const DrawerSection({
+    required this.title,
+    required this.items,
   });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.fill;
-
-    // Draw main background
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-
-    // Draw wave pattern
-    final wavePaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          primaryColor.withOpacity(0.1),
-          primaryColor.withOpacity(0.05),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    final path = Path();
-    final waveHeight = 30 * waveAnimation;
-    final waveLength = size.width / 2;
-
-    path.moveTo(0, 0);
-    path.lineTo(size.width - 50, 0);
-
-    // Create wave pattern on the right edge
-    for (double y = 0; y <= size.height; y += waveLength) {
-      final waveOffset = math.sin((y / waveLength) * 2 * math.pi) * waveHeight;
-      path.quadraticBezierTo(
-        size.width - 25 + waveOffset,
-        y + waveLength / 2,
-        size.width - 50,
-        y + waveLength,
-      );
-    }
-
-    path.lineTo(size.width - 50, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, wavePaint);
-
-    // Draw accent wave
-    final accentPaint = Paint()
-      ..color = primaryColor.withOpacity(0.1)
-      ..style = PaintingStyle.fill;
-
-    final accentPath = Path();
-    accentPath.moveTo(size.width - 80, 0);
-
-    for (double y = 0; y <= size.height; y += waveLength * 0.7) {
-      final waveOffset = math.cos((y / (waveLength * 0.7)) * 2 * math.pi) * (waveHeight * 0.5);
-      accentPath.quadraticBezierTo(
-        size.width - 60 + waveOffset,
-        y + (waveLength * 0.7) / 2,
-        size.width - 80,
-        y + (waveLength * 0.7),
-      );
-    }
-
-    accentPath.lineTo(size.width - 80, size.height);
-    accentPath.lineTo(size.width - 100, size.height);
-    accentPath.lineTo(size.width - 100, 0);
-    accentPath.close();
-
-    canvas.drawPath(accentPath, accentPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class DrawerItem {

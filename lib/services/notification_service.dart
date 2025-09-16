@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, avoid_print
 
 import 'dart:async';
 import 'dart:convert';
@@ -964,19 +964,6 @@ class NotificationService {
     }
   }
 
-  // Helper method to get channel ID based on notification type
-  String _getChannelIdForType(String type) {
-    switch (type) {
-      case 'order_update':
-      case 'order':
-        return 'orders';
-      case 'chat':
-        return 'chat';
-      default:
-        return 'general';
-    }
-  }
-
   // Fallback method to show local notification for testing
   Future<void> _showLocalNotificationForTesting(
     String title,
@@ -1316,6 +1303,76 @@ class NotificationService {
         'supplierId': supplierId,
         'reportCount': reportCount,
         'screen': 'manage_accounts',
+      },
+    );
+  }
+
+  // Verification-related notifications
+  Future<void> sendVerificationRequestNotification({
+    required String supplierName,
+    required String supplierId,
+    required String verificationId,
+  }) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'New Verification Request',
+      body: '$supplierName submitted ID verification documents for review',
+      type: 'verification_request',
+      data: {
+        'supplierName': supplierName,
+        'supplierId': supplierId,
+        'verificationId': verificationId,
+        'screen': 'verification_requests',
+      },
+    );
+  }
+
+  Future<void> sendVerificationApprovedNotification({
+    required String supplierId,
+    required String supplierName,
+  }) async {
+    await sendFCMNotification(
+      recipientId: supplierId,
+      title: 'Verification Approved',
+      body: 'Congratulations! Your ID verification has been approved. You can now access all supplier features.',
+      type: 'verification_approved',
+      data: {
+        'supplierName': supplierName,
+        'screen': 'profile',
+      },
+    );
+  }
+
+  Future<void> sendVerificationRejectedNotification({
+    required String supplierId,
+    required String supplierName,
+    required String reason,
+  }) async {
+    await sendFCMNotification(
+      recipientId: supplierId,
+      title: 'Verification Rejected',
+      body: 'Your ID verification was rejected: $reason. Please submit new documents.',
+      type: 'verification_rejected',
+      data: {
+        'supplierName': supplierName,
+        'reason': reason,
+        'screen': 'profile',
+      },
+    );
+  }
+
+  Future<void> sendVerificationAutoApprovedNotification({
+    required String supplierId,
+    required String supplierName,
+  }) async {
+    await sendFCMNotification(
+      recipientId: supplierId,
+      title: 'Verification Auto-Approved',
+      body: 'Your ID verification has been automatically approved after 24 hours. Welcome to VeggieConnect!',
+      type: 'verification_auto_approved',
+      data: {
+        'supplierName': supplierName,
+        'screen': 'profile',
       },
     );
   }

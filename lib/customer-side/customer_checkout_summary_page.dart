@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, avoid_print
+// ignore_for_file: deprecated_member_use, avoid_print, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -274,7 +274,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       for (final doc in widget.cartItems) {
         final data = doc.data();
         final orderDoc = ordersRef.doc();
-        final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
 
         batch.set(orderDoc, {
           'buyerId': user?.uid,
@@ -503,7 +502,6 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                     SizedBox(height: screenWidth * 0.03),
                     ...widget.cartItems.map((doc) {
                       final data = doc.data();
-                      final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
                       
                       return Container(
                         margin: EdgeInsets.only(bottom: screenWidth * 0.03),
@@ -556,7 +554,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                                   ),
                                   SizedBox(height: screenWidth * 0.01),
                                   Text(
-                                    '₱${data['price']?.toStringAsFixed(2) ?? '0.00'} × ${data['quantity'] ?? 1}',
+                                    '₱${((data['price'] ?? 0) * (data['quantity'] ?? 1)).toStringAsFixed(2)}',
                                     style: GoogleFonts.quicksand(
                                       fontSize: screenWidth * 0.035,
                                       color: Color(0xFF757575),
@@ -567,7 +565,7 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                               ),
                             ),
                             Text(
-                              '₱${itemTotal.toStringAsFixed(2)}',
+                              '₱${((data['price'] ?? 0) * (data['quantity'] ?? 1)).toStringAsFixed(2)}',
                               style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.04,
                                 color: Color(0xFF6CA04A),

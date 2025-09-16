@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:veggieconnect/services/product_rating_service.dart';
 import '../services/auth_state_service.dart';
 import '../services/cloudinary_service.dart';
 import '../services/content_filter_service.dart';
 import '../services/tax_service.dart';
 import '../services/notification_service.dart';
+import '../services/supplier_verification_service.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../widgets/lottie_loading_widget.dart';
@@ -40,7 +40,6 @@ class _AddProductPageState extends State<AddProductPage> {
   bool _isActive = true;
   String? _imageUrl;
   bool _isUploading = false;
-  String? _rejectionReason;
 
   // Predefined categories and units
   static const List<String> _categories = [
@@ -84,7 +83,6 @@ class _AddProductPageState extends State<AddProductPage> {
       }
       _isActive = widget.product!['isActive'] ?? true;
       _imageUrl = widget.product!['imageUrl'];
-      _rejectionReason = widget.product!['rejectionReason'];
     } else {
       _quantityController.text = '0'; // Set default value
     }
@@ -295,40 +293,27 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _submitProduct() async {
     if (_formKey.currentState!.validate()) {
-      if (widget.product != null) {
-        // Show confirmation dialog before updating
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Update Product'),
-            content: const Text('Are you sure you want to update this product?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Update'),
-              ),
-            ],
-          ),
-        );
-        if (confirm != true) return;
-      }
-      setState(() => _isUploading = true);
+      // Check if supplier is verified before allowing product submission
       final user = _authService.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Not logged in!')),
         );
-        setState(() => _isUploading = false);
         return;
       }
+
+      // Check verification status
+      final isVerified = await SupplierVerificationService.isSupplierVerified(user.uid);
+      if (!isVerified) {
+        _showVerificationRequiredDialog();
+        return;
+      }
+
+      setState(() => _isUploading = true);
+      
       try {
         // Fetch supplier name and trust status from Firestore
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        final supplierName = userDoc.data()?['name'] ?? 'Unknown Supplier';
         final isTrusted = userDoc.data()?['isTrusted'] == true;
 
         // --- Automatic Assessment Logic ---
@@ -350,8 +335,6 @@ class _AddProductPageState extends State<AddProductPage> {
           return;
         }
         
-        final netPrice = TaxService.calculateNetPrice(originalPrice);
-        
         final hasAllFields = name.isNotEmpty && desc.isNotEmpty && originalPrice > 0 && _quantity > 0 && _unit.isNotEmpty && _category.isNotEmpty;
         final priceValid = originalPrice > 0 && originalPrice < 10000;
         // Content filtering
@@ -368,181 +351,183 @@ class _AddProductPageState extends State<AddProductPage> {
         // For image, check if _imageUrl is present
         final hasImage = (_imageUrl ?? '').isNotEmpty;
 
-        String status = 'pending';
-        bool isVerified = false;
-        bool contentFlagged = false;
-        bool autoApproved = false;
-
         // Auto-approve if content is clean and supplier is trusted
+        String finalStatus = 'pending';
+        bool finalIsVerified = false;
+        bool finalContentFlagged = contentCheck.issues.isNotEmpty;
+        bool finalAutoApproved = false;
+        
         if (hasAllFields && priceValid && noProhibited && hasImage && isTrusted && contentCheck.isApproved) {
-          status = 'approved';
-          isVerified = true;
-          autoApproved = true;
-        } else if (contentCheck.issues.isNotEmpty) {
-          contentFlagged = true;
-          status = 'pending';
-          isVerified = false;
-        } else {
-          // For non-trusted suppliers, products remain pending for manual review
-          status = 'pending';
-          isVerified = false;
-          autoApproved = false;
+          finalStatus = 'approved';
+          finalIsVerified = true;
+          finalAutoApproved = true;
         }
 
-        if (widget.product == null || (widget.product?['status'] ?? '') == 'rejected') {
-          // Add new product or resubmit rejected product
-          final docRef = widget.product == null
-              ? await FirebaseFirestore.instance.collection('products').add({
-                  'sellerId': user.uid,
-                  'supplierName': supplierName,
-                  'name': name,
-                  'description': desc,
-                  'originalPrice': originalPrice,
-                  'price': netPrice, // Store the net price after tax deduction
-                  'taxAmount': TaxService.getTaxAmount(),
-                  'quantity': _quantity,
-                  'unit': _unit,
-                  'category': _category,
-                  'isActive': _isActive,
-                  'createdAt': FieldValue.serverTimestamp(),
-                  'updatedAt': FieldValue.serverTimestamp(),
-                  'imageUrl': _imageUrl ?? '',
-                  'favoriteCount': 0, // initialize favorite count for popular products
-                  'soldCount': 0, // initialize sold counter
-                  'status': status,
-                  'isVerified': isVerified,
-                  'rejectionReason': '',
-                  'contentFlagged': contentFlagged,
-                  'autoApproved': autoApproved,
-                  'contentIssues': contentCheck.issues,
-                  'contentSeverity': contentCheck.severity.toString(),
-                  'isTrustedSupplier': contentCheck.isTrustedSupplier,
-                  'requiresManualReview': contentCheck.requiresManualReview,
-                })
-              : FirebaseFirestore.instance.collection('products').doc(widget.docId!);
-          
-          final productId = widget.product == null ? docRef.id : widget.docId!;
-          
-          // Record tax deduction for new products
-          if (widget.product == null) {
-            await TaxService.recordTaxDeduction(
-              productId: productId,
-              supplierId: user.uid,
-              originalPrice: originalPrice,
-              netPrice: netPrice,
-            );
-            
-            // Initialize product rating fields
-            await ProductRatingService.initializeProductRating(productId);
-          }
-          
-          // Since image is already uploaded to Cloudinary in _pickImage, use the URL directly
-          if (widget.product == null) {
-            await docRef.update({'imageUrl': _imageUrl ?? ''});
-          } else {
-            await docRef.update({
-              'imageUrl': _imageUrl ?? '', 
-              'originalPrice': originalPrice,
-              'price': netPrice,
-              'taxAmount': TaxService.getTaxAmount(),
-              'status': status, 
-              'isVerified': isVerified, 
-              'rejectionReason': '',
-              'contentFlagged': contentFlagged,
-              'autoApproved': autoApproved,
-              'contentIssues': contentCheck.issues,
-              'contentSeverity': contentCheck.severity.toString(),
-              'isTrustedSupplier': contentCheck.isTrustedSupplier,
-              'requiresManualReview': contentCheck.requiresManualReview,
-            });
-          }
-
-          // Send admin notification for new product submission
-          try {
-            final notificationService = NotificationService();
-            print('🔔 Attempting to send admin notification for product: $name');
-            print('🔔 Supplier: $supplierName (ID: ${user.uid})');
-            
-            await notificationService.sendNewProductSubmissionNotification(
-              productName: name,
-              supplierName: supplierName,
-              supplierId: user.uid,
-              productId: productId,
-            );
-            
-            print('🔔 Admin notification sent successfully');
-          } catch (e) {
-            print('❌ Error sending admin notification: $e');
-            print('❌ Stack trace: ${StackTrace.current}');
-          }
-
-        } else {
-          // Edit existing product (not rejected)
-          // Get current product status to preserve approval for already-approved products
-          final currentDoc = await FirebaseFirestore.instance.collection('products').doc(widget.docId!).get();
-          final currentStatus = currentDoc.data()?['status'] ?? 'pending';
-          final currentIsVerified = currentDoc.data()?['isVerified'] ?? false;
-          
-          // Only re-evaluate approval status if product was previously rejected or pending
-          // Preserve approval status for already-approved products
-          String finalStatus = status;
-          bool finalIsVerified = isVerified;
-          bool finalContentFlagged = contentFlagged;
-          bool finalAutoApproved = autoApproved;
-          
-          if (currentStatus == 'approved') {
-            // Product is already approved - preserve approval status
-            finalStatus = 'approved';
-            finalIsVerified = true;
-            // Only flag content if there are serious issues, but keep it approved
-            finalContentFlagged = contentCheck.issues.isNotEmpty;
-            finalAutoApproved = currentDoc.data()?['autoApproved'] ?? false;
-          }
-          
-          // Since image is already uploaded to Cloudinary in _pickImage, use the URL directly
-          await FirebaseFirestore.instance.collection('products').doc(widget.docId!).update({
-            'sellerId': user.uid,
-            'supplierName': supplierName,
-            'name': name,
-            'description': desc,
-            'originalPrice': originalPrice,
-            'price': netPrice, // Store the net price after tax deduction
-            'taxAmount': TaxService.getTaxAmount(),
-            'quantity': _quantity,
-            'unit': _unit,
-            'category': _category,
-            'isActive': _isActive,
-            'updatedAt': FieldValue.serverTimestamp(),
-            'imageUrl': _imageUrl ?? '',
-            'status': finalStatus,
-            'isVerified': finalIsVerified,
-            'contentFlagged': finalContentFlagged,
-            'autoApproved': finalAutoApproved,
-            'contentIssues': contentCheck.issues,
-            'contentSeverity': contentCheck.severity.toString(),
-            'isTrustedSupplier': contentCheck.isTrustedSupplier,
-            'requiresManualReview': contentCheck.requiresManualReview,
-          });
-        }
-        if (!mounted) return;
-        setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.product == null 
-                ? 'Product added! ₱5 listing fee deducted from price.' 
-                : 'Product updated!'
+        if (widget.product != null) {
+          // Show confirmation dialog before updating
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Update Product'),
+              content: const Text('Are you sure you want to update this product?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('Update'),
+                ),
+              ],
             ),
-          ),
-        );
-        Navigator.pop(context);
+          );
+          if (confirm != true) return;
+        }
+      
+        if (widget.product != null) {
+          // Updating existing product
+          try {
+            final currentDoc = await FirebaseFirestore.instance.collection('products').doc(widget.docId!).get();
+            final currentStatus = currentDoc.data()?['status'] ?? 'pending';
+            
+            // Only re-evaluate approval status if product was previously rejected or pending
+            // Preserve approval status for already-approved products
+            if (currentStatus == 'approved') {
+              // Product is already approved - preserve approval status
+              finalStatus = 'approved';
+              finalIsVerified = true;
+              // Only flag content if there are serious issues, but keep it approved
+              finalContentFlagged = contentCheck.issues.isNotEmpty;
+              finalAutoApproved = currentDoc.data()?['autoApproved'] ?? false;
+            } else {
+              // Re-evaluate for pending/rejected products
+              if (hasAllFields && priceValid && noProhibited && hasImage && isTrusted && contentCheck.isApproved) {
+                finalStatus = 'approved';
+                finalIsVerified = true;
+                finalAutoApproved = true;
+              }
+            }
+            
+            // Since image is already uploaded to Cloudinary in _pickImage, use the URL directly
+            await FirebaseFirestore.instance.collection('products').doc(widget.docId!).update({
+              'sellerId': user.uid,
+              'supplierName': userDoc.data()?['name'] ?? 'Unknown Supplier',
+              'name': name,
+              'description': desc,
+              'originalPrice': originalPrice,
+              'price': TaxService.calculateNetPrice(originalPrice), // Store the net price after tax deduction
+              'taxAmount': TaxService.getTaxAmount(),
+              'quantity': _quantity,
+              'unit': _unit,
+              'category': _category,
+              'imageUrl': _imageUrl ?? '',
+              'status': finalStatus,
+              'isVerified': finalIsVerified,
+              'contentFlagged': finalContentFlagged,
+              'autoApproved': finalAutoApproved,
+              'updatedAt': FieldValue.serverTimestamp(),
+              'lastModified': FieldValue.serverTimestamp(),
+              'favoriteCount': 0,
+              'soldCount': 0,
+              'isActive': _isActive,
+              // Quick Actions fields
+              'paymentMethods': ['cashOnPickup', 'online'], // Support both payment methods
+              'isFreshToday': _isCreatedToday(),
+              'rating': 0.0, // Initialize rating
+              'totalRatings': 0,
+              'location': 'nearMe', // Default location filter
+              'isBestDeal': _isBestDeal(TaxService.calculateNetPrice(originalPrice)),
+              'lastRatingUpdate': FieldValue.serverTimestamp(),
+            });
+
+            setState(() => _isUploading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Product updated successfully!')),
+            );
+            Navigator.pop(context);
+          } catch (e) {
+            setState(() => _isUploading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error updating product: $e')),
+            );
+          }
+        } else {
+          // Creating new product
+          try {
+            final docRef = FirebaseFirestore.instance.collection('products').doc();
+            
+            await docRef.set({
+              'sellerId': user.uid,
+              'supplierName': userDoc.data()?['name'] ?? 'Unknown Supplier',
+              'name': name,
+              'description': desc,
+              'originalPrice': originalPrice,
+              'price': TaxService.calculateNetPrice(originalPrice), // Store the net price after tax deduction
+              'taxAmount': TaxService.getTaxAmount(),
+              'quantity': _quantity,
+              'unit': _unit,
+              'category': _category,
+              'imageUrl': _imageUrl ?? '',
+              'status': finalStatus,
+              'isVerified': finalIsVerified,
+              'contentFlagged': finalContentFlagged,
+              'autoApproved': finalAutoApproved,
+              'createdAt': FieldValue.serverTimestamp(),
+              'lastModified': FieldValue.serverTimestamp(),
+              'favoriteCount': 0,
+              'soldCount': 0,
+              'isActive': _isActive,
+              // Quick Actions fields
+              'paymentMethods': ['cashOnPickup', 'online'], // Support both payment methods
+              'isFreshToday': _isCreatedToday(),
+              'rating': 0.0, // Initialize rating
+              'totalRatings': 0,
+              'location': 'nearMe', // Default location filter
+              'isBestDeal': _isBestDeal(TaxService.calculateNetPrice(originalPrice)),
+              'lastRatingUpdate': FieldValue.serverTimestamp(),
+            });
+
+            // Send admin notification for new product submission
+            await NotificationService().sendNewProductSubmissionNotification(
+              productName: name,
+              supplierName: userDoc.data()?['name'] ?? 'Unknown Supplier',
+              supplierId: user.uid,
+              productId: docRef.id,
+            );
+
+            setState(() => _isUploading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(finalStatus == 'approved' ? 'Product added and approved!' : 'Product added successfully! Pending approval.')),
+            );
+            Navigator.pop(context);
+          } catch (e) {
+            setState(() => _isUploading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error adding product: $e')),
+            );
+          }
+        }
       } catch (e) {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to ${widget.product == null ? 'add' : 'update'} product: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     }
+  }
+
+  bool _isCreatedToday() {
+    // Check if this is a new product (not an update)
+    if (widget.product == null) {
+      return true; // New products are always "fresh today"
+    }
+    // For updates, check if the product was created today
+    return false; // Updates are not considered "fresh today"
+  }
+
+  bool _isBestDeal(double price) {
+    return true; // TO DO: implement logic to check if product is the best deal
   }
 
   @override
@@ -1098,6 +1083,109 @@ class _AddProductPageState extends State<AddProductPage> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => const SupplierDashboard(),
+      ),
+    );
+  }
+
+  void _showVerificationRequiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Color(0xFF6CA04A).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.verified_user,
+                  size: 40,
+                  color: Color(0xFF6CA04A),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Verification Required',
+                style: GoogleFonts.quicksand(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2E2E2E),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 12),
+              Text(
+                'You need to complete ID verification before you can add or manage products. This helps ensure trust and safety in our marketplace.',
+                style: GoogleFonts.quicksand(
+                  fontSize: 14,
+                  color: Color(0xFF666666),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Color(0xFF6CA04A)),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6CA04A),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => const SupplierDashboard()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF6CA04A),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Get Verified',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

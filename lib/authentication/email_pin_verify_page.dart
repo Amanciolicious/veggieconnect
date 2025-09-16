@@ -23,7 +23,6 @@ class PinVerifyPage extends StatefulWidget {
 class _PinVerifyPageState extends State<PinVerifyPage> {
   final _pinController = TextEditingController();
   bool _isLoading = false;
-  String? _errorMessage;
   int _secondsLeft = 300;
   late final Ticker _ticker;
 
@@ -55,7 +54,6 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
   Future<void> _verifyPin() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
@@ -65,14 +63,12 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
       final expiresAt = (data['pinExpiresAt'] as Timestamp?)?.toDate();
       if (_pinController.text.trim() != pin) {
         setState(() {
-          _errorMessage = 'Incorrect PIN.';
           _isLoading = false;
         });
         return;
       }
       if (expiresAt == null || DateTime.now().isAfter(expiresAt)) {
         setState(() {
-          _errorMessage = 'PIN expired. Please request a new one.';
           _isLoading = false;
         });
         return;
@@ -114,7 +110,6 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Verification failed.';
         _isLoading = false;
       });
     }
@@ -152,7 +147,6 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
   Future<void> _resendPin() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
     try {
       // Generate new PIN
@@ -165,7 +159,6 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
       await sendPinEmail(widget.email, newPin);
       setState(() {
         _isLoading = false;
-        _errorMessage = null;
         _secondsLeft = 300;
       });
       _ticker.stop();
@@ -177,7 +170,6 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to resend PIN.';
       });
     }
   }
@@ -355,6 +347,37 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                                     color: Colors.white,
                                   ),
                                 ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Resend PIN in ${_formatTime(_secondsLeft)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _resendPin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF6CA04A),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'Resend PIN',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),

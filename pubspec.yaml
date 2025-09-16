@@ -44,6 +44,7 @@ dependencies:
   latlong2: ^0.9.1
   flutter_map: ^8.2.1
   image_picker: ^1.2.0
+  camera: ^0.10.6
   geolocator: ^14.0.2
   cached_network_image: ^3.4.1
   http: ^1.5.0
@@ -52,7 +53,7 @@ dependencies:
   flutter_local_notifications: ^19.4.1
   geocoding: ^4.0.0
   path_provider: ^2.1.5
-  file_picker: ^10.3.2
+  file_picker: ^8.1.2
   firebase_storage: ^13.0.0
   fl_chart: ^1.0.0
   google_fonts: ^6.3.1
@@ -65,6 +66,9 @@ dependencies:
   app_links: ^6.3.2
   lottie: ^3.1.2
   crypto: ^3.0.3
+  # OCR Dependencies for ID verification
+  flutter_tesseract_ocr: ^0.4.25
+  image: ^4.1.7
 
 dev_dependencies:
   flutter_test:

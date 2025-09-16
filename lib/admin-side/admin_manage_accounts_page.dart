@@ -17,7 +17,6 @@ class AdminManageAccountsPage extends StatefulWidget {
 
 class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
 
   @override
   void dispose() {
@@ -85,7 +84,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   ),
                   suffixIcon: Icon(Icons.search, size: screenWidth * 0.04),
                 ),
-                onChanged: (query) => setState(() => _searchQuery = query),
+                onChanged: (query) => setState(() {}),
               ),
             ),
             SizedBox(height: screenWidth * 0.04),
@@ -159,11 +158,19 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   }
 
                   final users = snapshot.data!.docs;
+                  final query = _searchController.text.toLowerCase();
+                  final filteredUsers = users.where((user) {
+                    final userData = user.data() as Map<String, dynamic>;
+                    final fullName = userData['fullName']?.toLowerCase() ?? '';
+                    final email = userData['email']?.toLowerCase() ?? '';
+                    return fullName.contains(query) || email.contains(query);
+                  }).toList();
+
                   return ListView.builder(
-                    itemCount: users.length,
+                    itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
-                      final user = users[index].data() as Map<String, dynamic>;
-                      return _buildUserCard(context, screenWidth, users[index].id, user);
+                      final user = filteredUsers[index].data() as Map<String, dynamic>;
+                      return _buildUserCard(context, screenWidth, filteredUsers[index].id, user);
                     },
                   );
                 },
@@ -286,8 +293,6 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   future: SupplierReportService.getSupplierReportCount(userId),
                   builder: (context, reportSnapshot) {
                     final reportCount = reportSnapshot.data ?? 0;
-                    final intensity = SupplierReportService.getReportColorIntensity(reportCount);
-                    final percentage = (reportCount / 3.0 * 100).clamp(0.0, 100.0); // Changed to 3 reports max
                     
                     // Determine color based on report count
                     Color reportColor;
@@ -528,6 +533,47 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                         ),
                         Text(
                           'Account will be permanently banned',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: screenWidth * 0.035,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenWidth * 0.04),
+              // Unban Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6CA04A),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _unbanUser(userId);
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.04),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: screenWidth * 0.06,
+                        ),
+                        SizedBox(height: screenWidth * 0.02),
+                        Text(
+                          'Unban User',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.04,
+                          ),
+                        ),
+                        Text(
+                          'Remove all bans from this user',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: screenWidth * 0.035,
@@ -1006,38 +1052,119 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                 ),
               ],
               SizedBox(height: screenWidth * 0.05),
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6CA04A)),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showBanDialog(context, screenWidth, userId, user);
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-                        child: const Text('Ban/Unban', style: TextStyle(color: Colors.white)),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.03),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: reportCount > 0 ? () => _showReportReasons(context, screenWidth, userId) : null,
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD)),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-                        child: Text(
-                          reportCount > 0 ? 'View Report Reasons ($reportCount)' : 'No Reports',
-                          style: TextStyle(
-                            color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD),
+                  // First row of buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6CA04A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showBanDialog(context, screenWidth, userId, user);
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+                            child: Text(
+                              'Ban/Unban',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: reportCount > 0 ? () => _showReportReasons(context, screenWidth, userId) : null,
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+                            child: Text(
+                              reportCount > 0 ? 'Reports ($reportCount)' : 'No Reports',
+                              style: TextStyle(
+                                color: reportCount > 0 ? const Color(0xFF6CA04A) : const Color(0xFFBDBDBD),
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: screenWidth * 0.03),
+                  // Second row of buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: user['isActive'] == true ? Colors.orange : const Color(0xFF6CA04A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _toggleUserStatus(userId, !(user['isActive'] ?? true));
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+                            child: Text(
+                              user['isActive'] == true ? 'Deactivate' : 'Activate',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showDeleteConfirmation(context, userId, user['fullName'] ?? 'Unknown User');
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+                            child: Text(
+                              'Delete User',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1141,6 +1268,53 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
         SnackBar(content: Text('Error deleting user: $e')),
       );
     }
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String userId, String fullName) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Delete User?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Are you sure you want to delete $fullName?',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Cancel'),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _deleteUser(userId);
+                      },
+                      child: Text('Delete'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Color _getRoleColor(String? role) {

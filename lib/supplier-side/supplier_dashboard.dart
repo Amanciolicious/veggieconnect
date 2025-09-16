@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, library_private_types_in_public_api, avoid_print
 
 import 'dart:io';
 import 'dart:typed_data';
@@ -20,6 +20,8 @@ import 'package:veggieconnect/services/revenue_service.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/widgets/notification_center.dart';
 import 'package:veggieconnect/widgets/lottie_loading_widget.dart';
+import 'package:veggieconnect/services/supplier_verification_service.dart';
+import 'package:veggieconnect/widgets/id_camera_widget.dart';
 
 class SupplierDashboard extends StatefulWidget {
   const SupplierDashboard({super.key});
@@ -31,6 +33,7 @@ class SupplierDashboard extends StatefulWidget {
 class _SupplierDashboardState extends State<SupplierDashboard> {
   int _selectedIndex = 0;
   String? _localProfileImagePath;
+  bool _showVerificationNotification = false;
 
   final AuthStateService _authService = AuthStateService();
 
@@ -40,6 +43,121 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
   void initState() {
     super.initState();
     _loadLocalProfileImage();
+    _checkVerificationStatus();
+  }
+
+  Future<void> _checkVerificationStatus() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          final isVerified = userData['isVerified'] ?? false;
+          
+          setState(() {
+            _showVerificationNotification = !isVerified;
+          });
+          
+          // Show notification after a short delay to ensure UI is ready
+          if (!isVerified) {
+            Future.delayed(Duration(milliseconds: 1500), () {
+              if (mounted && _showVerificationNotification) {
+                _showFloatingVerificationNotification();
+              }
+            });
+          }
+        }
+      } catch (e) {
+        print('Error checking verification status: $e');
+      }
+    }
+  }
+
+  void _showFloatingVerificationNotification() {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GestureDetector(
+          onTap: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            // Navigate to profile tab and show verification modal
+            setState(() {
+              _selectedIndex = 4; // Profile tab index
+            });
+            // Small delay to ensure tab switch completes
+            Future.delayed(Duration(milliseconds: 300), () {
+              _showVerificationDialog();
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.verified_user,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Get Verified Now!',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'Verify your account to unlock all features. Tap to get started.',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+        backgroundColor: Color(0xFF6CA04A),
+        duration: Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 6,
+        action: SnackBarAction(
+          label: '✕',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _loadLocalProfileImage() async {
@@ -133,32 +251,6 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         ],
       ),
     );
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    Navigator.pop(context);
-    
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 75,
-      );
-      
-      if (image != null && _authService.currentUser != null) {
-        // Upload picked file to Cloudinary (mobile/desktop)
-        await _uploadToCloudinaryAndSave(file: File(image.path));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error picking image: $e'),
-          backgroundColor: Color(0xFFE57373),
-        ),
-      );
-    }
   }
 
   Future<void> _uploadViaCloudinary() async {
@@ -351,63 +443,77 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
             headerEmail: email,
             headerAvatarUrl: profileImageUrl,
             onHeaderTap: _showProfileImageOptions,
-            items: [
-              DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
-              DrawerItem(icon: Icons.inventory, title: 'Manage Products', index: 1),
-              DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
-              DrawerItem(icon: Icons.person, title: 'Profile', index: 3),
-            ],
-            additionalItems: [
-              DrawerItem(
-                icon: Icons.shopping_cart,
-                title: 'Orders Management',
-                index: -1,
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SupplierOrdersPage()),
-                  );
-                },
+            items: [], // Empty since we're using sections
+            sections: [
+              DrawerSection(
+                title: 'MAIN NAVIGATION',
+                items: [
+                  DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
+                  DrawerItem(icon: Icons.inventory, title: 'Manage Products', index: 1),
+                  DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
+                  DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
+                ],
               ),
-              DrawerItem(
-                icon: Icons.person_pin,
-                title: 'My Location',
-                index: -1,
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SupplierLocationPage()),
-                  );
-                },
+              DrawerSection(
+                title: 'BUSINESS TOOLS',
+                items: [
+                  DrawerItem(
+                    icon: Icons.shopping_cart,
+                    title: 'Orders Management',
+                    index: -1,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SupplierOrdersPage()),
+                      );
+                    },
+                  ),
+                  DrawerItem(
+                    icon: Icons.person_pin,
+                    title: 'My Location',
+                    index: -1,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SupplierLocationPage()),
+                      );
+                    },
+                  ),
+                  DrawerItem(
+                    icon: Icons.message,
+                    title: 'Messages',
+                    index: -1,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => SupplierChatListPage()),
+                      );
+                    },
+                  ),
+                ],
               ),
-              DrawerItem(
-                icon: Icons.message,
-                title: 'Messages',
-                index: -1,
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => SupplierChatListPage()),
-                  );
-                },
-              ),
-              DrawerItem(
-                icon: Icons.logout,
-                title: 'Logout',
-                index: -1,
-                isDestructive: true,
-                onTap: () async {
-                  await _authService.signOut();
-                  if (!mounted) return;
-             
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                    (route) => false,
-                  );
-                },
+              DrawerSection(
+                title: 'ACCOUNT',
+                items: [
+                  DrawerItem(
+                    icon: Icons.logout,
+                    title: 'Logout',
+                    index: -1,
+                    isDestructive: true,
+                    onTap: () async {
+                      await _authService.signOut();
+                      if (!mounted) return;
+                 
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           );
@@ -432,6 +538,8 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
         },
         backgroundColor: const Color(0xFF4CAF50),
         color: Colors.white,
+        height: 60,
+        animationDuration: const Duration(milliseconds: 300),
         items: const [
           Icon(Icons.home, size: 30, color: Colors.green,),
           Icon(Icons.inventory, size: 30, color: Colors.green,),
@@ -918,7 +1026,6 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
           return const SizedBox.shrink();
         }
         
-        int totalProducts = snapshot.data!.docs.length;
         int lowStockProducts = 0;
         int outOfStockProducts = 0;
         double totalValue = 0;
@@ -1413,6 +1520,12 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
                         valueColor: data['isVerified'] == true ? Colors.green : Colors.orange,
                       ),
                     ],
+                    
+                    // Get Verified Button for unverified suppliers
+                    if (data['isVerified'] != true) ...[
+                      SizedBox(height: screenWidth * 0.04),
+                      _buildGetVerifiedButton(screenWidth),
+                    ],
                   ],
                 ),
               ),
@@ -1540,32 +1653,228 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     );
   }
 
-  Widget _buildNotificationsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_outlined,
-            size: 64,
-            color: Color(0xFF4CAF50),
+  Widget _buildGetVerifiedButton(double screenWidth) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _showVerificationDialog,
+        icon: Icon(Icons.verified_user, color: Colors.white),
+        label: Text(
+          'Get Verified',
+          style: GoogleFonts.quicksand(
+            fontSize: screenWidth * 0.04,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
-          SizedBox(height: 16),
-          Text(
-            'Notifications',
-            style: GoogleFonts.quicksand(
-              fontSize: 18,
-              color: Color(0xFF1A1A1A),
-              fontWeight: FontWeight.w400,
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF6CA04A),
+          padding: EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
+      ),
+    );
+  }
+
+  void _showVerificationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => VerificationDialog(),
+    );
+  }
+
+}
+
+class VerificationDialog extends StatefulWidget {
+  const VerificationDialog({super.key});
+
+  @override
+  State<VerificationDialog> createState() => _VerificationDialogState();
+}
+
+class _VerificationDialogState extends State<VerificationDialog> {
+  final AuthStateService _authService = AuthStateService();
+  bool _isSubmitting = false;
+  Uint8List? _frontIdBytes;
+  Uint8List? _backIdBytes;
+  String? _frontIdFileName;
+  String? _backIdFileName;
+
+  AuthUser? get user => _authService.currentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Fixed Header
+            Container(
+              padding: EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  Icon(Icons.verified_user, color: Color(0xFF6CA04A), size: 32),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'ID Verification',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF222222),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.close, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Stay updated with latest alerts',
-            style: GoogleFonts.quicksand(
-              fontSize: 14,
-              color: Color(0xFF757575),
-              fontWeight: FontWeight.w400,
+            
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Instructions
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF6CA04A).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Color(0xFF6CA04A).withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Verification Requirements:',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6CA04A),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          _buildRequirement('Upload clear photos of front and back of your valid ID'),
+                          _buildRequirement('Ensure all text is readable and not blurred'),
+                          _buildRequirement('Accepted IDs: Driver\'s License, Passport, National ID'),
+                          _buildRequirement('Processing time: Up to 24 hours (auto-approved if not reviewed)'),
+                        ],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 24),
+                    
+                    // Front ID Upload
+                    _buildImageUploadSection(
+                      title: 'Front of ID',
+                      subtitle: 'Tap to capture or select image',
+                      imageBytes: _frontIdBytes,
+                      fileName: _frontIdFileName,
+                      onTap: () => _pickImage(true),
+                    ),
+                    
+                    SizedBox(height: 16),
+                    
+                    // Back ID Upload
+                    _buildImageUploadSection(
+                      title: 'Back of ID',
+                      subtitle: 'Tap to capture or select image',
+                      imageBytes: _backIdBytes,
+                      fileName: _backIdFileName,
+                      onTap: () => _pickImage(false),
+                    ),
+                    
+                    SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Fixed Submit Button
+            Container(
+              padding: EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _canSubmit() ? _submitVerification : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _canSubmit() ? Color(0xFF6CA04A) : Colors.grey[400],
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: _canSubmit() ? 2 : 0,
+                  ),
+                  child: _isSubmitting
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Processing...',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          'Submit for Verification',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequirement(String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle, color: Color(0xFF6CA04A), size: 16),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.quicksand(
+                fontSize: 14,
+                color: Color(0xFF666666),
+              ),
             ),
           ),
         ],
@@ -1573,4 +1882,364 @@ class _SupplierDashboardState extends State<SupplierDashboard> {
     );
   }
 
+  Widget _buildImageUploadSection({
+    required String title,
+    required String subtitle,
+    required Uint8List? imageBytes,
+    required String? fileName,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      imageBytes != null ? Icons.check_circle : Icons.camera_alt,
+                      color: imageBytes != null ? Color(0xFF6CA04A) : Colors.grey[600],
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF222222),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(
+                  imageBytes != null ? 'Image captured: $fileName' : subtitle,
+                  style: GoogleFonts.quicksand(
+                    fontSize: 14,
+                    color: imageBytes != null ? Color(0xFF6CA04A) : Colors.grey[600],
+                  ),
+                ),
+                if (imageBytes != null) ...[
+                  SizedBox(height: 12),
+                  Container(
+                    height: 100,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        imageBytes,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(bool isFront) async {
+    try {
+      // Show image source selection dialog
+      final ImageSource? source = await _showImageSourceDialog();
+      if (source == null) return;
+
+      if (source == ImageSource.camera) {
+        // Use custom ID camera widget with size detection
+        final result = await Navigator.of(context).push<Map<String, dynamic>>(
+          MaterialPageRoute(
+            builder: (context) => IdCameraWidget(
+              title: isFront ? 'Front of ID' : 'Back of ID',
+              onImageCaptured: (bytes, fileName) {
+                Navigator.of(context).pop({
+                  'bytes': bytes,
+                  'fileName': fileName,
+                });
+              },
+            ),
+          ),
+        );
+
+        if (result != null) {
+          setState(() {
+            if (isFront) {
+              _frontIdBytes = result['bytes'] as Uint8List;
+              _frontIdFileName = result['fileName'] as String;
+            } else {
+              _backIdBytes = result['bytes'] as Uint8List;
+              _backIdFileName = result['fileName'] as String;
+            }
+          });
+        }
+      } else {
+        // Use regular image picker for gallery
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: 1500,
+          maxHeight: 1500,
+          imageQuality: 90,
+        );
+
+        if (image != null) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            if (isFront) {
+              _frontIdBytes = bytes;
+              _frontIdFileName = image.name;
+            } else {
+              _backIdBytes = bytes;
+              _backIdFileName = image.name;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error capturing image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceDialog() async {
+    return await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Select Image Source',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF222222),
+                  ),
+                ),
+                SizedBox(height: 20),
+                
+                // Camera Option with ID detection
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+                    icon: Icon(Icons.camera_alt, color: Colors.white),
+                    label: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Take Photo with ID Detection',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Guided capture with frame overlay',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF6CA04A),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Gallery Option
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+                    icon: Icon(Icons.photo_library, color: Color(0xFF6CA04A)),
+                    label: Text(
+                      'Choose from Gallery',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6CA04A),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Color(0xFF6CA04A)),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Cancel Option
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _canSubmit() {
+    return _frontIdBytes != null && _backIdBytes != null && !_isSubmitting;
+  }
+
+  Future<void> _submitVerification() async {
+    if (!_canSubmit() || user == null) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      // Get user data for submission
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+      
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final supplierName = userData['name'] ?? 'Unknown Supplier';
+      final supplierEmail = userData['email'] ?? user!.email ?? '';
+
+      // Submit verification request
+      final verificationId = await SupplierVerificationService.submitVerificationRequest(
+        supplierId: user!.uid,
+        supplierName: supplierName,
+        supplierEmail: supplierEmail,
+        frontIdImageBytes: _frontIdBytes!,
+        backIdImageBytes: _backIdBytes!,
+      );
+
+      if (verificationId != null) {
+        // Show success dialog
+        Navigator.of(context).pop(); // Close verification dialog
+        _showSuccessDialog();
+      } else {
+        throw Exception('Failed to submit verification request');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting verification: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Color(0xFF6CA04A),
+                size: 64,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Verification Submitted!',
+                style: GoogleFonts.quicksand(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF222222),
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Your ID verification has been submitted successfully. Our team will review your documents within 24 hours. If not reviewed manually, your account will be automatically verified.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.quicksand(
+                  fontSize: 14,
+                  color: Color(0xFF666666),
+                ),
+              ),
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF6CA04A),
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Got it!',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

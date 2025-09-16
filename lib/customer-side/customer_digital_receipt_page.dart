@@ -211,7 +211,6 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
     final dateStr = DateFormat('yyyy-MM-dd – kk:mm').format(now);
     final paymentMethodDisplay = _getPaymentMethodDisplayName();
     final paymentIcon = _getPaymentMethodIcon();
-    final subtotal = widget.total;
     final shipping = 0.0;
     final orderStatus = 'Order Placed';
     

@@ -3,9 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/content_filter_service.dart';
-import '../services/auto_approval_service.dart';
-import '../services/countdown_timer_service.dart';
-import '../widgets/countdown_timer_widget.dart';
+import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 
 class AdminVerifyListingsPage extends StatefulWidget {
@@ -17,29 +15,8 @@ class AdminVerifyListingsPage extends StatefulWidget {
 
 class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
   final ContentFilterService _contentFilterService = ContentFilterService();
-  final CountdownTimerService _countdownService = CountdownTimerService();
+  final AuthStateService _authService = AuthStateService();
   String _filterStatus = 'all'; // 'all', 'pending', 'flagged', 'approved', 'rejected'
-
-  @override
-  void initState() {
-    super.initState();
-    // Start countdowns for all pending products when page loads
-    _countdownService.startCountdownForPendingProducts();
-  }
-
-  /// Start countdown for a specific product
-  void _startCountdownForProduct(String productId) {
-    if (!_countdownService.isCountdownActive(productId)) {
-      _countdownService.startCountdown(productId);
-    }
-  }
-
-  @override
-  void dispose() {
-    // Clean up countdowns when page is disposed
-    _countdownService.cancelAllCountdowns();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -192,11 +169,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                       final productData = product.data() as Map<String, dynamic>;
                       final productId = product.id;
 
-                      // Start countdown for pending products
-                      if (productData['status'] == 'pending') {
-                        _startCountdownForProduct(productId);
-                      }
-
                       return _buildProductCard(context, screenWidth, productId, productData);
                     },
                   );
@@ -216,28 +188,33 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
       case 'pending':
         return baseQuery
             .where('status', isEqualTo: 'pending')
+            .orderBy('createdAt', descending: true)
             .snapshots();
       case 'flagged':
         return baseQuery
             .where('contentFlagged', isEqualTo: true)
+            .orderBy('createdAt', descending: true)
             .snapshots();
       case 'approved':
         return baseQuery
             .where('status', isEqualTo: 'approved')
+            .orderBy('updatedAt', descending: true)
             .snapshots();
       case 'rejected':
         return baseQuery
             .where('status', isEqualTo: 'rejected')
+            .orderBy('updatedAt', descending: true)
             .snapshots();
       case 'recently_processed':
-        // Show products that were processed by admin in the last 24 hours
+        // Show products that were processed in the last 24 hours
         final yesterday = DateTime.now().subtract(const Duration(hours: 24));
         return baseQuery
-            .where('verificationDate', isGreaterThan: yesterday)
-            .where('verifiedBy', isEqualTo: 'admin')
+            .where('updatedAt', isGreaterThan: Timestamp.fromDate(yesterday))
+            .where('reviewedBy', whereIn: ['admin', 'system_auto_approval'])
+            .orderBy('updatedAt', descending: true)
             .snapshots();
       default:
-        return baseQuery.snapshots();
+        return baseQuery.orderBy('createdAt', descending: true).snapshots();
     }
   }
 
@@ -292,31 +269,6 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
     }
   }
 
-  bool _isProductOverdue(Map<String, dynamic> product) {
-    final scheduledTime = product['scheduledApprovalTime'] as String?;
-    if (scheduledTime == null) return false;
-
-    final scheduledDateTime = DateTime.parse(scheduledTime);
-    final now = DateTime.now();
-
-    return now.isAfter(scheduledDateTime);
-  }
-
-  String _getOverdueText(Map<String, dynamic> product) {
-    final scheduledTime = product['scheduledApprovalTime'] as String?;
-    if (scheduledTime == null) return '';
-
-    final scheduledDateTime = DateTime.parse(scheduledTime);
-    final now = DateTime.now();
-    final difference = now.difference(scheduledDateTime);
-
-    if (difference.inMinutes > 0) {
-      return 'Overdue by ${difference.inMinutes} minutes';
-    } else {
-      return 'Due in ${-difference.inMinutes} minutes';
-    }
-  }
-
   String _getEmptyStateMessage() {
     switch (_filterStatus) {
       case 'pending':
@@ -328,9 +280,30 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
       case 'rejected':
         return 'No rejected products in this filter';
       case 'recently_processed':
-        return 'No products have been processed by the admin in the last 24 hours.';
+        return 'No products have been processed in the last 24 hours.';
       default:
         return 'No pending listings to verify';
+    }
+  }
+
+  String _formatTimeRemaining(Timestamp? autoApprovalScheduledAt) {
+    if (autoApprovalScheduledAt == null) return '';
+    
+    final scheduledTime = autoApprovalScheduledAt.toDate();
+    final now = DateTime.now();
+    final difference = scheduledTime.difference(now);
+    
+    if (difference.isNegative) {
+      return 'Auto-approval overdue';
+    }
+    
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+    
+    if (hours > 0) {
+      return 'Auto-approval in ${hours}h ${minutes}m';
+    } else {
+      return 'Auto-approval in ${minutes}m';
     }
   }
 
@@ -345,6 +318,9 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
 
     final isFlagged = product['contentFlagged'] == true || contentCheck.issues.isNotEmpty;
     final isTrusted = contentCheck.isTrustedSupplier;
+    final autoApprovalScheduledAt = product['autoApprovalScheduledAt'] as Timestamp?;
+    final reviewedBy = product['reviewedBy'] as String?;
+    final isAutoApproved = reviewedBy == 'system_auto_approval';
 
     return Container(
       margin: EdgeInsets.only(bottom: screenWidth * 0.04),
@@ -369,56 +345,87 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Content Status Badge
-            if (isFlagged)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.01),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                  border: Border.all(color: Colors.red),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.warning, color: Colors.red, size: screenWidth * 0.04),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      'Content Flagged',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.03,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
+            // Status badges row
+            Row(
+              children: [
+                // Content Status Badge
+                if (isFlagged)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.01),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      border: Border.all(color: Colors.red),
                     ),
-                  ],
-                ),
-              ),
-            if (isTrusted)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.01),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.verified, color: Colors.green, size: screenWidth * 0.04),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      'Trusted Supplier',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.03,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.warning, color: Colors.red, size: screenWidth * 0.04),
+                        SizedBox(width: screenWidth * 0.01),
+                        Text(
+                          'Content Flagged',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.03,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                if (isFlagged && isTrusted) SizedBox(width: screenWidth * 0.02),
+                if (isTrusted)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.01),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified, color: Colors.green, size: screenWidth * 0.04),
+                        SizedBox(width: screenWidth * 0.01),
+                        Text(
+                          'Trusted Supplier',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.03,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (isAutoApproved)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.01),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      border: Border.all(color: Colors.blue),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule, color: Colors.blue, size: screenWidth * 0.04),
+                        SizedBox(width: screenWidth * 0.01),
+                        Text(
+                          'Auto-Approved',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.03,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
             SizedBox(height: screenWidth * 0.02),
+            
             // Product Image and Basic Info
             Row(
               children: [
@@ -486,6 +493,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
               ],
             ),
             SizedBox(height: screenWidth * 0.03),
+            
             // Supplier Info
             Container(
               padding: EdgeInsets.all(screenWidth * 0.03),
@@ -514,6 +522,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
               ),
             ),
             SizedBox(height: screenWidth * 0.03),
+            
             // Description
             if (product['description'] != null && product['description'].toString().isNotEmpty)
               Column(
@@ -537,6 +546,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                   SizedBox(height: screenWidth * 0.03),
                 ],
               ),
+              
             // Content Issues (if any)
             if (contentCheck.issues.isNotEmpty) ...[
               Container(
@@ -581,17 +591,36 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
               ),
               SizedBox(height: screenWidth * 0.03),
             ],
-            // Countdown Timer for Pending Products
-            if (product['status'] == 'pending' || product['status'] == null) ...[
-              SizedBox(height: screenWidth * 0.02),
-              CountdownTimerWidget(
-                productId: productId,
-                onTimerComplete: () {
-                  // Refresh the page when timer completes
-                  setState(() {});
-                },
+            
+            // Auto-approval timer info for pending products
+            if (product['status'] == 'pending' && autoApprovalScheduledAt != null) ...[
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.03),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.schedule, color: Colors.orange, size: screenWidth * 0.04),
+                    SizedBox(width: screenWidth * 0.02),
+                    Expanded(
+                      child: Text(
+                        _formatTimeRemaining(autoApprovalScheduledAt),
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              SizedBox(height: screenWidth * 0.03),
             ],
+            
             // Action Buttons
             if (product['status'] == 'pending' || product['status'] == null) ...[
               Row(
@@ -656,7 +685,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                     SizedBox(width: screenWidth * 0.02),
                     Text(
                       product['status'] == 'approved'
-                          ? 'Product Approved - Now Visible to Buyers'
+                          ? (isAutoApproved ? 'Product Auto-Approved - Now Visible to Buyers' : 'Product Approved - Now Visible to Buyers')
                           : 'Product Rejected',
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
@@ -676,13 +705,23 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
 
   Future<void> _verifyProduct(BuildContext context, String productId, bool isApproved) async {
     try {
-      if (isApproved) {
-        // Cancel countdown for this product since it's being manually approved
-        _countdownService.cancelCountdown(productId);
+      final user = _authService.currentUser;
+      if (user == null) return;
 
-        // Use the new manual approval method
-        final autoApprovalService = AutoApprovalService();
-        await autoApprovalService.manualApproveProduct(productId);
+      if (isApproved) {
+        // Manual approval - this will cancel the Cloud Function auto-approval
+        await FirebaseFirestore.instance.collection('products').doc(productId).update({
+          'status': 'approved',
+          'isVerified': true,
+          'isActive': true,
+          'reviewedAt': FieldValue.serverTimestamp(),
+          'reviewedBy': user.uid,
+          'rejectionReason': '',
+          'autoApproved': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+          // Remove auto-approval scheduling since it's manually approved
+          'autoApprovalScheduledAt': FieldValue.delete(),
+        });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product approved and now visible to buyers!')),
@@ -693,23 +732,23 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
           _filterStatus = 'recently_processed';
         });
       } else {
-        // Cancel countdown for this product since it's being rejected
-        _countdownService.cancelCountdown(productId);
-
         final reason = await _showRejectionDialog(context);
         if (reason == null || reason.trim().isEmpty) return;
+        
         await FirebaseFirestore.instance.collection('products').doc(productId).update({
           'isVerified': false,
           'isActive': false,
           'status': 'rejected',
           'rejectionReason': reason.trim(),
-          'verifiedBy': 'admin',
-          'verificationDate': FieldValue.serverTimestamp(),
+          'reviewedBy': user.uid,
+          'reviewedAt': FieldValue.serverTimestamp(),
           'contentFlagged': true,
-          'autoApprovalCompleted': true,
-          'autoApprovalFailed': true,
-          'autoApprovalFailureReason': 'Manually rejected by admin',
+          'autoApproved': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+          // Remove auto-approval scheduling since it's manually rejected
+          'autoApprovalScheduledAt': FieldValue.delete(),
         });
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product rejected.')),
         );

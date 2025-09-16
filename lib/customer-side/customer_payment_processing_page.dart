@@ -288,7 +288,6 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       for (final doc in widget.cartItems) {
         final data = doc.data();
         final orderDoc = ordersRef.doc();
-        final itemTotal = (data['price'] ?? 0) * (data['quantity'] ?? 1);
 
         batch.set(orderDoc, {
           'buyerId': user?.uid,

@@ -11,9 +11,6 @@ import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 
 class PayMongoGCashService {
-  static const String _baseUrl = 'https://api.paymongo.com/v1';
-  static const String _publicKey = 'pk_test_VdHjKhDXJvwZhKhMGZdRxhVy';
-  static const String _secretKey = 'sk_test_3VVVNyKGwKGvKKKVVVVVVVVV';
   
   static final AuthStateService _authService = AuthStateService();
   static AuthUser? get _currentUser => _authService.currentUser;

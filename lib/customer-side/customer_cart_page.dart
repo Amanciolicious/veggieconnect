@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:veggieconnect/customer-side/customer_checkout_summary_page.dart'; // Added import for CheckoutSummaryPage
-import 'package:veggieconnect/customer-side/customer_payment_processing_page.dart';
 import '../widgets/lottie_loading_widget.dart';
 import '../authentication/login_page.dart';
 import '../services/auth_state_service.dart';
@@ -140,42 +139,6 @@ class _CartPageState extends State<CartPage> {
         ],
       ),
     );
-  }
-
-  Future<void> _checkout(List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems) async {
-    if (cartItems.isEmpty || _isProcessing) return;
-    final paymentMethod = await _showPaymentMethodDialog();
-    if (paymentMethod == null) return;
-    
-    // Generate order ID
-    final orderId = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
-    
-    // Navigate to payment processing page
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => PaymentProcessingPage(
-          cartItems: cartItems,
-          total: _calculateTotal(cartItems),
-          paymentMethod: paymentMethod,
-          orderId: orderId,
-        ),
-      ),
-    );
-  }
-
-  String _getPaymentMethodDisplayName(String method) {
-    switch (method) {
-      case 'cash_on_pickup':
-        return 'Cash on Pickup';
-      case 'gcash':
-      case 'grab_pay':
-      case 'paymaya':
-      case 'card':
-      case 'online_payment':
-        return 'Online Payment';
-      default:
-        return 'Unknown Method';
-    }
   }
 
   @override

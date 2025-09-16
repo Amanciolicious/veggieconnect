@@ -19,7 +19,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String? _avatarUrl;
-  String? _localAvatarPath;
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final AuthStateService _authService = AuthStateService();
@@ -108,7 +107,6 @@ class _ProfilePageState extends State<ProfilePage> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'avatarUrl': url});
       setState(() {
         _avatarUrl = url;
-        _localAvatarPath = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Uploaded to Cloudinary successfully')),
@@ -140,7 +138,6 @@ class _ProfilePageState extends State<ProfilePage> {
         
         setState(() {
           _avatarUrl = url;
-          _localAvatarPath = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Uploaded to Cloudinary successfully')),
@@ -202,7 +199,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() {
         _avatarUrl = url;
-        _localAvatarPath = null; // prefer URL
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -231,7 +227,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
         setState(() {
           _avatarUrl = url;
-          _localAvatarPath = null;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -257,61 +252,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     
     return null;
-  }
-
-  void _showEditProfile(Map<String, dynamic> data) {
-    _nameController.text = data['name'] ?? '';
-    _emailController.text = data['email'] ?? '';
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: _pickAvatar,
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Color(0xFF6CA04A).withOpacity(0.1),
-                  backgroundImage: _getProfileImage(data),
-                  child: _getProfileImage(data) == null ? Icon(Icons.camera_alt, color: Color(0xFF6CA04A), size: 32) : null,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                enabled: false,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF6CA04A)),
-                  onPressed: () async {
-                    await FirebaseFirestore.instance.collection('users').doc(_authService.currentUser!.uid).update({'name': _nameController.text.trim()});
-                    
-                    Navigator.pop(context);
-                    setState(() {});
-                  },
-                  child: Text('Save Changes', style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Row _buildInfoRow(IconData icon, String label, String value, double screenWidth, {Color? valueColor}) {

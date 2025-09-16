@@ -96,6 +96,81 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     }
   }
 
+  Widget _buildRelatedProductsSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('products')
+          .where('category', isEqualTo: widget.product['category'])
+          .where('productId', isNotEqualTo: widget.productId)
+          .limit(5)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        
+        final products = snapshot.data!.docs;
+        
+        return SizedBox(
+          height: screenWidth * 0.35,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              final product = products[index].data() as Map<String, dynamic>;
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailsPage(
+                        product: product,
+                        productId: products[index].id,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: EdgeInsets.only(right: screenWidth * 0.04),
+                  width: screenWidth * 0.25,
+                  child: Column(
+                    children: [
+                      ProductImageWidget(
+                        imagePath: product['imageUrl'] ?? '',
+                        width: screenWidth * 0.25,
+                        height: screenWidth * 0.25,
+                        placeholder: Icon(Icons.shopping_basket, size: screenWidth * 0.1, color: Color(0xFF6CA04A)),
+                      ),
+                      SizedBox(height: screenWidth * 0.02),
+                      Text(
+                        product['name'] ?? 'Unknown Product',
+                        style: GoogleFonts.quicksand(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: screenWidth * 0.01),
+                      Text(
+                        '\u20b1${product['price']?.toStringAsFixed(2) ?? '0.00'}/${product['unit'] ?? 'unit'}',
+                        style: GoogleFonts.quicksand(
+                          fontSize: screenWidth * 0.035,
+                          color: Color(0xFF6CA04A),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -798,6 +873,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               );
                             },
                           ),
+                          SizedBox(height: screenWidth * 0.04),
+                          Text(
+                            'Related Products',
+                            style: GoogleFonts.quicksand(
+                              fontSize: screenWidth * 0.05,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF222222),
+                            ),
+                          ),
+                          SizedBox(height: screenWidth * 0.03),
+                          _buildRelatedProductsSection(),
+                          
                           SizedBox(height: screenWidth * 0.04),
                           Text(
                             'Description',

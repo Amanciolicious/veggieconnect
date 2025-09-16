@@ -23,18 +23,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
-  String _statusFilter = 'all';
   String _dateFilter = 'all';
-  final bool _showOnlyPending = false;
-
-  final List<String> _statusOptions = [
-    'all',
-    'pending',
-    'processing',
-    'ready_to_pickup',
-    'picked_up',
-    'cancelled',
-  ];
 
   final List<String> _dateOptions = [
     'all',
@@ -131,155 +120,31 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
                 ),
                 const SizedBox(height: 12),
                 
-                // Filter Row (responsive)
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 360;
-                    if (isNarrow) {
-                      return Column(
-                        children: [
-                          DropdownButtonFormField<String>(
-                            value: _statusFilter,
-                            decoration: InputDecoration(
-                              labelText: 'Status',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                            ),
-                            items: _statusOptions.map((String status) {
-                              return DropdownMenuItem<String>(
-                                value: status,
-                                child: Text(status.toUpperCase(), overflow: TextOverflow.ellipsis),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _statusFilter = newValue!;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            value: _dateFilter,
-                            decoration: InputDecoration(
-                              labelText: 'Date',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 5,
-                              ),
-                            ),
-                            items: _dateOptions.map((String date) {
-                              return DropdownMenuItem<String>(
-                                value: date,
-                                child: Text(date.replaceAll('_', ' ').toUpperCase(), overflow: TextOverflow.ellipsis),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _dateFilter = newValue!;
-                              });
-                            },
-                          ),
-                        ],
-                      );
-                    }
-
-                    return Row(
-                      children: [
-                        // Status Filter
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _statusFilter,
-                            decoration: InputDecoration(
-                              labelText: 'Status',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                            ),
-                            items: _statusOptions.map((String status) {
-                              return DropdownMenuItem<String>(
-                                value: status,
-                                child: Text(status.toUpperCase(), overflow: TextOverflow.ellipsis),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _statusFilter = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        
-                        // Date Filter
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _dateFilter,
-                            decoration: InputDecoration(
-                              labelText: 'Date',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            items: _dateOptions.map((String date) {
-                              return DropdownMenuItem<String>(
-                                value: date,
-                                child: Text(date.replaceAll('_', ' ').toUpperCase(), overflow: TextOverflow.ellipsis),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _dateFilter = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                
-                
-                // Urgent Button
-                if (_showOnlyPending)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                // Date Filter Only
+                DropdownButtonFormField<String>(
+                  value: _dateFilter,
+                  decoration: InputDecoration(
+                    labelText: 'Date Filter',
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.warning, color: Colors.red, size: 16),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Urgent',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
                     ),
                   ),
+                  items: _dateOptions.map((String date) {
+                    return DropdownMenuItem<String>(
+                      value: date,
+                      child: Text(date.replaceAll('_', ' ').toUpperCase(), overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _dateFilter = newValue!;
+                    });
+                  },
+                ),
               ],
             ),
           ),
@@ -365,70 +230,71 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         // Order Summary Cards
         return Column(
           children: [
-            // Summary Cards
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildSummaryCard(
-                      'Total',
-                      orders.length.toString(),
-                      Icons.shopping_cart,
-                      const Color(0xFF6CA04A),
-                    ),
-                    const SizedBox(width: 12),
-                    _buildSummaryCard(
-                      'Pending',
-                      orders.where((doc) => 
-                        (doc.data() as Map<String, dynamic>)['status'] == 'pending' ||
-                        (doc.data() as Map<String, dynamic>)['status'] == null ||
-                        (doc.data() as Map<String, dynamic>)['status'] == 'completed'
-                      ).length.toString(),
-                      Icons.schedule,
-                      Colors.orange,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildSummaryCard(
-                      'Processing',
-                      orders.where((doc) => 
-                        (doc.data() as Map<String, dynamic>)['status'] == 'processing'
-                      ).length.toString(),
-                      Icons.sync,
-                      Colors.blue,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildSummaryCard(
-                      'Ready to Pick Up',
-                      orders.where((doc) => 
-                        (doc.data() as Map<String, dynamic>)['status'] == 'ready_to_pickup'
-                      ).length.toString(),
-                      Icons.local_shipping,
-                      Colors.purple,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildSummaryCard(
-                      'Picked Up',
-                      orders.where((doc) => 
-                        (doc.data() as Map<String, dynamic>)['status'] == 'picked_up'
-                      ).length.toString(),
-                      Icons.check_circle,
-                      Colors.green,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildSummaryCard(
-                      'Cancelled',
-                      orders.where((doc) => 
-                        (doc.data() as Map<String, dynamic>)['status'] == 'cancelled'
-                      ).length.toString(),
-                      Icons.cancel,
-                      Colors.red,
-                    ),
-                  ],
+            // Summary Cards - Only show in 'All Orders' tab
+            if (status == 'all')
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildCompactCountIndicator(
+                        'Total',
+                        orders.length.toString(),
+                        Icons.shopping_cart,
+                        const Color(0xFF6CA04A),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildCompactCountIndicator(
+                        'Pending',
+                        orders.where((doc) => 
+                          (doc.data() as Map<String, dynamic>)['status'] == 'pending' ||
+                          (doc.data() as Map<String, dynamic>)['status'] == null ||
+                          (doc.data() as Map<String, dynamic>)['status'] == 'completed'
+                        ).length.toString(),
+                        Icons.schedule,
+                        Colors.orange,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildCompactCountIndicator(
+                        'Processing',
+                        orders.where((doc) => 
+                          (doc.data() as Map<String, dynamic>)['status'] == 'processing'
+                        ).length.toString(),
+                        Icons.sync,
+                        Colors.blue,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildCompactCountIndicator(
+                        'Ready to Pick Up',
+                        orders.where((doc) => 
+                          (doc.data() as Map<String, dynamic>)['status'] == 'ready_to_pickup'
+                        ).length.toString(),
+                        Icons.local_shipping,
+                        Colors.purple,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildCompactCountIndicator(
+                        'Picked Up',
+                        orders.where((doc) => 
+                          (doc.data() as Map<String, dynamic>)['status'] == 'picked_up'
+                        ).length.toString(),
+                        Icons.check_circle,
+                        Colors.green,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildCompactCountIndicator(
+                        'Cancelled',
+                        orders.where((doc) => 
+                          (doc.data() as Map<String, dynamic>)['status'] == 'cancelled'
+                        ).length.toString(),
+                        Icons.cancel,
+                        Colors.red,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             
             // Orders List
             Expanded(
@@ -448,10 +314,10 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     );
   }
 
-  Widget _buildSummaryCard(String title, String count, IconData icon, Color color) {
+  Widget _buildCompactCountIndicator(String title, String count, IconData icon, Color color) {
     return Container(
-      width: 120,
-      padding: const EdgeInsets.all(16),
+      width: 80,
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -466,21 +332,21 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
           Text(
             count,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             title,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
@@ -627,7 +493,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       
       final orderData = orderDoc.data() as Map<String, dynamic>;
       final buyerId = orderData['buyerId'] as String?;
-      final buyerName = orderData['buyerName'] as String?;
       final supplierId = orderData['sellerId'] as String?;
       final supplierName = orderData['sellerName'] as String? ?? 'Store';
       final productId = orderData['productId'] as String?;
@@ -760,26 +625,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         );
       }
     }
-  }
-
-  Future<String> _getBuyerName(String? buyerId) async {
-    if (buyerId == null) return 'Unknown Buyer';
-    
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(buyerId)
-          .get();
-      
-      if (userDoc.exists) {
-        final userData = userDoc.data() as Map<String, dynamic>;
-        return userData['name'] ?? 'Unknown Buyer';
-      }
-    } catch (e) {
-      print('Error fetching buyer name: $e');
-    }
-    
-    return 'Unknown Buyer';
   }
 
   void _showOrderDetails(Map<String, dynamic> order, String orderId) {
@@ -947,200 +792,198 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     return GestureDetector(
       onTap: () => _showOrderDetails(order, orderId),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         child: Card(
-          elevation: 2,
+          elevation: 1,
           child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with status and actions
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'Order #${orderId.substring(0, 8)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                // First Row: Order ID, Status, Date, Actions
+                Row(
+                  children: [
+                    // Order ID and Date
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Order #${orderId.substring(0, 8)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (createdAt != null)
+                            Text(
+                              DateFormat('MMM dd, HH:mm').format(createdAt.toDate()),
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
                               ),
                             ),
-                            if (order['hasRating'] == true) ...[
-                              SizedBox(width: 8),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFF6CA04A).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Color(0xFF6CA04A), width: 1),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.star,
-                                      color: Color(0xFF6CA04A),
-                                      size: 12,
-                                    ),
-                                    SizedBox(width: 2),
-                                    Text(
-                                      'Rated',
-                                      style: TextStyle(
-                                        color: Color(0xFF6CA04A),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                        ],
+                      ),
+                    ),
+                    // Status and Rating Badge
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (order['hasRating'] == true) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6CA04A).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF6CA04A), width: 0.5),
                               ),
-                            ],
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    color: Color(0xFF6CA04A),
+                                    size: 10,
+                                  ),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Rated',
+                                    style: TextStyle(
+                                      color: Color(0xFF6CA04A),
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
                           ],
-                        ),
-                        if (createdAt != null)
+                          _buildCompactStatusChip(status),
+                        ],
+                      ),
+                    ),
+                    // Actions Menu
+                    SizedBox(
+                      width: 24,
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, size: 18),
+                        padding: EdgeInsets.zero,
+                        onSelected: (value) => _handleOrderAction(orderId, value, order),
+                        itemBuilder: (context) => _buildOrderActions(status),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Second Row: Product Image, Details, and Total
+                Row(
+                  children: [
+                    // Product Image
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.grey[200],
+                      ),
+                      child: imageUrl != null && imageUrl.toString().isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.image, color: Colors.grey, size: 20);
+                                },
+                              ),
+                            )
+                          : const Icon(Icons.image, color: Colors.grey, size: 20),
+                    ),
+                    
+                    const SizedBox(width: 10),
+                    
+                    // Product Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            DateFormat('MMM dd, yyyy - HH:mm').format(createdAt.toDate()),
+                            productName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Qty: $quantity × ₱${price.toStringAsFixed(2)}',
                             style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontSize: 11,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  _buildStatusChip(status),
-                  SizedBox(width: 4),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) => _handleOrderAction(orderId, value, order),
-                    itemBuilder: (context) => _buildOrderActions(status),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Product details
-              Row(
-                children: [
-                  // Product image
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[200],
-                    ),
-                    child: imageUrl != null && imageUrl.toString().isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.image, color: Colors.grey);
-                              },
+                          Text(
+                            'Buyer: $buyerName',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 11,
                             ),
-                          )
-                        : const Icon(Icons.image, color: Colors.grey),
-                  ),
-                  
-                  const SizedBox(width: 12),
-                  
-                  // Product info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Total Amount and Payment Method
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          productName,
+                          '₱${totalAmount.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Qty: $quantity x ₱${price.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
                             fontSize: 14,
+                            color: Color(0xFF6CA04A),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Buyer: $buyerName',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                        if (order['paymentMethod'] != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _getPaymentMethodDisplayName(order['paymentMethod']),
+                              style: const TextStyle(
+                                fontSize: 8,
+                                color: Colors.blue,
+                              ),
+                            ),
                           ),
-                        ),
                       ],
                     ),
-                  ),
-                  
-                  // Total amount
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '₱${totalAmount.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF6CA04A),
-                        ),
-                      ),
-                      const Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              
-              // Payment method
-              if (order['paymentMethod'] != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Payment: ${_getPaymentMethodDisplayName(order['paymentMethod'])}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.blue,
-                    ),
-                  ),
+                  ],
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
-    ),);
+    );
   }
 
-  Widget _buildStatusChip(String status) {
+  Widget _buildCompactStatusChip(String status) {
     // Normalize for display - show completed orders as pending for suppliers
     if (status == 'placed' || status.isEmpty || status == 'completed') {
       status = 'pending';
@@ -1159,7 +1002,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         break;
       case 'ready_to_pickup':
         color = Colors.purple;
-        text = 'READY TO PICK UP';
+        text = 'READY';
         break;
       case 'picked_up':
         color = Colors.green;
@@ -1175,17 +1018,17 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
       ),
       child: Text(
         text,
         style: TextStyle(
           color: color,
-          fontSize: 10,
+          fontSize: 8,
           fontWeight: FontWeight.bold,
         ),
       ),
