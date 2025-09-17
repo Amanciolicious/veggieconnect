@@ -437,36 +437,44 @@ class _AddProductPageState extends State<AddProductPage> {
             }
             
             // Since image is already uploaded to Cloudinary in _pickImage, use the URL directly
-            await FirebaseFirestore.instance.collection('products').doc(widget.docId!).update({
-              'sellerId': user.uid,
-              'supplierName': userDoc.data()?['name'] ?? 'Unknown Supplier',
-              'name': name,
-              'description': desc,
-              'originalPrice': originalPrice,
+            final productData = {
+              'name': _nameController.text.trim(),
+              'description': _descController.text.trim(),
               'price': TaxService.calculateNetPrice(originalPrice), // Store the net price after tax deduction
+              'originalPrice': originalPrice,
               'taxAmount': TaxService.getTaxAmount(),
-              'quantity': _quantity,
               'unit': _unit,
               'category': _category,
               'imageUrl': _imageUrl ?? '',
+              'sellerId': user.uid,
+              'supplierName': userDoc.data()?['name'] ?? 'Unknown Supplier',
               'status': finalStatus,
               'isVerified': finalIsVerified,
-              'contentFlagged': finalContentFlagged,
-              'autoApproved': finalAutoApproved,
+              'isActive': _isActive, // Use supplier's choice instead of approval status
               'updatedAt': FieldValue.serverTimestamp(),
               'lastModified': FieldValue.serverTimestamp(),
-              'favoriteCount': 0,
+              'autoApproved': finalAutoApproved,
+              'contentFlagged': finalContentFlagged,
+              'quantity': _quantity,
               'soldCount': 0,
-              'isActive': _isActive,
-              // Quick Actions fields
+              'favoriteCount': 0,
               'paymentMethods': ['cashOnPickup', 'online'], // Support both payment methods
               'isFreshToday': _isCreatedToday(),
               'rating': 0.0, // Initialize rating
-              'totalRatings': 0,
               'location': 'nearMe', // Default location filter
               'isBestDeal': _isBestDeal(TaxService.calculateNetPrice(originalPrice)),
               'lastRatingUpdate': FieldValue.serverTimestamp(),
-            });
+            };
+
+            // Set auto-approval scheduling for pending products
+            if (finalStatus == 'pending') {
+              final autoApprovalTime = Timestamp.fromDate(
+                DateTime.now().add(const Duration(minutes: 5))
+              );
+              productData['autoApprovalScheduledAt'] = autoApprovalTime;
+            }
+
+            await FirebaseFirestore.instance.collection('products').doc(widget.docId!).update(productData);
 
             setState(() => _isUploading = false);
             ScaffoldMessenger.of(context).showSnackBar(
@@ -482,38 +490,45 @@ class _AddProductPageState extends State<AddProductPage> {
         } else {
           // Creating new product
           try {
-            final docRef = FirebaseFirestore.instance.collection('products').doc();
-            
-            await docRef.set({
-              'sellerId': user.uid,
-              'supplierName': userDoc.data()?['name'] ?? 'Unknown Supplier',
-              'name': name,
-              'description': desc,
-              'originalPrice': originalPrice,
+            final productData = {
+              'name': _nameController.text.trim(),
+              'description': _descController.text.trim(),
               'price': TaxService.calculateNetPrice(originalPrice), // Store the net price after tax deduction
+              'originalPrice': originalPrice,
               'taxAmount': TaxService.getTaxAmount(),
-              'quantity': _quantity,
               'unit': _unit,
               'category': _category,
               'imageUrl': _imageUrl ?? '',
+              'sellerId': user.uid,
+              'supplierName': userDoc.data()?['name'] ?? 'Unknown Supplier',
               'status': finalStatus,
               'isVerified': finalIsVerified,
-              'contentFlagged': finalContentFlagged,
-              'autoApproved': finalAutoApproved,
+              'isActive': _isActive, // Use supplier's choice instead of approval status
               'createdAt': FieldValue.serverTimestamp(),
               'lastModified': FieldValue.serverTimestamp(),
-              'favoriteCount': 0,
+              'autoApproved': finalAutoApproved,
+              'contentFlagged': finalContentFlagged,
+              'quantity': _quantity,
               'soldCount': 0,
-              'isActive': _isActive,
-              // Quick Actions fields
+              'favoriteCount': 0,
               'paymentMethods': ['cashOnPickup', 'online'], // Support both payment methods
               'isFreshToday': _isCreatedToday(),
               'rating': 0.0, // Initialize rating
-              'totalRatings': 0,
               'location': 'nearMe', // Default location filter
               'isBestDeal': _isBestDeal(TaxService.calculateNetPrice(originalPrice)),
               'lastRatingUpdate': FieldValue.serverTimestamp(),
-            });
+            };
+
+            // Set auto-approval scheduling for pending products
+            if (finalStatus == 'pending') {
+              final autoApprovalTime = Timestamp.fromDate(
+                DateTime.now().add(const Duration(minutes: 5))
+              );
+              productData['autoApprovalScheduledAt'] = autoApprovalTime;
+            }
+
+            final docRef = FirebaseFirestore.instance.collection('products').doc();
+            await docRef.set(productData);
 
             // Send admin notification for new product submission
             await NotificationService().sendNewProductSubmissionNotification(
@@ -590,7 +605,7 @@ class _AddProductPageState extends State<AddProductPage> {
         },
         items: const [
           Icon(Icons.home, size: 30, color: Colors.green),
-          Icon(Icons.inventory, size: 30, color: Colors.green),
+          Icon(Icons.build, size: 30, color: Colors.green),
           Icon(Icons.inventory_2, size: 30, color: Colors.green),
           Icon(Icons.shopping_cart, size: 30, color: Colors.green),
           Icon(Icons.person, size: 30, color: Colors.green),
@@ -865,7 +880,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(color: Color(0xFF6CA04A)),
                                   ),
-                                  prefixIcon: Icon(Icons.inventory, color: Color(0xFF6CA04A)),
+                                  prefixIcon: Icon(Icons.build, color: Color(0xFF6CA04A)),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -1124,7 +1139,7 @@ class _AddProductPageState extends State<AddProductPage> {
             ),
           ),
           _drawerItem(icon: Icons.dashboard, label: 'Overview', onTap: () => _goToTab(context, 0)),
-          _drawerItem(icon: Icons.inventory, label: 'Manage Products', onTap: () => _goToTab(context, 1), selected: true),
+          _drawerItem(icon: Icons.build, label: 'Manage Products', onTap: () => _goToTab(context, 1), selected: true),
           _drawerItem(icon: Icons.inventory_2, label: 'Stock Management', onTap: () => _goToTab(context, 2)),
           _drawerItem(icon: Icons.shopping_cart, label: 'Orders Management', onTap: () => _goToTab(context, 3)),
           _drawerItem(icon: Icons.person, label: 'Profile', onTap: () => _goToTab(context, 4)),

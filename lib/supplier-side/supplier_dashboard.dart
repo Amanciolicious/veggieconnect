@@ -445,6 +445,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
           final profileImageUrl = userData?['profileImageUrl'] as String?;
           
           return ModernWaveDrawer(
+            key: ValueKey(_selectedIndex), // Force rebuild when selectedIndex changes
             selectedIndex: _selectedIndex,
             onItemTap: (index) {
               setState(() {
@@ -462,7 +463,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                 title: 'MAIN NAVIGATION',
                 items: [
                   DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
-                  DrawerItem(icon: Icons.inventory, title: 'Manage Products', index: 1),
+                  DrawerItem(icon: Icons.build, title: 'Manage Products', index: 1),
                   DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
                   DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
                 ],
@@ -555,7 +556,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         animationDuration: const Duration(milliseconds: 300),
         items: const [
           Icon(Icons.home, size: 30, color: Colors.green,),
-          Icon(Icons.inventory, size: 30, color: Colors.green,),
+          Icon(Icons.build, size: 30, color: Colors.green,),
           Icon(Icons.inventory_2, size: 30, color: Colors.green,),
           Icon(Icons.shopping_cart, size: 30, color: Colors.green,),
           Icon(Icons.person, size: 30, color: Colors.green,),
@@ -600,7 +601,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                     .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return _buildStatCard(cardRadius, 'Total Products', '$count', Icons.inventory, Colors.blue);
+                  return _buildStatCard(cardRadius, 'Total Products', '$count', Icons.build, Colors.blue);
                 },
               ),
               // Active Orders
@@ -789,7 +790,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
   String _productStatusFilter = 'All';
 
   Widget _buildStatusToggle() {
-    final statuses = ['All', 'approved', 'pending', 'rejected'];
+    final statuses = ['All', 'approved', 'pending', 'rejected', 'active', 'inactive'];
     return Wrap(
       spacing: 8,
       children: statuses.map((s) {
@@ -835,9 +836,18 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         }
         
         var products = snapshot.data!.docs;
-        // Local filter by status
+        // Local filter by status or active/inactive
         if (_productStatusFilter != 'All') {
-          products = products.where((d) => ((d.data() as Map<String, dynamic>)['status'] ?? 'pending') == _productStatusFilter).toList();
+          if (_productStatusFilter == 'active') {
+            // Filter by isActive = true
+            products = products.where((d) => ((d.data() as Map<String, dynamic>)['isActive'] ?? false) == true).toList();
+          } else if (_productStatusFilter == 'inactive') {
+            // Filter by isActive = false
+            products = products.where((d) => ((d.data() as Map<String, dynamic>)['isActive'] ?? false) == false).toList();
+          } else {
+            // Filter by status field (approved, pending, rejected)
+            products = products.where((d) => ((d.data() as Map<String, dynamic>)['status'] ?? 'pending') == _productStatusFilter).toList();
+          }
         }
         return ListView.builder(
           shrinkWrap: true,
@@ -942,52 +952,58 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                           ),
                         ),
                         Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(product['status']).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                (product['status'] ?? 'pending').toString().toUpperCase(),
-                                style: GoogleFonts.quicksand(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getStatusColor(product['status']),
-                                ),
-                              ),
-                            ),
-                            // Add Rejection Reason button for rejected products
-                            if (product['status'] == 'rejected') ...[
-                              SizedBox(height: 8),
-                              ElevatedButton(
-                                onPressed: () => _showRejectionReasonModal(context, product),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red.shade50,
-                                  foregroundColor: Colors.red.shade700,
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  minimumSize: Size(0, 28),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    side: BorderSide(color: Colors.red.shade200),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: Text(
-                                  'Rejection Reason',
-                                  style: GoogleFonts.quicksand(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+  children: [
+    Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: _getStatusColor(product['status']).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        (product['status'] ?? 'pending').toString().toUpperCase(),
+        style: GoogleFonts.quicksand(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: _getStatusColor(product['status']),
+        ),
+      ),
+    ),
+    SizedBox(height: 8),
+    // Delete Button for ALL products
+    IconButton(
+      onPressed: () => _deleteProduct(docId, product['name'] ?? 'Product'),
+      icon: Icon(Icons.delete, color: Colors.red, size: 20),
+      tooltip: 'Delete Product',
+    ),
+    // Add Rejection Reason button for rejected products
+    if (product['status'] == 'rejected') ...[
+      ElevatedButton(
+        onPressed: () => _showRejectionReasonModal(context, product),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.shade50,
+          foregroundColor: Colors.red.shade700,
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          minimumSize: Size(0, 28),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+            side: BorderSide(color: Colors.red.shade200),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          'Rejection Reason',
+          style: GoogleFonts.quicksand(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ],
+  ],
+),
                       ],
                     ),
                   ),
@@ -1829,6 +1845,112 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
     );
   }
 
+  @override
+  void dispose() {
+    _ticker.stop();
+    _ticker.dispose();
+    _nowNotifier.dispose();
+    super.dispose();
+  }
+Future<void> _deleteProduct(String docId, String productName) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.red, size: 24),
+          SizedBox(width: 8),
+          Text(
+            'Delete Product',
+            style: GoogleFonts.quicksand(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.red,
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Are you sure you want to delete this product?',
+            style: GoogleFonts.quicksand(fontSize: 16),
+          ),
+          SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              border: Border.all(color: Colors.red.shade200),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '"$productName"',
+              style: GoogleFonts.quicksand(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.red.shade800,
+              ),
+            ),
+          ),
+          SizedBox(height: 12),
+          Text(
+            '⚠️ This action cannot be undone.',
+            style: GoogleFonts.quicksand(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  
+  if (confirmed == true) {
+    try {
+      await FirebaseFirestore.instance.collection('products').doc(docId).delete();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Product "$productName" deleted successfully'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete product: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+}
 }
 
 class VerificationDialog extends StatefulWidget {
@@ -2042,7 +2164,7 @@ class _VerificationDialogState extends State<VerificationDialog> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

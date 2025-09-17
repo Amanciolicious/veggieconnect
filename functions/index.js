@@ -387,513 +387,6 @@ exports.paymongoWebhook = functions.https.onRequest(async (req, res) => {
   }
 });
 
-// Cloud Function for 5-minute auto-approval of supplier verification requests
-exports.autoApproveVerifications = functions.pubsub.schedule('every 1 hours').onRun(async (context) => {
-  console.log('Running auto-approval check for supplier verifications...');
-
-  try {
-    const now = admin.firestore.Timestamp.now();
-    const fiveMinutesAgo = new Date(now.toDate().getTime() - (5 * 60 * 1000));
-
-    // Query for pending verification requests older than 5 minutes
-    const pendingVerifications = await admin.firestore()
-      .collection('supplier_verifications')
-      .where('status', '==', 'pending')
-      .where('submittedAt', '<=', admin.firestore.Timestamp.fromDate(fiveMinutesAgo))
-      .get();
-
-    console.log(`Found ${pendingVerifications.docs.length} verification requests eligible for auto-approval`);
-
-    const batch = admin.firestore().batch();
-    const autoApprovedVerifications = [];
-
-    for (const doc of pendingVerifications.docs) {
-      const verificationData = doc.data();
-
-      // Auto-approve the verification
-      batch.update(doc.ref, {
-        status: 'approved',
-        reviewedAt: now,
-        reviewedBy: 'system_auto_approval',
-        reviewNotes: 'Automatically approved after 5 minutes without admin review',
-        autoApproved: true,
-        updatedAt: now,
-      });
-
-      // Update supplier's verification status in users collection
-      batch.update(admin.firestore().collection('users').doc(verificationData.supplierId), {
-        isVerified: true,
-        verificationStatus: 'approved',
-        verifiedAt: now,
-        updatedAt: now,
-      });
-
-      autoApprovedVerifications.push({
-        id: doc.id,
-        supplierId: verificationData.supplierId,
-        supplierName: verificationData.supplierName,
-        supplierEmail: verificationData.supplierEmail,
-      });
-    }
-
-    // Commit all updates
-    if (autoApprovedVerifications.length > 0) {
-      await batch.commit();
-      console.log(`Auto-approved ${autoApprovedVerifications.length} verification requests`);
-
-      // Send notifications to auto-approved suppliers
-      for (const verification of autoApprovedVerifications) {
-        try {
-          // Get supplier's FCM token
-          const supplierDoc = await admin.firestore()
-            .collection('users')
-            .doc(verification.supplierId)
-            .get();
-
-          if (supplierDoc.exists) {
-            const supplierData = supplierDoc.data();
-            const fcmToken = supplierData.fcmToken;
-
-            if (fcmToken) {
-              const message = {
-                token: fcmToken,
-                notification: {
-                  title: 'Verification Approved!',
-                  body: 'Your supplier verification has been automatically approved. You can now manage products and access all supplier features.',
-                },
-                data: {
-                  type: 'verification_auto_approved',
-                  verificationId: verification.id,
-                  screen: 'supplier_profile',
-                },
-                android: {
-                  notification: {
-                    channelId: 'verification',
-                    priority: 'high',
-                    sound: 'default',
-                  },
-                },
-                apns: {
-                  payload: {
-                    aps: {
-                      alert: {
-                        title: 'Verification Approved!',
-                        body: 'Your supplier verification has been automatically approved. You can now manage products and access all supplier features.',
-                      },
-                      sound: 'default',
-                      badge: 1,
-                    },
-                  },
-                },
-              };
-
-              await admin.messaging().send(message);
-              console.log(`Auto-approval notification sent to supplier: ${verification.supplierEmail}`);
-            }
-
-            // Also create in-app notification
-            await admin.firestore()
-              .collection('users')
-              .doc(verification.supplierId)
-              .collection('notifications')
-              .add({
-                title: 'Verification Approved!',
-                body: 'Your supplier verification has been automatically approved. You can now manage products and access all supplier features.',
-                type: 'verification_auto_approved',
-                data: {
-                  verificationId: verification.id,
-                  screen: 'supplier_profile',
-                },
-                isRead: false,
-                createdAt: now,
-              });
-          }
-        } catch (notificationError) {
-          console.error(`Error sending auto-approval notification to ${verification.supplierEmail}:`, notificationError);
-          // Continue with other notifications even if one fails
-        }
-      }
-
-      // Send notification to admins about auto-approvals
-      try {
-        const adminUsers = await admin.firestore()
-          .collection('users')
-          .where('role', '==', 'admin')
-          .get();
-
-        const adminTokens = [];
-        const adminNotifications = [];
-
-        adminUsers.docs.forEach((doc) => {
-          const adminData = doc.data();
-          if (adminData.fcmToken) {
-            adminTokens.push(adminData.fcmToken);
-          }
-
-          // Create in-app notification for each admin
-          adminNotifications.push(
-            admin.firestore()
-              .collection('users')
-              .doc(doc.id)
-              .collection('notifications')
-              .add({
-                title: 'Auto-Approval Summary',
-                body: `${autoApprovedVerifications.length} supplier verification${autoApprovedVerifications.length > 1 ? 's' : ''} automatically approved after 5 minutes.`,
-                type: 'admin_auto_approval_summary',
-                data: {
-                  count: autoApprovedVerifications.length,
-                  screen: 'verification_requests',
-                },
-                isRead: false,
-                createdAt: now,
-              }),
-          );
-        });
-
-        // Send FCM to all admins
-        if (adminTokens.length > 0) {
-          const adminMessage = {
-            tokens: adminTokens,
-            notification: {
-              title: 'Auto-Approval Summary',
-              body: `${autoApprovedVerifications.length} supplier verification${autoApprovedVerifications.length > 1 ? 's' : ''} automatically approved after 5 minutes.`,
-            },
-            data: {
-              type: 'admin_auto_approval_summary',
-              count: autoApprovedVerifications.length.toString(),
-              screen: 'verification_requests',
-            },
-            android: {
-              notification: {
-                channelId: 'admin',
-                priority: 'default',
-                sound: 'default',
-              },
-            },
-          };
-
-          await admin.messaging().sendMulticast(adminMessage);
-          console.log(`Auto-approval summary sent to ${adminTokens.length} admins`);
-        }
-
-        // Create in-app notifications for admins
-        await Promise.all(adminNotifications);
-      } catch (adminNotificationError) {
-        console.error('Error sending admin auto-approval notifications:', adminNotificationError);
-      }
-    } else {
-      console.log('No verification requests found for auto-approval');
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error in auto-approval function:', error);
-    throw error;
-  }
-});
-
-// Trigger to schedule auto-approval when verification is submitted
-exports.scheduleAutoApproval = functions.firestore
-  .document('supplier_verifications/{verificationId}')
-  .onCreate(async (snap, context) => {
-    try {
-      const verificationData = snap.data();
-      const verificationId = context.params.verificationId;
-
-      // Calculate auto-approval time (5 minutes from submission)
-      const submittedAt = verificationData.submittedAt;
-      const autoApprovalTime = new Date(submittedAt.toDate().getTime() + (5 * 60 * 1000));
-
-      // Update the verification document with scheduled auto-approval time
-      await snap.ref.update({
-        autoApprovalScheduledAt: admin.firestore.Timestamp.fromDate(autoApprovalTime),
-      });
-
-      console.log(`Auto-approval scheduled for verification ${verificationId} at ${autoApprovalTime.toISOString()}`);
-
-      return null;
-    } catch (error) {
-      console.error('Error scheduling auto-approval:', error);
-      throw error;
-    }
-  });
-
-// Cancel auto-approval when verification is manually reviewed
-exports.cancelAutoApproval = functions.firestore
-  .document('supplier_verifications/{verificationId}')
-  .onUpdate(async (change, context) => {
-    try {
-      const before = change.before.data();
-      const after = change.after.data();
-      const verificationId = context.params.verificationId;
-
-      // Check if status changed from pending to approved/rejected (manual review)
-      if (before.status === 'pending' &&
-          (after.status === 'approved' || after.status === 'rejected') &&
-          after.reviewedBy !== 'system_auto_approval') {
-        console.log(`Manual review completed for verification ${verificationId}, auto-approval cancelled`);
-
-        // Update to remove auto-approval scheduling
-        await change.after.ref.update({
-          autoApprovalScheduledAt: admin.firestore.FieldValue.delete(),
-        });
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error cancelling auto-approval:', error);
-      throw error;
-    }
-  });
-
-// Cloud Function for 5-minute auto-approval of product submissions
-exports.autoApproveProducts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
-  console.log('Running auto-approval check for product submissions...');
-
-  try {
-    const now = admin.firestore.Timestamp.now();
-    const fiveMinutesAgo = new Date(now.toDate().getTime() - (5 * 60 * 1000));
-
-    // Query for pending products older than 5 minutes
-    const pendingProducts = await admin.firestore()
-      .collection('products')
-      .where('status', '==', 'pending')
-      .where('createdAt', '<=', admin.firestore.Timestamp.fromDate(fiveMinutesAgo))
-      .get();
-
-    console.log(`Found ${pendingProducts.docs.length} products eligible for auto-approval`);
-
-    const batch = admin.firestore().batch();
-    const autoApprovedProducts = [];
-
-    for (const doc of pendingProducts.docs) {
-      const productData = doc.data();
-
-      // Auto-approve the product
-      batch.update(doc.ref, {
-        status: 'approved',
-        isVerified: true,
-        reviewedAt: now,
-        reviewedBy: 'system_auto_approval',
-        rejectionReason: '',
-        autoApproved: true,
-        updatedAt: now,
-      });
-
-      autoApprovedProducts.push({
-        id: doc.id,
-        name: productData.name,
-        supplierId: productData.sellerId,
-        supplierName: productData.supplierName,
-      });
-    }
-
-    // Commit all updates
-    if (autoApprovedProducts.length > 0) {
-      await batch.commit();
-      console.log(`Auto-approved ${autoApprovedProducts.length} products`);
-
-      // Send notifications to suppliers about auto-approved products
-      for (const product of autoApprovedProducts) {
-        try {
-          // Get supplier's FCM token
-          const supplierDoc = await admin.firestore()
-            .collection('users')
-            .doc(product.supplierId)
-            .get();
-
-          if (supplierDoc.exists) {
-            const supplierData = supplierDoc.data();
-            const fcmToken = supplierData.fcmToken;
-
-            if (fcmToken) {
-              const message = {
-                token: fcmToken,
-                notification: {
-                  title: 'Product Approved!',
-                  body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
-                },
-                data: {
-                  type: 'product_auto_approved',
-                  productId: product.id,
-                  screen: 'supplier_products',
-                },
-                android: {
-                  notification: {
-                    channelId: 'products',
-                    priority: 'high',
-                    sound: 'default',
-                  },
-                },
-                apns: {
-                  payload: {
-                    aps: {
-                      alert: {
-                        title: 'Product Approved!',
-                        body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
-                      },
-                      sound: 'default',
-                      badge: 1,
-                    },
-                  },
-                },
-              };
-
-              await admin.messaging().send(message);
-              console.log(`Auto-approval notification sent for product: ${product.name}`);
-            }
-
-            // Also create in-app notification
-            await admin.firestore()
-              .collection('users')
-              .doc(product.supplierId)
-              .collection('notifications')
-              .add({
-                title: 'Product Approved!',
-                body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
-                type: 'product_auto_approved',
-                data: {
-                  productId: product.id,
-                  screen: 'supplier_products',
-                },
-                isRead: false,
-                createdAt: now,
-              });
-          }
-        } catch (notificationError) {
-          console.error(`Error sending auto-approval notification for product ${product.name}:`, notificationError);
-        }
-      }
-
-      // Send summary notification to admins
-      try {
-        const adminUsers = await admin.firestore()
-          .collection('users')
-          .where('role', '==', 'admin')
-          .get();
-
-        const adminTokens = [];
-        const adminNotifications = [];
-
-        adminUsers.docs.forEach((doc) => {
-          const adminData = doc.data();
-          if (adminData.fcmToken) {
-            adminTokens.push(adminData.fcmToken);
-          }
-
-          adminNotifications.push(
-            admin.firestore()
-              .collection('users')
-              .doc(doc.id)
-              .collection('notifications')
-              .add({
-                title: 'Product Auto-Approval Summary',
-                body: `${autoApprovedProducts.length} product${autoApprovedProducts.length > 1 ? 's' : ''} automatically approved after 5 minutes.`,
-                type: 'admin_product_auto_approval',
-                data: {
-                  count: autoApprovedProducts.length,
-                  screen: 'admin_products',
-                },
-                isRead: false,
-                createdAt: now,
-              }),
-          );
-        });
-
-        if (adminTokens.length > 0) {
-          const adminMessage = {
-            tokens: adminTokens,
-            notification: {
-              title: 'Product Auto-Approval Summary',
-              body: `${autoApprovedProducts.length} product${autoApprovedProducts.length > 1 ? 's' : ''} automatically approved after 5 minutes.`,
-            },
-            data: {
-              type: 'admin_product_auto_approval',
-              count: autoApprovedProducts.length.toString(),
-              screen: 'admin_products',
-            },
-            android: {
-              notification: {
-                channelId: 'admin',
-                priority: 'default',
-                sound: 'default',
-              },
-            },
-          };
-
-          await admin.messaging().sendMulticast(adminMessage);
-          console.log(`Product auto-approval summary sent to ${adminTokens.length} admins`);
-        }
-
-        await Promise.all(adminNotifications);
-      } catch (adminNotificationError) {
-        console.error('Error sending admin product auto-approval notifications:', adminNotificationError);
-      }
-    } else {
-      console.log('No products found for auto-approval');
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error in product auto-approval function:', error);
-    throw error;
-  }
-});
-
-// Trigger to schedule product auto-approval when product is submitted
-exports.scheduleProductAutoApproval = functions.firestore
-  .document('products/{productId}')
-  .onCreate(async (snap, context) => {
-    try {
-      const productData = snap.data();
-      const productId = context.params.productId;
-
-      // Only schedule auto-approval for pending products
-      if (productData.status === 'pending') {
-        const createdAt = productData.createdAt;
-        const autoApprovalTime = new Date(createdAt.toDate().getTime() + (5 * 60 * 1000));
-
-        await snap.ref.update({
-          autoApprovalScheduledAt: admin.firestore.Timestamp.fromDate(autoApprovalTime),
-        });
-
-        console.log(`Product auto-approval scheduled for ${productId} at ${autoApprovalTime.toISOString()}`);
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error scheduling product auto-approval:', error);
-      throw error;
-    }
-  });
-
-// Cancel product auto-approval when manually reviewed
-exports.cancelProductAutoApproval = functions.firestore
-  .document('products/{productId}')
-  .onUpdate(async (change, context) => {
-    try {
-      const before = change.before.data();
-      const after = change.after.data();
-      const productId = context.params.productId;
-
-      // Check if status changed from pending to approved/rejected (manual review)
-      if (before.status === 'pending' &&
-          (after.status === 'approved' || after.status === 'rejected') &&
-          after.reviewedBy !== 'system_auto_approval') {
-        console.log(`Manual review completed for product ${productId}, auto-approval cancelled`);
-
-        await change.after.ref.update({
-          autoApprovalScheduledAt: admin.firestore.FieldValue.delete(),
-        });
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error cancelling product auto-approval:', error);
-      throw error;
-    }
-  });
-
 // Cloud Function for real-time supplier ban management
 exports.processSupplierBan = functions.firestore
   .document('supplier_reports/{reportId}')
@@ -1261,167 +754,230 @@ exports.unbanSupplier = functions.https.onCall(async (data, context) => {
   }
 });
 
-// Cloud Function: approve any pending products whose autoApprovalScheduledAt has arrived
-exports.autoApproveScheduledProducts = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
-  console.log('Running scheduled auto-approval for products with autoApprovalScheduledAt <= now...');
+// Cloud Function for reliable 5-minute auto-approval of products (runs every 30 seconds)
+exports.reliableAutoApproveProducts = functions.pubsub.schedule('every 30 seconds').onRun(async (context) => {
+  console.log('Running reliable auto-approval check for products...');
 
   try {
     const now = admin.firestore.Timestamp.now();
+    const fiveMinutesAgo = new Date(now.toDate().getTime() - (5 * 60 * 1000));
 
-    const dueProducts = await admin.firestore()
+    // Query for pending products that should be auto-approved
+    // Check both autoApprovalScheduledAt field and createdAt fallback
+    const pendingProducts = await admin.firestore()
       .collection('products')
       .where('status', '==', 'pending')
-      .where('autoApprovalScheduledAt', '<=', now)
       .get();
 
-    if (dueProducts.empty) {
-      console.log('No products due for scheduled auto-approval');
-      return null;
-    }
+    console.log(`Found ${pendingProducts.docs.length} pending products to check`);
 
     const batch = admin.firestore().batch();
-    const approved = [];
+    const autoApprovedProducts = [];
 
-    dueProducts.docs.forEach((doc) => {
-      const data = doc.data();
-      batch.update(doc.ref, {
-        status: 'approved',
-        isVerified: true,
-        reviewedAt: now,
-        reviewedBy: 'system_auto_approval',
-        rejectionReason: '',
-        autoApproved: true,
-        updatedAt: now,
-        autoApprovalScheduledAt: admin.firestore.FieldValue.delete(),
-      });
-      approved.push({ id: doc.id, name: data.name, supplierId: data.sellerId });
-    });
+    for (const doc of pendingProducts.docs) {
+      const productData = doc.data();
+      let shouldAutoApprove = false;
 
-    await batch.commit();
-    console.log(`Scheduled auto-approved ${approved.length} products`);
-
-    for (const product of approved) {
-      try {
-        const supplierDoc = await admin.firestore().collection('users').doc(product.supplierId).get();
-        if (supplierDoc.exists && supplierDoc.data().fcmToken) {
-          await admin.messaging().send({
-            token: supplierDoc.data().fcmToken,
-            notification: {
-              title: 'Product Approved!',
-              body: `Your product "${product.name || ''}" has been approved.`,
-            },
-            data: { type: 'product_auto_approved', productId: product.id, screen: 'supplier_products' },
-            android: { notification: { channelId: 'products', priority: 'high', sound: 'default' } },
-          });
+      // Check if product should be auto-approved
+      if (productData.autoApprovalScheduledAt) {
+        // Use scheduled time if available
+        if (productData.autoApprovalScheduledAt.toDate() <= now.toDate()) {
+          shouldAutoApprove = true;
         }
-      } catch (e) {
-        console.error(`Notify failed for product ${product.id}:`, e);
+      } else if (productData.createdAt) {
+        // Fallback: check if created more than 5 minutes ago
+        if (productData.createdAt.toDate() <= fiveMinutesAgo) {
+          shouldAutoApprove = true;
+        }
       }
-    }
 
-    return null;
-  } catch (error) {
-    console.error('Error in autoApproveScheduledProducts:', error);
-    throw error;
-  }
-});
-
-// Trigger: when a product's content is cleared (contentFlagged: true -> false) and still pending, schedule short auto-approval (e.g., 2 minutes)
-exports.scheduleAutoApprovalOnContentCleared = functions.firestore
-  .document('products/{productId}')
-  .onUpdate(async (change, context) => {
-    try {
-      const before = change.before.data();
-      const after = change.after.data();
-
-      if (!before || !after) return null;
-
-      const wasFlagged = !!before.contentFlagged;
-      const isFlagged = !!after.contentFlagged;
-      const isPending = after.status === 'pending' || !after.status;
-
-      if (wasFlagged && !isFlagged && isPending) {
-        const now = new Date();
-        const inTwoMinutes = new Date(now.getTime() + 2 * 60 * 1000);
-        await change.after.ref.update({
-          autoApprovalScheduledAt: admin.firestore.Timestamp.fromDate(inTwoMinutes),
-          updatedAt: admin.firestore.Timestamp.now(),
+      if (shouldAutoApprove) {
+        // Auto-approve the product
+        batch.update(doc.ref, {
+          status: 'approved',
+          isVerified: true,
+          isActive: true,
+          reviewedAt: now,
+          reviewedBy: 'system_auto_approval',
+          rejectionReason: '',
+          autoApproved: true,
+          updatedAt: now,
+          // Remove scheduling field
+          autoApprovalScheduledAt: admin.firestore.FieldValue.delete(),
         });
-        console.log(`Scheduled auto-approval in 2 minutes for product ${context.params.productId}`);
+
+        autoApprovedProducts.push({
+          id: doc.id,
+          name: productData.name || 'Unknown Product',
+          supplierId: productData.sellerId || productData.supplierId,
+          supplierName: productData.supplierName || 'Unknown Supplier',
+        });
       }
-
-      return null;
-    } catch (error) {
-      console.error('Error scheduling auto-approval on content cleared:', error);
-      throw error;
-    }
-  });
-
-// Cron: approve pending verifications whose autoApprovalScheduledAt has arrived
-exports.autoApproveScheduledVerifications = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
-  console.log('Running scheduled auto-approval for supplier verifications...');
-
-  try {
-    const now = admin.firestore.Timestamp.now();
-    const due = await admin.firestore()
-      .collection('supplier_verifications')
-      .where('status', '==', 'pending')
-      .where('autoApprovalScheduledAt', '<=', now)
-      .get();
-
-    if (due.empty) {
-      console.log('No verifications due for auto-approval');
-      return null;
     }
 
-    const batch = admin.firestore().batch();
-    const toNotify = [];
+    // Commit all updates
+    if (autoApprovedProducts.length > 0) {
+      await batch.commit();
+      console.log(`Reliably auto-approved ${autoApprovedProducts.length} products`);
 
-    due.docs.forEach((doc) => {
-      const data = doc.data();
-      batch.update(doc.ref, {
-        status: 'approved',
-        reviewedAt: now,
-        reviewedBy: 'system_auto_approval',
-        reviewNotes: 'Automatically approved after timer elapsed',
-        autoApproved: true,
-        updatedAt: now,
-        autoApprovalScheduledAt: admin.firestore.FieldValue.delete(),
-      });
-      batch.update(admin.firestore().collection('users').doc(data.supplierId), {
-        isVerified: true,
-        verificationStatus: 'approved',
-        verifiedAt: now,
-        updatedAt: now,
-      });
-      toNotify.push({ supplierId: data.supplierId, supplierEmail: data.supplierEmail });
-    });
+      // Send FCM and in-app notifications to suppliers about auto-approved products
+      for (const product of autoApprovedProducts) {
+        try {
+          // Get supplier's FCM token and user data
+          const supplierDoc = await admin.firestore()
+            .collection('users')
+            .doc(product.supplierId)
+            .get();
 
-    await batch.commit();
-    console.log(`Auto-approved ${toNotify.length} verifications by schedule`);
+          if (supplierDoc.exists) {
+            const supplierData = supplierDoc.data();
+            const fcmToken = supplierData.fcmToken;
 
-    for (const item of toNotify) {
-      try {
-        const userDoc = await admin.firestore().collection('users').doc(item.supplierId).get();
-        if (userDoc.exists && userDoc.data().fcmToken) {
-          await admin.messaging().send({
-            token: userDoc.data().fcmToken,
-            notification: {
-              title: 'Verification Approved!',
-              body: 'Your supplier verification was approved.',
-            },
-            data: { type: 'verification_auto_approved', screen: 'supplier_profile' },
-            android: { notification: { channelId: 'verification', priority: 'high', sound: 'default' } },
-          });
+            // Send FCM push notification
+            if (fcmToken) {
+              const message = {
+                token: fcmToken,
+                notification: {
+                  title: 'Product Approved!',
+                  body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
+                },
+                data: {
+                  type: 'product_auto_approved',
+                  productId: product.id,
+                  productName: product.name,
+                  status: 'approved',
+                  supplierId: product.supplierId,
+                  screen: 'supplier_products',
+                  recipientId: product.supplierId,
+                },
+                android: {
+                  notification: {
+                    channelId: 'products',
+                    priority: 'high',
+                    sound: 'default',
+                  },
+                },
+                apns: {
+                  payload: {
+                    aps: {
+                      alert: {
+                        title: 'Product Approved!',
+                        body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
+                      },
+                      sound: 'default',
+                      badge: 1,
+                    },
+                  },
+                },
+              };
+
+              await admin.messaging().send(message);
+              console.log(`FCM notification sent for auto-approved product: ${product.name}`);
+            }
+
+            // Create in-app notification in Firestore for notification center
+            await admin.firestore()
+              .collection('users')
+              .doc(product.supplierId)
+              .collection('notifications')
+              .add({
+                title: 'Product Approved!',
+                body: `Your product "${product.name}" has been automatically approved and is now live for customers.`,
+                type: 'product_auto_approved',
+                data: {
+                  productId: product.id,
+                  productName: product.name,
+                  status: 'approved',
+                  supplierId: product.supplierId,
+                  screen: 'supplier_products',
+                  recipientId: product.supplierId,
+                },
+                isRead: false,
+                showBadge: true,
+                priority: 'normal',
+                timestamp: now,
+                createdAt: now,
+              });
+
+            console.log(`In-app notification created for supplier: ${product.supplierId}`);
+          }
+        } catch (notificationError) {
+          console.error(`Error sending notifications for product ${product.name}:`, notificationError);
         }
-      } catch (e) {
-        console.error('Notify verification approval failed:', e);
       }
+
+      // Send summary notification to admins
+      try {
+        const adminUsers = await admin.firestore()
+          .collection('users')
+          .where('role', '==', 'admin')
+          .get();
+
+        const adminTokens = [];
+        const adminNotifications = [];
+
+        adminUsers.docs.forEach((doc) => {
+          const adminData = doc.data();
+          if (adminData.fcmToken) {
+            adminTokens.push(adminData.fcmToken);
+          }
+
+          adminNotifications.push(
+            admin.firestore()
+              .collection('users')
+              .doc(doc.id)
+              .collection('notifications')
+              .add({
+                title: 'Product Auto-Approval Summary',
+                body: `${autoApprovedProducts.length} product${autoApprovedProducts.length > 1 ? 's' : ''} automatically approved after 5 minutes.`,
+                type: 'admin_product_auto_approval',
+                data: {
+                  count: autoApprovedProducts.length,
+                  screen: 'admin_products',
+                },
+                isRead: false,
+                timestamp: now,
+                createdAt: now,
+              }),
+          );
+        });
+
+        if (adminTokens.length > 0) {
+          const adminMessage = {
+            tokens: adminTokens,
+            notification: {
+              title: 'Product Auto-Approval Summary',
+              body: `${autoApprovedProducts.length} product${autoApprovedProducts.length > 1 ? 's' : ''} automatically approved after 5 minutes.`,
+            },
+            data: {
+              type: 'admin_product_auto_approval',
+              count: autoApprovedProducts.length.toString(),
+              screen: 'admin_products',
+            },
+            android: {
+              notification: {
+                channelId: 'admin',
+                priority: 'default',
+                sound: 'default',
+              },
+            },
+          };
+
+          await admin.messaging().sendMulticast(adminMessage);
+          console.log(`Product auto-approval summary sent to ${adminTokens.length} admins`);
+        }
+
+        await Promise.all(adminNotifications);
+      } catch (adminNotificationError) {
+        console.error('Error sending admin product auto-approval notifications:', adminNotificationError);
+      }
+    } else {
+      console.log('No products found for reliable auto-approval');
     }
 
     return null;
   } catch (error) {
-    console.error('Error in autoApproveScheduledVerifications:', error);
+    console.error('Error in reliable product auto-approval function:', error);
     throw error;
   }
 });

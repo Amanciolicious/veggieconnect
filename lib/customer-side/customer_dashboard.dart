@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously, avoid_print, library_private_types_in_public_api
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,6 +37,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthStateService _authService = AuthStateService();
+  int _currentCarouselIndex = 0; // Added for Smart Shopping Carousel
+  
+  // Add PageController and Timer for auto-scroll
+  late PageController _carouselPageController;
+  Timer? _carouselTimer;
+  final int _totalCarouselPages = 5;
 
   AuthUser? get user => _authService.currentUser;
 
@@ -239,17 +246,46 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _carouselPageController = PageController();
+    _startCarouselTimer();
+  }
+
+  @override
+  void dispose() {
+    _carouselPageController.dispose();
+    _carouselTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCarouselTimer() {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_currentCarouselIndex < _totalCarouselPages - 1) {
+        _carouselPageController.nextPage(
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _carouselPageController.animateToPage(
+          0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Debug authentication state
     print('🔧 Dashboard: Building dashboard - user: ${user?.uid}');
     print('🔧 Dashboard: AuthService authenticated: ${_authService.isAuthenticated}');
-    
     final screenWidth = MediaQuery.of(context).size.width;
-    
     // Responsive sizing for Infinix Smart 8 (720x1612)
     final isSmallScreen = screenWidth <= 720;
     final responsiveFontSize = isSmallScreen ? screenWidth * 0.045 : 18.0;
-    
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
@@ -365,7 +401,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         final avatarUrl = (userData?['avatarUrl'] ?? userData?['profileImageUrl']) as String?;
         final displayName = userData?['name'] ?? user?.displayName ?? 'Vegie Lover';
         final email = user?.email ?? 'vegieuser@email.com';
-        
         return ModernWaveDrawer(
           selectedIndex: _selectedIndex,
           onItemTap: (index) {
@@ -451,7 +486,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final isSmallScreen = screenWidth <= 720;
     final responsivePadding = isSmallScreen ? screenWidth * 0.03 : 20.0;
     final responsiveMargin = isSmallScreen ? screenWidth * 0.025 : 20.0;
-    
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -514,7 +549,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             ),
           ),
         ),
-        
+
         // Quick Actions Hub Section
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
@@ -527,7 +562,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ),
         ),
         SizedBox(height: isSmallScreen ? 12 : 15),
-        
+
         // Quick Actions Grid
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
@@ -582,9 +617,56 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             ],
           ),
         ),
-        
+
         SizedBox(height: isSmallScreen ? 25 : 30),
-        
+
+        // Smart Shopping Carousel
+        Container(
+          margin: EdgeInsets.all(responsiveMargin),
+          height: isSmallScreen ? 120 : 140,
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _carouselPageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentCarouselIndex = index;
+                    });
+                  },
+                  children: [
+                    _buildSmartCard('Personalized for You', '40% off your favorites', Icons.person_outline, const Color(0xFF4CAF50), isSmallScreen, screenWidth),
+                    _buildSmartCard('Fresh Today', 'Just harvested produce', Icons.eco, const Color(0xFF2196F3), isSmallScreen, screenWidth),
+                    _buildSmartCard('Trending Now', "Everyone's buying", Icons.trending_up, const Color(0xFF9C27B0), isSmallScreen, screenWidth),
+                    _buildSmartCard('Flash Sale', 'Limited time deals', Icons.flash_on, const Color(0xFFFF5722), isSmallScreen, screenWidth),
+                    _buildSmartCard('Community Choice', 'Most loved items', Icons.favorite, const Color(0xFFE91E63), isSmallScreen, screenWidth),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _currentCarouselIndex == index ? 20 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentCarouselIndex == index
+                          ? const Color(0xFF4CAF50)
+                          : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: isSmallScreen ? 25 : 30),
+
         // Popular Products Section
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
@@ -597,7 +679,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ),
         ),
         SizedBox(height: isSmallScreen ? 12 : 15),
-        
+
         // Popular Products Stream
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
@@ -617,7 +699,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   ),
                 );
               }
-              
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return Center(
                   child: Column(
@@ -650,7 +731,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   ),
                 );
               }
-              
               // Filter products with favorites and sort by popularity
               final sortedDocs = snapshot.data!.docs
                   .where((doc) {
@@ -658,7 +738,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     // Check if product is active (default to true if field doesn't exist)
                     final isActive = data['isActive'] ?? true;
                     if (!isActive) return false;
-                    
                     // Check favorite count (default to 0 if field doesn't exist)
                     final favoriteCount = (data['favoriteCount'] ?? 0) as num;
                     return favoriteCount > 0;
@@ -669,7 +748,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   final bp = ((b.data() as Map<String, dynamic>)['favoriteCount'] ?? 0) as num;
                   return bp.compareTo(ap);
                 });
-
               // If no popular products found, show all approved products instead
               if (sortedDocs.isEmpty) {
                 final allProducts = snapshot.data!.docs
@@ -679,7 +757,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       return isActive;
                     })
                     .toList();
-                
                 if (allProducts.isEmpty) {
                   return Center(
                     child: Column(
@@ -712,11 +789,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     ),
                   );
                 }
-                
                 // Show recent products if no popular ones exist
                 sortedDocs.addAll(allProducts.take(6));
               }
-
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -732,8 +807,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   final data = doc.data() as Map<String, dynamic>;
                   final productId = doc.id;
                   final favoriteCount = (data['favoriteCount'] ?? 0) as num;
-                  
-                  
                   return GestureDetector(
                     onTap: () => _navigateToProductDetails(doc.id, data),
                     child: Container(
@@ -865,7 +938,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               final userData = userSnap.data!.data() as Map<String, dynamic>?;
                               final favorites = List<String>.from(userData?['favorites'] ?? []);
                               final isFavorite = favorites.contains(productId);
-                              
                               return GestureDetector(
                                 onTap: () => _toggleFavorite(productId),
                                 child: Container(
@@ -894,16 +966,183 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         ),
                       ],
                     ),
-                  ),
+                  )
                 );
             });
             },
           ),
         ),
-        
         const SizedBox(height: 20),
       ],
     );
+  }
+
+  // New method for Smart Shopping Carousel
+  Widget _buildSmartCard(String title, String subtitle, IconData icon, Color color, bool isSmallScreen, double screenWidth) {
+    return GestureDetector(
+      onTap: () => _handleSmartCardTap(title),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [color, color.withOpacity(0.7)]),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -10,
+              top: -10,
+              child: Icon(icon, size: 60, color: Colors.white.withOpacity(0.1)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.quicksand(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        StreamBuilder<String>(
+                          stream: _getSmartSubtitle(title),
+                          builder: (context, snapshot) {
+                            return Text(
+                              snapshot.data ?? subtitle,
+                              style: GoogleFonts.quicksand(
+                                fontSize: 13,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.8), size: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Updated method for Smart Shopping Carousel
+  void _handleSmartCardTap(String title) {
+    if (title.contains('Fresh')) {
+      _showQuickActionModal('Fresh Today', Icons.schedule, const Color(0xFF2196F3), 'freshToday');
+    } else if (title.contains('Trending')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerProductsPage()));
+    } else if (title.contains('Flash')) {
+      _showQuickActionModal('Best Deals', Icons.local_offer, const Color(0xFFFF5722), 'bestDeals');
+    } else if (title.contains('Community')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerProductsPage()));
+    } else {
+      _showQuickActionModal('Best Deals', Icons.local_offer, const Color(0xFF4CAF50), 'bestDeals');
+    }
+  }
+
+  // Updated method for Smart Shopping Carousel
+  Stream<String> _getSmartSubtitle(String title) {
+    if (title.contains('Fresh')) {
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .where('isFreshToday', isEqualTo: true)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final data = snapshot.docs.first.data();
+          final name = data['name'] ?? 'Fresh produce';
+          final createdAt = data['createdAt'] as Timestamp?;
+          if (createdAt != null) {
+            final hoursAgo = DateTime.now().difference(createdAt.toDate()).inHours;
+            return 'Fresh $name - ${hoursAgo}h ago';
+          }
+          return 'Fresh $name available now';
+        }
+        return 'Fresh produce available daily';
+      });
+    } else if (title.contains('Trending')) {
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .orderBy('soldCount', descending: true)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final data = snapshot.docs.first.data();
+          final name = data['name'] ?? 'Popular item';
+          final soldCount = (data['soldCount'] ?? 0) as num;
+          return "$name - $soldCount sold";
+        }
+        return "Check trending products";
+      });
+    } else if (title.contains('Flash')) {
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .where('price', isLessThanOrEqualTo: 50)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final data = snapshot.docs.first.data();
+          final name = data['name'] ?? 'Great deal';
+          final price = (data['price'] ?? 0) as num;
+          return 'Limited: ₱${price.toStringAsFixed(2)} $name';
+        }
+        return 'Amazing deals available';
+      });
+    } else if (title.contains('Community')) {
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .orderBy('favoriteCount', descending: true)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final data = snapshot.docs.first.data();
+          final name = data['name'] ?? 'Popular choice';
+          final favoriteCount = (data['favoriteCount'] ?? 0) as num;
+          return 'Most loved: $name ($favoriteCount♥)';
+        }
+        return 'Discover favorites';
+      });
+    }
+    return Stream.value('Personalized deals for you');
   }
 
   Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap, bool isSmallScreen, Widget badge) {
@@ -911,7 +1150,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final responsivePadding = isSmallScreen ? screenWidth * 0.03 : 16.0;
     final responsiveIconSize = isSmallScreen ? screenWidth * 0.06 : 28.0;
     final responsiveFontSize = isSmallScreen ? screenWidth * 0.032 : 14.0;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1098,20 +1337,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       );
       return;
     }
-
     try {
       final userDoc = FirebaseFirestore.instance.collection('users').doc(user!.uid);
       final userData = await userDoc.get();
-      
       if (!userData.exists) {
         await userDoc.set({
           'favorites': [],
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
-      
       final favorites = List<String>.from((userData.data())?['favorites'] ?? []);
-      
       if (favorites.contains(productId)) {
         // Remove from favorites
         favorites.remove(productId);
@@ -1120,7 +1355,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           'updatedAt': FieldValue.serverTimestamp(),
         });
         await _updateProductFavoriteCount(productId, -1);
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -1137,7 +1371,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           'updatedAt': FieldValue.serverTimestamp(),
         });
         await _updateProductFavoriteCount(productId, 1);
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -1283,7 +1516,6 @@ class _QuickActionModalState extends State<QuickActionModal> {
                       child: CircularProgressIndicator(),
                     );
                   }
-
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Column(
@@ -1306,9 +1538,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
                       ),
                     );
                   }
-
                   final filteredDocs = _filterProducts(snapshot.data!.docs);
-
                   return Column(
                     children: [
                       // Count header
@@ -1387,29 +1617,22 @@ class _QuickActionModalState extends State<QuickActionModal> {
     return docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
       final isActive = data['isActive'] ?? true;
-      
       if (!isActive) return false;
-
       switch (widget.filterType) {
         case 'cashOnPickup':
           final paymentMethods = List<String>.from(data['paymentMethods'] ?? []);
           return paymentMethods.contains('cashOnPickup');
-        
         case 'freshToday':
           return data['isFreshToday'] ?? false;
-        
         case 'topRated':
           final rating = (data['rating'] ?? 0.0) as num;
           return rating >= 4.5;
-        
         case 'nearMe':
           // For now, return all products. Location filtering would need user's location
           return true;
-        
         case 'bestDeals':
           final price = (data['price'] ?? 0) as num;
           return price <= 50;
-        
         default:
           return true;
       }
@@ -1428,10 +1651,10 @@ class _QuickActionModalState extends State<QuickActionModal> {
             // Product image
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty
+              child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
                   ? Image.network(
-                      _versionedImageUrl(data['imageUrls'][0], data['updatedAt']),
-                      key: ValueKey(_versionedImageUrl(data['imageUrls'][0], data['updatedAt'])),
+                      _versionedImageUrl(data['imageUrl'], data['updatedAt']),
+                      key: ValueKey(_versionedImageUrl(data['imageUrl'], data['updatedAt'])),
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
@@ -1522,7 +1745,6 @@ class _QuickActionModalState extends State<QuickActionModal> {
   Widget _buildProductBadge(Map<String, dynamic> data) {
     String badgeText = '';
     Color badgeColor = widget.color;
-
     switch (widget.filterType) {
       case 'cashOnPickup':
         badgeText = 'Cash on Pickup';
@@ -1549,7 +1771,6 @@ class _QuickActionModalState extends State<QuickActionModal> {
         badgeText = 'Best Deal';
         break;
     }
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

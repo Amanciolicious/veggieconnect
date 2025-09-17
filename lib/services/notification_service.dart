@@ -658,14 +658,21 @@ class NotificationService {
     required String productName,
     required String status,
     required String supplierId,
+    String? productId,
     String? reason,
+    bool isAutoApproval = false,
   }) async {
-    String title = 'Product ${status == 'approved' ? 'Approved' : 'Rejected'}';
-    String body = 'Your product "$productName" has been $status';
+    String title = isAutoApproval 
+        ? 'Product Auto-Approved!' 
+        : 'Product ${status == 'approved' ? 'Approved' : 'Rejected'}';
+    
+    String body = isAutoApproval
+        ? 'Your product "$productName" has been automatically approved and is now live for customers.'
+        : 'Your product "$productName" has been $status';
     
     if (status.toLowerCase() == 'rejected' && reason != null && reason.isNotEmpty) {
       body += ': $reason';
-    } else if (status.toLowerCase() == 'approved') {
+    } else if (status.toLowerCase() == 'approved' && !isAutoApproval) {
       body += ' and is now visible to buyers!';
     }
 
@@ -674,12 +681,14 @@ class NotificationService {
       recipientId: supplierId,
       title: title,
       body: body,
-      type: 'product_approval',
+      type: isAutoApproval ? 'product_auto_approved' : 'product_approval',
       data: {
+        'productId': productId,
         'productName': productName,
         'status': status,
         'supplierId': supplierId,
         'reason': reason,
+        'isAutoApproval': isAutoApproval,
         'screen': 'products',
       },
     );
@@ -688,14 +697,16 @@ class NotificationService {
     sendInAppNotification(
       title: title,
       body: body,
-      type: 'product_approval',
+      type: isAutoApproval ? 'product_auto_approved' : 'product_approval',
       targetUserId: supplierId,
       targetUserRole: 'supplier',
       data: {
+        'productId': productId,
         'productName': productName,
         'status': status,
         'supplierId': supplierId,
         'reason': reason,
+        'isAutoApproval': isAutoApproval,
         'screen': 'products',
       },
     );
@@ -1391,6 +1402,19 @@ class NotificationService {
       data: {
         'supplierName': supplierName,
         'screen': 'profile',
+      },
+    );
+  }
+
+  Future<void> sendAutoApprovalSummaryNotification(int count) async {
+    await sendFCMNotificationToRole(
+      role: 'admin',
+      title: 'Product Auto-Approval Summary',
+      body: '$count product${count > 1 ? 's' : ''} automatically approved after 5 minutes.',
+      type: 'admin_product_auto_approval',
+      data: {
+        'count': count,
+        'screen': 'admin_products',
       },
     );
   }

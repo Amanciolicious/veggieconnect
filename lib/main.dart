@@ -12,6 +12,7 @@ import 'services/performance_service.dart';
 import 'services/migration_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/preboarding_service.dart';
+import 'services/client_auto_approval_service.dart';
 import 'customer-side/customer_navigation_screen.dart';
 import 'widgets/app_loader.dart';
 import 'screens/preboarding_screen.dart';
@@ -40,6 +41,9 @@ void main() async {
   
   // Initialize AuthStateService
   await AuthStateService().initialize();
+
+  // Start client-side auto-approval service
+  ClientAutoApprovalService().startAutoApproval();
 
   // Run one-time migrations
   await MigrationService.migrateDeliveredToPickedUp();

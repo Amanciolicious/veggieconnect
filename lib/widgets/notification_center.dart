@@ -270,6 +270,10 @@ class _NotificationCenterState extends State<NotificationCenter> {
         iconData = Icons.check_circle;
         iconColor = Colors.orange;
         break;
+      case 'product_auto_approved':
+        iconData = Icons.auto_awesome;
+        iconColor = Colors.green;
+        break;
       case 'promo':
         iconData = Icons.local_offer;
         iconColor = Colors.purple;
