@@ -8,13 +8,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:image_picker/image_picker.dart';
-
+import '../widgets/analytics_widgets.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:veggieconnect/admin-side/admin_farm_map_page.dart';
 import 'package:veggieconnect/services/tax_service.dart';
 import 'package:veggieconnect/widgets/notification_center.dart';
 import '../services/revenue_service.dart';
+import '../services/analytics_service.dart';
+import '../services/seasonal_analytics_service.dart';
 import '../authentication/login_page.dart';
 import '../services/cloudinary_service.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -418,6 +420,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         },
         backgroundColor: const Color(0xFF4CAF50),
         color: Colors.white,
+        height: 60,
+        animationDuration: const Duration(milliseconds: 300),
         items: const [
           Icon(Icons.home, size: 30, color: Colors.green),
           Icon(Icons.analytics, size: 30, color: Colors.green),
@@ -525,6 +529,51 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Quick Actions first
+          Text(
+            'Quick Actions',
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ActionCard(
+            title: 'Manage Accounts',
+            subtitle: 'View and manage user accounts',
+            icon: Icons.manage_accounts,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
+              );
+            },
+          ),
+          ActionCard(
+            title: 'Supplier Verification',
+            subtitle: 'Review supplier ID verification requests',
+            icon: Icons.verified_user,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminVerificationReviewPage()),
+              );
+            },
+          ),
+          ActionCard(
+            title: 'Verify Listings',
+            subtitle: 'Review pending product listings',
+            icon: Icons.verified,
+            onTap: () {
+              setState(() {
+                _selectedIndex = 3;
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Overview compact
           Text(
             'System Overview',
             style: GoogleFonts.quicksand(
@@ -533,14 +582,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               color: const Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 6,
-            childAspectRatio: 0.9,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 1.25,
             children: [
               // Total Users (suppliers and buyers only, exclude admins)
               StreamBuilder<QuerySnapshot>(
@@ -551,7 +600,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 builder: (context, snapshot) {
                   int count = 0;
                   if (snapshot.hasData) {
-                    // Filter out admin accounts from the count
                     count = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final role = (data['role'] ?? '').toString().toLowerCase();
@@ -625,56 +673,40 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+
+          // Quick notifications (recent)
           Text(
-            'Quick Actions',
+            'Quick Notifications',
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 20),
-          ActionCard(
-            title: 'Manage Accounts',
-            subtitle: 'View and manage user accounts',
-            icon: Icons.manage_accounts,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
+          const SizedBox(height: 12),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('notifications')
+                .orderBy('createdAt', descending: true)
+                .limit(5)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Text('No recent notifications');
+              }
+              return Column(
+                children: [
+                  for (final doc in snapshot.data!.docs)
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      dense: true,
+                      leading: const Icon(Icons.notifications, color: Colors.green),
+                      title: Text((doc.data() as Map<String, dynamic>)['title']?.toString() ?? 'Notification'),
+                      subtitle: Text((doc.data() as Map<String, dynamic>)['message']?.toString() ?? ''),
+                    ),
+                ],
               );
-            },
-          ),
-          ActionCard(
-            title: 'Supplier Verification',
-            subtitle: 'Review supplier ID verification requests',
-            icon: Icons.verified_user,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminVerificationReviewPage()),
-              );
-            },
-          ),
-          ActionCard(
-            title: 'Verify Listings',
-            subtitle: 'Review pending product listings',
-            icon: Icons.verified,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 3;
-              });
-            },
-          ),
-          ActionCard(
-            title: 'View Reports',
-            subtitle: 'Access system reports and analytics',
-            icon: Icons.report,
-            onTap: () {
-              setState(() {
-                _selectedIndex = 4;
-              });
             },
           ),
         ],
@@ -769,6 +801,97 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             },
           ),
           const SizedBox(height: 20),
+          // Product Category Analytics (uses AnalyticsService + Analytics Widgets)
+          StreamBuilder<Map<String, dynamic>>(
+            stream: AnalyticsService.getProductCategoryAnalyticsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading categories...'
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final data = snapshot.data ?? {};
+              final totalProducts = (data['totalProducts'] ?? 0).toString();
+              final avgPrice = AnalyticsService.formatCurrency((data['averagePrice'] ?? 0.0) as double);
+              final organicPct = AnalyticsService.formatPercentage((data['organicPercentage'] ?? 0.0) as double);
+
+              return AnalyticsCard(
+                title: 'Product Categories',
+                icon: Icons.category,
+                initiallyExpanded: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnalyticsMetricItem(label: 'Total Active Products', value: totalProducts, icon: Icons.inventory_2),
+                    const SizedBox(height: 12),
+                    AnalyticsMetricItem(label: 'Average Price', value: avgPrice, valueColor: Colors.green, icon: Icons.attach_money),
+                    const SizedBox(height: 12),
+                    AnalyticsMetricItem(label: 'Organic Products', value: organicPct, icon: Icons.eco),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 20),
+          // Seasonal Analytics (uses SeasonalAnalyticsService + SeasonIndicator)
+          StreamBuilder<Map<String, dynamic>>(
+            stream: SeasonalAnalyticsService.getSeasonalAnalyticsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(
+                      child: GroceryLoadingWidget(
+                        size: 80,
+                        showText: true,
+                        loadingText: 'Loading seasonal data...'
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final seasonal = snapshot.data ?? {};
+              final currentSeason = (seasonal['currentSeason'] ?? 'Unknown').toString();
+              final topSeasonalProducts = (seasonal['topSeasonalProducts'] as List<dynamic>?) ?? const [];
+
+              return AnalyticsCard(
+                title: 'Seasonal Insights',
+                icon: Icons.timeline,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        SeasonIndicator(season: currentSeason, isCurrent: true),
+                        const SizedBox(width: 12),
+                        Text('Current Season', style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    AnalyticsMetricItem(
+                      label: 'Top Seasonal Products',
+                      value: topSeasonalProducts.length.toString(),
+                      icon: Icons.star,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
           // Order Counts (real-time)
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('orders').snapshots(),

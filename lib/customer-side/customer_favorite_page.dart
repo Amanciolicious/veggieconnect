@@ -266,13 +266,48 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                                 Spacer(),
-                                                Text(
-                                                  '₱${product['price']?.toStringAsFixed(2) ?? '0.00'}/${product['unit'] ?? 'unit'}',
-                                                  style: GoogleFonts.quicksand(
-                                                    fontSize: screenWidth * 0.04,
-                                                    color: Color(0xFF6CA04A),
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      '₱${product['price']?.toStringAsFixed(2) ?? '0.00'}/${product['unit'] ?? 'unit'}',
+                                                      style: GoogleFonts.quicksand(
+                                                        fontSize: screenWidth * 0.04,
+                                                        color: Color(0xFF6CA04A),
+                                                        fontWeight: FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    // Favorite count badge (real-time via stream)
+                                                    Builder(
+                                                      builder: (_) {
+                                                        final favCount = (product['favoriteCount'] ?? 0) as num;
+                                                        if (favCount <= 0) return const SizedBox.shrink();
+                                                        return Container(
+                                                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.red.withOpacity(0.1),
+                                                            borderRadius: BorderRadius.circular(12),
+                                                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(Icons.favorite, color: Colors.red, size: 12),
+                                                              SizedBox(width: 2),
+                                                              Text(
+                                                                '$favCount',
+                                                                style: GoogleFonts.quicksand(
+                                                                  color: Colors.red,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  fontSize: 10,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
@@ -365,7 +400,7 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
           'favorites': favorites,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-        await _updateProductPopularity(productId, -1);
+        await _updateProductFavoriteCount(productId, -1);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -382,7 +417,7 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
           'favorites': favorites,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-        await _updateProductPopularity(productId, 1);
+        await _updateProductFavoriteCount(productId, 1);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -405,36 +440,36 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
     }
   }
 
-  Future<void> _updateProductPopularity(String productId, int change) async {
+  Future<void> _updateProductFavoriteCount(String productId, int change) async {
     try {
       final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final productDoc = await transaction.get(productRef);
         if (productDoc.exists) {
-          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
-          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          final currentCount = (productDoc.data()?['favoriteCount'] ?? 0) as num;
+          final nextValue = (currentCount + change).clamp(0, 1 << 31);
           transaction.update(productRef, {
-            'popularity': nextValue,
+            'favoriteCount': nextValue,
             'lastUpdated': FieldValue.serverTimestamp(),
           });
         }
       });
     } catch (e) {
-      debugPrint('Failed to update product popularity: $e');
+      debugPrint('Failed to update product favorite count: $e');
       // If transaction fails, try a direct update as fallback
       try {
         final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
         final productDoc = await productRef.get();
         if (productDoc.exists) {
-          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
-          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
+          final currentCount = (productDoc.data()?['favoriteCount'] ?? 0) as num;
+          final nextValue = (currentCount + change).clamp(0, 1 << 31);
           await productRef.update({
-            'popularity': nextValue,
+            'favoriteCount': nextValue,
             'lastUpdated': FieldValue.serverTimestamp(),
           });
         }
       } catch (fallbackError) {
-        debugPrint('Fallback popularity update also failed: $fallbackError');
+        debugPrint('Fallback favorite count update also failed: $fallbackError');
       }
     }
   }

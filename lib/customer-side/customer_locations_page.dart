@@ -373,18 +373,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     },
                   ),
                   SizedBox(height: 8),
-                  
-                  // Open in External Maps Button
-                  _buildNavigationOption(
-                    icon: Icons.map,
-                    title: 'Open in Maps App',
-                    subtitle: 'Use your preferred navigation app',
-                    color: Colors.teal,
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _openInMapsSupplier(supplier);
-                    },
-                  ),
                 ],
               ],
             ),

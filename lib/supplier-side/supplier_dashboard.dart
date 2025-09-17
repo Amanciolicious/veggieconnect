@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously, library_private_types_in_public_api, avoid_print
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -518,9 +519,9 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                     index: -1,
                     isDestructive: true,
                     onTap: () async {
-                      await _authService.signOut();
+                      // Non-blocking logout for instant UX
+                      unawaited(_authService.signOut());
                       if (!mounted) return;
-                 
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (_) => const LoginPage()),
                         (route) => false,

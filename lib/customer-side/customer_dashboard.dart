@@ -37,7 +37,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthStateService _authService = AuthStateService();
-  int _currentCarouselIndex = 0; // Added for Smart Shopping Carousel
+  late final ValueNotifier<int> _carouselIndexNotifier = ValueNotifier<int>(0);
   
   // Add PageController and Timer for auto-scroll
   late PageController _carouselPageController;
@@ -53,7 +53,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   Future<void> _logout() async {
-    await _authService.signOut();
+    // Trigger sign out instantly (AuthStateService clears state synchronously)
+    unawaited(_authService.signOut());
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -256,12 +257,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   void dispose() {
     _carouselPageController.dispose();
     _carouselTimer?.cancel();
+    _carouselIndexNotifier.dispose();
     super.dispose();
   }
 
   void _startCarouselTimer() {
     _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_currentCarouselIndex < _totalCarouselPages - 1) {
+      final idx = _carouselIndexNotifier.value;
+      if (idx < _totalCarouselPages - 1) {
         _carouselPageController.nextPage(
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
@@ -380,12 +383,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         color: Colors.white,
         height: 60,
         animationDuration: const Duration(milliseconds: 300),
-        items: const [
-          Icon(Icons.home, size: 30, color: Colors.green),
-          Icon(Icons.favorite, size: 30, color: Colors.green),
-          Icon(Icons.shopping_cart, size: 30, color: Colors.green),
-          Icon(Icons.search, size: 30, color: Colors.green),
-          Icon(Icons.person, size: 30, color: Colors.green),
+        items: [
+          const Icon(Icons.home, size: 30, color: Colors.green),
+          const Icon(Icons.favorite, size: 30, color: Colors.green),
+          _buildCartNavIcon(),
+          const Icon(Icons.search, size: 30, color: Colors.green),
+          const Icon(Icons.person, size: 30, color: Colors.green),
         ],
       ),
     );
@@ -481,6 +484,71 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
+  // Real-time cart count for bottom navigation badge
+  Stream<int> _cartItemCountStream() {
+    if (user == null) {
+      return Stream.value(0);
+    }
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .collection('cart')
+        .snapshots()
+        .map((snapshot) {
+      int total = 0;
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final quantity = (data['quantity'] ?? 1) as num;
+        total += quantity.toInt();
+      }
+      return total;
+    });
+  }
+
+  Widget _buildCartNavIcon() {
+    return StreamBuilder<int>(
+      stream: _cartItemCountStream(),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.shopping_cart, size: 30, color: Colors.green),
+            if (count > 0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: Text(
+                    count > 99 ? '99+' : '$count',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildHomeTab() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth <= 720;
@@ -550,11 +618,64 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ),
         ),
 
-        // Quick Actions Hub Section
+        
+        SizedBox(height: isSmallScreen ? 25 : 30),
+
+        // Smart Shopping Carousel
+        Container(
+          margin: EdgeInsets.all(responsiveMargin),
+          height: isSmallScreen ? 120 : 140,
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _carouselPageController,
+                  onPageChanged: (index) {
+                    // Avoid rebuilding the whole page; notify only listeners of index
+                    _carouselIndexNotifier.value = index;
+                  },
+                  children: [
+                    _buildSmartCard('Personalized for You', '40% off your favorites', Icons.person_outline, const Color(0xFF4CAF50), isSmallScreen, screenWidth),
+                    _buildSmartCard('Fresh Today', 'Just harvested produce', Icons.eco, const Color(0xFF2196F3), isSmallScreen, screenWidth),
+                    _buildSmartCard('Trending Now', "Everyone's buying", Icons.trending_up, const Color(0xFF9C27B0), isSmallScreen, screenWidth),
+                    _buildSmartCard('Flash Sale', 'Limited time deals', Icons.flash_on, const Color(0xFFFF5722), isSmallScreen, screenWidth),
+                    _buildSmartCard('Community Choice', 'Most loved items', Icons.favorite, const Color(0xFFE91E63), isSmallScreen, screenWidth),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder<int>(
+                valueListenable: _carouselIndexNotifier,
+                builder: (_, value, _) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      5,
+                      (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: value == index ? 20 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: value == index
+                              ? const Color(0xFF4CAF50)
+                              : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+
+        // Quick Actions moved below the carousel for standard layout
+        SizedBox(height: isSmallScreen ? 20 : 24),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
           child: Text(
-            'Quick Actions', 
+            'Quick Actions',
             style: GoogleFonts.quicksand(
               fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
               fontWeight: FontWeight.w400,
@@ -562,17 +683,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ),
         ),
         SizedBox(height: isSmallScreen ? 12 : 15),
-
-        // Quick Actions Grid
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
           child: GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: isSmallScreen ? 12 : 15,
-            mainAxisSpacing: isSmallScreen ? 12 : 15,
-            childAspectRatio: isSmallScreen ? 1.1 : 1.2,
+            crossAxisCount: isSmallScreen ? 3 : 4,
+            crossAxisSpacing: isSmallScreen ? 10 : 12,
+            mainAxisSpacing: isSmallScreen ? 10 : 12,
+            childAspectRatio: isSmallScreen ? 1.1 : 1.25,
             children: [
               _buildQuickActionCard(
                 'Cash on Pickup',
@@ -620,53 +739,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
         SizedBox(height: isSmallScreen ? 25 : 30),
 
-        // Smart Shopping Carousel
-        Container(
-          margin: EdgeInsets.all(responsiveMargin),
-          height: isSmallScreen ? 120 : 140,
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView(
-                  controller: _carouselPageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentCarouselIndex = index;
-                    });
-                  },
-                  children: [
-                    _buildSmartCard('Personalized for You', '40% off your favorites', Icons.person_outline, const Color(0xFF4CAF50), isSmallScreen, screenWidth),
-                    _buildSmartCard('Fresh Today', 'Just harvested produce', Icons.eco, const Color(0xFF2196F3), isSmallScreen, screenWidth),
-                    _buildSmartCard('Trending Now', "Everyone's buying", Icons.trending_up, const Color(0xFF9C27B0), isSmallScreen, screenWidth),
-                    _buildSmartCard('Flash Sale', 'Limited time deals', Icons.flash_on, const Color(0xFFFF5722), isSmallScreen, screenWidth),
-                    _buildSmartCard('Community Choice', 'Most loved items', Icons.favorite, const Color(0xFFE91E63), isSmallScreen, screenWidth),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  5,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _currentCarouselIndex == index ? 20 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _currentCarouselIndex == index
-                          ? const Color(0xFF4CAF50)
-                          : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        SizedBox(height: isSmallScreen ? 25 : 30),
-
         // Popular Products Section
         Padding(
           padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
@@ -686,8 +758,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('products')
-                .where('status', isEqualTo: 'approved')
-                .limit(50) // Increased limit to get more products for filtering
+                .limit(100)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -735,62 +806,53 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               final sortedDocs = snapshot.data!.docs
                   .where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    // Check if product is active (default to true if field doesn't exist)
                     final isActive = data['isActive'] ?? true;
                     if (!isActive) return false;
-                    // Check favorite count (default to 0 if field doesn't exist)
-                    final favoriteCount = (data['favoriteCount'] ?? 0) as num;
+                    final raw = data['favoriteCount'];
+                    final favoriteCount = raw is num ? raw : int.tryParse(raw?.toString() ?? '0') ?? 0;
                     return favoriteCount > 0;
                   })
                   .toList()
                 ..sort((a, b) {
-                  final ap = ((a.data() as Map<String, dynamic>)['favoriteCount'] ?? 0) as num;
-                  final bp = ((b.data() as Map<String, dynamic>)['favoriteCount'] ?? 0) as num;
+                  final ad = a.data() as Map<String, dynamic>;
+                  final bd = b.data() as Map<String, dynamic>;
+                  final ar = ad['favoriteCount'];
+                  final br = bd['favoriteCount'];
+                  final ap = ar is num ? ar : int.tryParse(ar?.toString() ?? '0') ?? 0;
+                  final bp = br is num ? br : int.tryParse(br?.toString() ?? '0') ?? 0;
                   return bp.compareTo(ap);
                 });
-              // If no popular products found, show all approved products instead
               if (sortedDocs.isEmpty) {
-                final allProducts = snapshot.data!.docs
-                    .where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final isActive = data['isActive'] ?? true;
-                      return isActive;
-                    })
-                    .toList();
-                if (allProducts.isEmpty) {
-                  return Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.favorite_border,
-                          size: isSmallScreen ? 40 : 48,
-                          color: Colors.grey[400],
+                return Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.favorite_border,
+                        size: isSmallScreen ? 40 : 48,
+                        color: Colors.grey[400],
+                      ),
+                      SizedBox(height: isSmallScreen ? 10 : 12),
+                      Text(
+                        'No popular products yet.',
+                        style: GoogleFonts.quicksand(
+                          fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w400,
                         ),
-                        SizedBox(height: isSmallScreen ? 10 : 12),
-                        Text(
-                          'No popular products yet.',
-                          style: GoogleFonts.quicksand(
-                            fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w400,
-                          ),
+                      ),
+                      SizedBox(height: isSmallScreen ? 6 : 8),
+                      Text(
+                        'Start favoriting products to see them here!',
+                        style: GoogleFonts.quicksand(
+                          fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w400,
                         ),
-                        SizedBox(height: isSmallScreen ? 6 : 8),
-                        Text(
-                          'Start favoriting products to see them here!',
-                          style: GoogleFonts.quicksand(
-                            fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w400,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                // Show recent products if no popular ones exist
-                sortedDocs.addAll(allProducts.take(6));
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
               }
               return GridView.builder(
                 shrinkWrap: true,
@@ -806,7 +868,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   final doc = sortedDocs[index];
                   final data = doc.data() as Map<String, dynamic>;
                   final productId = doc.id;
-                  final favoriteCount = (data['favoriteCount'] ?? 0) as num;
+                  final frc = data['favoriteCount'];
+                  final favoriteCount = frc is num ? frc : int.tryParse(frc?.toString() ?? '0') ?? 0;
                   return GestureDetector(
                     onTap: () => _navigateToProductDetails(doc.id, data),
                     child: Container(
@@ -887,7 +950,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      // Favorite count indicator (only show if > 0)
+                                      // Favorite count indicator (real-time count already streamed with product)
                                       if (favoriteCount > 0)
                                         Container(
                                           padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1077,6 +1140,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       return FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .where('isFreshToday', isEqualTo: true)
           .limit(1)
           .snapshots()
@@ -1097,6 +1161,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       return FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .orderBy('soldCount', descending: true)
           .limit(1)
           .snapshots()
@@ -1113,6 +1178,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       return FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .where('price', isLessThanOrEqualTo: 50)
           .limit(1)
           .snapshots()
@@ -1129,6 +1195,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       return FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
+          .where('favoriteCount', isGreaterThan: 0)
           .orderBy('favoriteCount', descending: true)
           .limit(1)
           .snapshots()
@@ -1147,9 +1215,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap, bool isSmallScreen, Widget badge) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final responsivePadding = isSmallScreen ? screenWidth * 0.03 : 16.0;
-    final responsiveIconSize = isSmallScreen ? screenWidth * 0.06 : 28.0;
-    final responsiveFontSize = isSmallScreen ? screenWidth * 0.032 : 14.0;
+    final responsivePadding = isSmallScreen ? screenWidth * 0.02 : 10.0;
+    final responsiveIconSize = isSmallScreen ? screenWidth * 0.05 : 24.0;
+    final responsiveFontSize = isSmallScreen ? screenWidth * 0.028 : 12.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -1157,14 +1225,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         padding: EdgeInsets.all(responsivePadding),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
+          border: Border.all(color: color.withOpacity(0.18), width: 0.8),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+              color: Colors.grey.withOpacity(0.06),
+              spreadRadius: 0.5,
+              blurRadius: 3,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -1172,10 +1240,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+              padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
+                borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
               ),
               child: Icon(
                 icon,
@@ -1183,7 +1251,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 size: responsiveIconSize,
               ),
             ),
-            SizedBox(height: isSmallScreen ? 10 : 12),
+            SizedBox(height: isSmallScreen ? 8 : 10),
             Text(
               title,
               style: GoogleFonts.quicksand(
@@ -1206,7 +1274,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       stream: FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
-          .where('paymentMethod', isEqualTo: 'cashOnPickup')
+          .where('isActive', isEqualTo: true)
+          .where('paymentMethods', arrayContains: 'cashOnPickup')
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -1216,8 +1285,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         return Text(
           '$count+',
           style: GoogleFonts.quicksand(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
             color: Colors.grey[600],
           ),
         );
@@ -1230,6 +1299,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       stream: FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .where('isFreshToday', isEqualTo: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -1240,8 +1310,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         return Text(
           '$count+',
           style: GoogleFonts.quicksand(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
             color: Colors.grey[600],
           ),
         );
@@ -1254,6 +1324,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       stream: FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .where('rating', isGreaterThanOrEqualTo: 4.5)
           .snapshots(),
       builder: (context, snapshot) {
@@ -1264,8 +1335,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         return Text(
           '$count+',
           style: GoogleFonts.quicksand(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
             color: Colors.grey[600],
           ),
         );
@@ -1278,6 +1349,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       stream: FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .where('location', isEqualTo: 'nearMe')
           .snapshots(),
       builder: (context, snapshot) {
@@ -1288,8 +1360,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         return Text(
           '$count+',
           style: GoogleFonts.quicksand(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
             color: Colors.grey[600],
           ),
         );
@@ -1302,6 +1374,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       stream: FirebaseFirestore.instance
           .collection('products')
           .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
           .where('isBestDeal', isEqualTo: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -1312,8 +1385,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         return Text(
           '$count+',
           style: GoogleFonts.quicksand(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
             color: Colors.grey[600],
           ),
         );
@@ -1608,6 +1681,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
     return FirebaseFirestore.instance
         .collection('products')
         .where('status', isEqualTo: 'approved')
+        .where('isActive', isEqualTo: true)
         .orderBy('updatedAt', descending: true)
         .limit(20)
         .snapshots();

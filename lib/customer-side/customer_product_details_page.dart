@@ -483,7 +483,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     Text(
                                       'Customer Reviews',
                                       style: GoogleFonts.quicksand(
-                                        fontSize: screenWidth * 0.04,
+                                        fontSize: screenWidth * 0.036,
                                         fontWeight: FontWeight.w600,
                                         color: Color(0xFF333333),
                                       ),
@@ -511,23 +511,29 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                           sum + ((d['rating'] ?? 0) as num).toDouble());
                                         final average = totalRating / reviews.length;
                                         
-                                        return Row(
-                                          children: [
-                                            StarRatingDisplay(
-                                              rating: average,
-                                              size: screenWidth * 0.038,
-                                              showRatingText: true,
+                                        return Flexible(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerRight,
+                                            child: Row(
+                                              children: [
+                                                StarRatingDisplay(
+                                                  rating: average,
+                                                  size: screenWidth * 0.034,
+                                                  showRatingText: true,
+                                                ),
+                                                SizedBox(width: screenWidth * 0.012),
+                                                Text(
+                                                  '(${reviews.length})',
+                                                  style: GoogleFonts.quicksand(
+                                                    fontSize: screenWidth * 0.03,
+                                                    color: Color(0xFF757575),
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            SizedBox(width: screenWidth * 0.02),
-                                            Text(
-                                              '(${reviews.length})',
-                                              style: GoogleFonts.quicksand(
-                                                fontSize: screenWidth * 0.033,
-                                                color: Color(0xFF757575),
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         );
                                       },
                                     ),
@@ -559,9 +565,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                             SizedBox(width: screenWidth * 0.03),
                                             Expanded(
                                               child: Text(
-                                                'No customer reviews yet. Be the first to review!',
+                                                'No reviews yet. Be the first!',
                                                 style: GoogleFonts.quicksand(
-                                                  fontSize: screenWidth * 0.035,
+                                                  fontSize: screenWidth * 0.032,
                                                   color: Colors.grey[600],
                                                   fontWeight: FontWeight.w400,
                                                 ),
@@ -651,18 +657,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
-                                                        Text(
-                                                          buyerName,
-                                                          style: GoogleFonts.quicksand(
-                                                            fontSize: screenWidth * 0.038,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: Color(0xFF333333),
+                                                        FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          alignment: Alignment.centerLeft,
+                                                          child: Text(
+                                                            buyerName,
+                                                            style: GoogleFonts.quicksand(
+                                                              fontSize: screenWidth * 0.036,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Color(0xFF333333),
+                                                            ),
                                                           ),
                                                         ),
                                                         Text(
                                                           'Purchased from $supplierName',
                                                           style: GoogleFonts.quicksand(
-                                                            fontSize: screenWidth * 0.032,
+                                                            fontSize: screenWidth * 0.03,
                                                             color: Color(0xFF757575),
                                                             fontWeight: FontWeight.w400,
                                                           ),
@@ -677,14 +687,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                                     children: [
                                                       StarRatingDisplay(
                                                         rating: rating.toDouble(),
-                                                        size: screenWidth * 0.035,
+                                                        size: screenWidth * 0.032,
                                                         showRatingText: false,
                                                       ),
                                                       SizedBox(height: 2),
                                                       Text(
                                                         formattedDate,
                                                         style: GoogleFonts.quicksand(
-                                                          fontSize: screenWidth * 0.03,
+                                                          fontSize: screenWidth * 0.028,
                                                           color: Color(0xFF9E9E9E),
                                                           fontWeight: FontWeight.w400,
                                                         ),
@@ -710,10 +720,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                                   child: Text(
                                                     feedback,
                                                     style: GoogleFonts.quicksand(
-                                                      fontSize: screenWidth * 0.035,
+                                                      fontSize: screenWidth * 0.033,
                                                       color: Color(0xFF555555),
                                                       fontWeight: FontWeight.w400,
-                                                      height: 1.4,
+                                                      height: 1.35,
                                                     ),
                                                   ),
                                                 ),

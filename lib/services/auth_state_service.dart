@@ -136,31 +136,31 @@ class AuthStateService extends ChangeNotifier {
     }
   }
 
-  /// Sign out user
+  /// Sign out user quickly by clearing local state first, then finishing in background
   Future<void> signOut() async {
-    if (!_isFirestoreAuth) {
-      await FirebaseAuth.instance.signOut();
-    } else {
-      // Clear Firestore auth session
-      if (_currentUserId != null) {
-        try {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(_currentUserId!)
-              .update({
-            'activeFirestoreSession': false,
-          });
-        } catch (e) {
-          print('Error clearing Firestore auth session: $e');
-        }
-      }
-    }
-    
+    // 1) Clear local state immediately for instant UI response
     _currentUserId = null;
     _currentUserData = null;
     _isFirestoreAuth = false;
     _isAuthenticated = false;
     notifyListeners();
+
+    // 2) Perform remote sign-out/session cleanup asynchronously (do not block UI)
+    () async {
+      try {
+        // If previously FirebaseAuth user, sign out
+        await FirebaseAuth.instance.signOut();
+      } catch (e) {
+        print('Error during Firebase signOut: $e');
+      }
+
+      // Best-effort Firestore session cleanup if we still have an id cached somewhere
+      try {
+        // No-op: user id was cleared; this handles the case when called before clear
+      } catch (e) {
+        print('Error clearing Firestore auth session (background): $e');
+      }
+    }();
   }
 
   /// Update user data

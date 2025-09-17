@@ -591,6 +591,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
             });
             
             return AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               title: Stack(
                 children: [
                   Text('Ban User: ${user['fullName'] ?? 'Unknown'}'),
@@ -771,87 +772,100 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   ),
                 ],
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: daysController,
-                    decoration: InputDecoration(
-                      labelText: 'Ban Duration (days)',
-                      hintText: 'Enter number of days',
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedDays = int.tryParse(value) ?? 1;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  TextField(
-                    controller: reasonController,
-                    decoration: InputDecoration(
-                      labelText: 'Reason for ban',
-                      hintText: 'Explain why this user is being banned',
-                    ),
-                    maxLines: 3,
-                  ),
-                  SizedBox(height: 16),
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.schedule, color: Colors.orange),
-                            SizedBox(width: 8),
-                            Text(
-                              'Ban Duration Preview:',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade700,
-                              ),
+              content: LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxHeight = MediaQuery.of(context).size.height * 0.6;
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: maxHeight),
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: daysController,
+                            decoration: InputDecoration(
+                              labelText: 'Ban Duration (days)',
+                              hintText: 'Enter number of days',
                             ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedDays = int.tryParse(value) ?? 1;
+                              });
+                            },
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.timer, color: Colors.orange, size: 20),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  selectedDays == 1 
-                                    ? 'User will be banned for 1 day (24 hours)'
-                                    : 'User will be banned for $selectedDays days (${selectedDays * 24} hours)',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange,
+                          SizedBox(height: 16),
+                          TextField(
+                            controller: reasonController,
+                            decoration: InputDecoration(
+                              labelText: 'Reason for ban',
+                              hintText: 'Explain why this user is being banned',
+                            ),
+                            maxLines: 3,
+                            textInputAction: TextInputAction.done,
+                          ),
+                          SizedBox(height: 16),
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.schedule, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Ban Duration Preview:',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.orange),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.timer, color: Colors.orange, size: 20),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          selectedDays == 1 
+                                            ? 'User will be banned for 1 day (24 hours)'
+                                            : 'User will be banned for $selectedDays days (${selectedDays * 24} hours)',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
               actions: [
                 TextButton(
