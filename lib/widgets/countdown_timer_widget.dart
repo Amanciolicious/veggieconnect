@@ -147,7 +147,7 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget>
             Expanded(
               child: Text(
                 'Auto-approved!',
-                style: GoogleFonts.inter(
+                style: GoogleFonts.quicksand(
                   color: const Color(0xFF4CAF50),
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
@@ -204,7 +204,7 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget>
                     children: [
                       Text(
                         'Auto-approval in:',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 14,
                           color: const Color(0xFF757575),
                           fontWeight: FontWeight.w500,
@@ -213,7 +213,7 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget>
                       const SizedBox(height: 4),
                       Text(
                         _formatTime(_remainingSeconds),
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: _getTimerColor(),
@@ -235,7 +235,7 @@ class _CountdownTimerWidgetState extends State<CountdownTimerWidget>
                     ),
                     child: Text(
                       'URGENT',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.quicksand(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFFF44336),

@@ -158,7 +158,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
             SizedBox(width: 8),
             Text(
               'Error',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.red,
@@ -168,7 +168,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         ),
         content: Text(
           message,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 14,
             color: Colors.grey[700],
           ),
@@ -178,7 +178,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'OK',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -207,7 +207,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
             SizedBox(width: 8),
             Text(
               'Success',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -217,7 +217,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         ),
         content: Text(
           message,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 14,
             color: Colors.grey[700],
           ),
@@ -227,7 +227,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'OK',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -266,7 +266,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
-        style: GoogleFonts.inter(
+        style: GoogleFonts.quicksand(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: Colors.grey[800],
@@ -310,7 +310,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
         ),
         title: Text(
           'Verify PIN',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.grey[800],
@@ -353,7 +353,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   // Title
                   Text(
                     'Enter Verification PIN',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.quicksand(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.grey[800],
@@ -366,7 +366,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   Text(
                     'We sent a 5-digit PIN to',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.quicksand(
                       fontSize: 13,
                       color: Colors.grey[600],
                     ),
@@ -377,7 +377,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   Text(
                     widget.email,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.quicksand(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF4CAF50),
@@ -418,7 +418,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                             )
                           : Text(
                               'Verify PIN',
-                              style: GoogleFonts.inter(
+                              style: GoogleFonts.quicksand(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -435,7 +435,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                     children: [
                       Text(
                         'Didn\'t receive the PIN? ',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 13,
                           color: Colors.grey[600],
                         ),
@@ -455,7 +455,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                                 _resendCountdown > 0 
                                     ? 'Resend in ${_resendCountdown}s'
                                     : 'Resend PIN',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _resendCountdown > 0 
@@ -488,7 +488,7 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                         Expanded(
                           child: Text(
                             'This PIN will expire in 15 minutes. Enter it as soon as you receive it.',
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.quicksand(
                               fontSize: 11,
                               color: Colors.orange[700],
                             ),

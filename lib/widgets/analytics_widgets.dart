@@ -27,7 +27,7 @@ class AnalyticsCard extends StatelessWidget {
         leading: icon != null ? Icon(icon, color: const Color(0xFF4CAF50)) : null,
         title: Text(
           title,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1A1A1A),
@@ -77,7 +77,7 @@ class AnalyticsMetricItem extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.inter(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   color: Colors.grey[600],
                 ),
@@ -88,7 +88,7 @@ class AnalyticsMetricItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: valueColor ?? const Color(0xFF1A1A1A),
@@ -106,7 +106,7 @@ class AnalyticsMetricItem extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 change!,
-                style: GoogleFonts.inter(
+                style: GoogleFonts.quicksand(
                   fontSize: 12,
                   color: isPositive ? Colors.green : Colors.red,
                   fontWeight: FontWeight.w500,
@@ -149,7 +149,7 @@ class TopPerformersList extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1A1A1A),
@@ -172,7 +172,7 @@ class TopPerformersList extends StatelessWidget {
                   children: [
                     Text(
                       item[nameKey]?.toString() ?? 'Unknown',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.quicksand(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -180,7 +180,7 @@ class TopPerformersList extends StatelessWidget {
                     if (subtitleKey != null && item[subtitleKey] != null)
                       Text(
                         item[subtitleKey].toString(),
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
@@ -190,7 +190,7 @@ class TopPerformersList extends StatelessWidget {
               ),
               Text(
                 _formatValue(item[valueKey]),
-                style: GoogleFonts.inter(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF4CAF50),
@@ -256,7 +256,7 @@ class SeasonIndicator extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             season,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.quicksand(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: isCurrent 
@@ -307,7 +307,7 @@ class AnalyticsLoadingCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1A1A1A),
@@ -320,7 +320,7 @@ class AnalyticsLoadingCard extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               loadingText,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 color: Colors.grey[600],
               ),

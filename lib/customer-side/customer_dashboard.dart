@@ -284,21 +284,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     // Debug authentication state
     print('🔧 Dashboard: Building dashboard - user: ${user?.uid}');
     print('🔧 Dashboard: AuthService authenticated: ${_authService.isAuthenticated}');
-    final screenWidth = MediaQuery.of(context).size.width;
-    // Responsive sizing for Infinix Smart 8 (720x1612)
-    final isSmallScreen = screenWidth <= 720;
-    final responsiveFontSize = isSmallScreen ? screenWidth * 0.045 : 18.0;
-
+    
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: _buildModernDrawer(),
-      appBar: ModernAppBar(
+      appBar: _selectedIndex == 0 ? ModernAppBar(
         title: Text(
           'VeggieConnect',
           style: GoogleFonts.quicksand(
-            fontSize: responsiveFontSize,
-            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontWeight: FontWeight.w400,
             color: Colors.black,
           ),
         ),
@@ -331,8 +327,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     },
                     icon: Icon(
                       Icons.notifications,
-                      color: Colors.black,
-                      size: responsiveFontSize * 1.2,
+                      color: Color(0xFF4CAF50),
+                      size: 24
                     ),
                   ),
                   if (unreadCount > 0)
@@ -365,21 +361,21 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             },
           ),
         ],
-      ),
+      ) : null,
       body: IndexedStack(
         index: _selectedIndex,
         children: [
           _buildHomeTab(),
-          CustomerFavoritePage(),
-          CartPage(),
+          const CustomerFavoritePage(),
+          const CartPage(),
           BuyerProductsPage(),
-          ProfilePage()
+          const ProfilePage()
         ],
       ),
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: Color(0xFF4CAF50),
         color: Colors.white,
         height: 60,
         animationDuration: const Duration(milliseconds: 300),
@@ -1156,7 +1152,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           return 'Fresh $name available now';
         }
         return 'Fresh produce available daily';
-      });
+      }).asBroadcastStream();
     } else if (title.contains('Trending')) {
       return FirebaseFirestore.instance
           .collection('products')
@@ -1173,7 +1169,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           return "$name - $soldCount sold";
         }
         return "Check trending products";
-      });
+      }).asBroadcastStream();
     } else if (title.contains('Flash')) {
       return FirebaseFirestore.instance
           .collection('products')
@@ -1190,7 +1186,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           return 'Limited: ₱${price.toStringAsFixed(2)} $name';
         }
         return 'Amazing deals available';
-      });
+      }).asBroadcastStream();
     } else if (title.contains('Community')) {
       return FirebaseFirestore.instance
           .collection('products')
@@ -1208,9 +1204,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           return 'Most loved: $name ($favoriteCount♥)';
         }
         return 'Discover favorites';
-      });
+      }).asBroadcastStream();
     }
-    return Stream.value('Personalized deals for you');
+    return Stream<String>.value('Personalized deals for you').asBroadcastStream();
   }
 
   Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap, bool isSmallScreen, Widget badge) {

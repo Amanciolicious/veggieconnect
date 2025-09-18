@@ -10,6 +10,7 @@ import '../models/supplier_verification.dart';
 import '../services/supplier_verification_service.dart';
 import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class AdminVerificationReviewPage extends StatefulWidget {
   const AdminVerificationReviewPage({super.key});
@@ -48,37 +49,23 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'Supplier Verification Review',
-          style: GoogleFonts.quicksand(
-            fontSize: screenWidth * 0.045,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+      appBar: RolePageHeader(
+        title: 'Supplier Verification Review',
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            setState(() { _filterStatus = value; });
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 'all', child: Text('All Requests')),
+            PopupMenuItem(value: 'pending', child: Text('Pending Review')),
+            PopupMenuItem(value: 'approved', child: Text('Approved')),
+            PopupMenuItem(value: 'rejected', child: Text('Rejected')),
+          ],
+          icon: const Icon(Icons.filter_list, color: Color(0xFF4CAF50)),
         ),
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                _filterStatus = value;
-              });
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'all', child: Text('All Requests')),
-              PopupMenuItem(value: 'pending', child: Text('Pending Review')),
-              PopupMenuItem(value: 'approved', child: Text('Approved')),
-              PopupMenuItem(value: 'rejected', child: Text('Rejected')),
-            ],
-            icon: Icon(Icons.filter_list, color: Colors.white),
-          ),
-        ],
       ),
       body: Column(
         children: [

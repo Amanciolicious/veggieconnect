@@ -7,6 +7,8 @@ import '../services/auth_state_service.dart';
 import 'customer_product_details_page.dart';
 import '../widgets/product_image_widget.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
+import 'customer_dashboard.dart';
 
 class CustomerFavoritePage extends StatefulWidget {
   const CustomerFavoritePage({super.key});
@@ -25,17 +27,17 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
     final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'My Favorites',
-          style: GoogleFonts.quicksand(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        elevation: 0,
+      appBar: RolePageHeader(
+        title: 'My Favorites',
+        onBackTap: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+            );
+          }
+        },
       ),
       body: user == null
           ? Center(

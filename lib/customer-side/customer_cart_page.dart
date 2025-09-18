@@ -7,6 +7,8 @@ import 'package:veggieconnect/customer-side/customer_checkout_summary_page.dart'
 import '../widgets/lottie_loading_widget.dart';
 import '../authentication/login_page.dart';
 import '../services/auth_state_service.dart';
+import '../widgets/role_page_header.dart';
+import 'customer_dashboard.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -147,18 +149,17 @@ class _CartPageState extends State<CartPage> {
     
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'My Cart',
-          style: GoogleFonts.quicksand(
-            fontSize: screenWidth * 0.055,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        elevation: 0,
-        actions: [],
+      appBar: RolePageHeader(
+        title: 'My Cart',
+        onBackTap: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+            );
+          }
+        },
       ),
       body: user == null
           ? Center(

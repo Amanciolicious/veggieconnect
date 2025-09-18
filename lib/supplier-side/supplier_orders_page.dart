@@ -9,7 +9,9 @@ import 'package:veggieconnect/services/navigation_manager.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
+import 'package:veggieconnect/widgets/role_page_header.dart';
 import 'supplier_chat_page.dart';
+import 'supplier_dashboard.dart';
 import '../widgets/lottie_loading_widget.dart';
 
 class SupplierOrdersPage extends StatefulWidget {
@@ -53,41 +55,41 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF6CA04A),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+      appBar: RolePageHeader(title: 'Orders Management',
+      onBackTap: _handleBackTap,
         ),
-        title: const Text(
-          'Orders Management',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          isScrollable: true,
-          labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
-          tabs: const [
-            Tab(text: 'All Order'),
-            Tab(text: 'Pending'),
-            Tab(text: 'Processing'),
-            Tab(text: 'Ready to Pick Up'),
-            Tab(text: 'Picked Up'),
-            Tab(text: 'Cancelled'),
-          ],
-        ),
-      ),
       body: Column(
         children: [
+          // Header Row: Back button + Status tabs
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                // Back button styled to match the design
+                const SizedBox(width: 8),
+                // Tabs
+                Expanded(
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: const Color(0xFF4CAF50),
+                    labelColor: const Color(0xFF4CAF50),
+                    unselectedLabelColor: Colors.grey,
+                    isScrollable: true,
+                    labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+                    tabs: const [
+                      Tab(text: 'All Order'),
+                      Tab(text: 'Pending'),
+                      Tab(text: 'Processing'),
+                      Tab(text: 'Ready to Pick Up'),
+                      Tab(text: 'Picked Up'),
+                      Tab(text: 'Cancelled'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           // Search and Filter Section
           Container(
             padding: const EdgeInsets.all(16),
@@ -152,7 +154,6 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           // Orders List
           Expanded(
             child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.6, // Limit TabView height
               child: TabBarView(
                 controller: _tabController,
                 children: [
@@ -169,6 +170,17 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
         ],
       ),
     );
+  }
+
+  void _handleBackTap() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (_) => const SupplierDashboard()),
+      );
+    }
   }
 
   Widget _buildOrdersList(String status) {

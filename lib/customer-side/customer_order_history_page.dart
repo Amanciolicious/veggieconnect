@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../widgets/role_page_header.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'customer_rating_dialog.dart';
@@ -47,26 +48,19 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
     }
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'Order History',
-          style: GoogleFonts.quicksand(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
+      appBar: const RolePageHeader(title: 'Order History'),
+      body: Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            indicatorColor: Color(0xFF6CA04A),
+            labelColor: Color(0xFF6CA04A),
+            unselectedLabelColor: Colors.black54,
+            isScrollable: true,
+            tabs: _tabs.map((t) => Tab(text: t)).toList(),
           ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          isScrollable: true,
-          tabs: _tabs.map((t) => Tab(text: t)).toList(),
-        ),
-      ),
-      body: TabBarView(
+          Expanded(
+            child: TabBarView(
         controller: _tabController,
         children: _tabs.map((tab) {
           return Padding(
@@ -449,6 +443,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
             ),
           );
         }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

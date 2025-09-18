@@ -2,8 +2,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/product_image_widget.dart';
+import '../widgets/role_page_header.dart';
 import 'package:flutter/material.dart';
 import 'customer_product_details_page.dart'; // Import ProductDetailsPage
+import 'customer_dashboard.dart';
 import '../widgets/lottie_loading_widget.dart';
 import '../services/auth_state_service.dart';
 
@@ -149,33 +151,23 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
     
     // Responsive sizing for Infinix Smart 8 (720x1612)
     final isSmallScreen = screenWidth <= 720;
-    final responsiveFontSize = isSmallScreen ? screenWidth * 0.045 : screenWidth * 0.055;
     final responsivePadding = isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.04;
     final responsiveMargin = isSmallScreen ? screenWidth * 0.025 : screenWidth * 0.03;
     
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          _getAppBarTitle(),
-          style: GoogleFonts.quicksand(
-            fontSize: responsiveFontSize,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: isSmallScreen ? 22 : 24,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        elevation: 0,
+      appBar: RolePageHeader(
+        title: _getAppBarTitle(),
+        onBackTap: () {
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          } else {
+            navigator.pushReplacement(
+              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+            );
+          }
+        },
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: responsivePadding, vertical: responsiveMargin),

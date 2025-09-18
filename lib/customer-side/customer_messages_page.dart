@@ -7,6 +7,7 @@ import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
 import 'customer_chat_page.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class CustomerMessagesPage extends StatefulWidget {
   const CustomerMessagesPage({super.key});
@@ -46,34 +47,28 @@ class _CustomerMessagesPageState extends State<CustomerMessagesPage> {
 
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          _isSelectionMode ? '${_selectedConversations.length} selected' : 'My Messages',
-          style: GoogleFonts.quicksand(
-            fontSize: screenWidth * 0.045,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        elevation: 2,
-        actions: [
-          if (_isSelectionMode) ...[
-            IconButton(
-              icon: Icon(Icons.delete, color: Colors.white, size: screenWidth * 0.05),
-              onPressed: _deleteSelectedConversations,
-            ),
-            IconButton(
-              icon: Icon(Icons.close, color: Colors.white, size: screenWidth * 0.05),
-              onPressed: () {
-                setState(() {
-                  _isSelectionMode = false;
-                  _selectedConversations.clear();
-                });
-              },
-            ),
-          ],
-        ],
+      appBar: RolePageHeader(
+        title: _isSelectionMode ? '${_selectedConversations.length} selected' : 'My Messages',
+        trailing: _isSelectionMode
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.delete, color: Color(0xFF4CAF50), size: screenWidth * 0.05),
+                    onPressed: _deleteSelectedConversations,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Color(0xFF4CAF50), size: screenWidth * 0.05),
+                    onPressed: () {
+                      setState(() {
+                        _isSelectionMode = false;
+                        _selectedConversations.clear();
+                      });
+                    },
+                  ),
+                ],
+              )
+            : null,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _chatService.streamBuyerConversations(user!.uid),

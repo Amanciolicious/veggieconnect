@@ -80,7 +80,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: title is String
                     ? Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF1A1A1A),
@@ -161,13 +161,13 @@ class ModernSearchBar extends StatelessWidget {
         onSubmitted: onSubmitted,
         onChanged: onChanged,
         onTap: onTap,
-        style: GoogleFonts.inter(
+        style: GoogleFonts.quicksand(
           fontSize: 16,
           color: const Color(0xFF1A1A1A),
         ),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: GoogleFonts.inter(
+          hintStyle: GoogleFonts.quicksand(
             fontSize: 16,
             color: const Color(0xFF9E9E9E),
           ),

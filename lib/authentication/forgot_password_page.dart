@@ -75,7 +75,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             SizedBox(width: 8),
             Text(
               'Error',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.red,
@@ -85,7 +85,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         content: Text(
           message,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 14,
             color: Colors.grey[700],
           ),
@@ -95,7 +95,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'OK',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -137,7 +137,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         title: Text(
           'Forgot Password',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.grey[800],
@@ -185,7 +185,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     Center(
                       child: Text(
                         'Reset Your Password',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: Colors.grey[800],
@@ -200,7 +200,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       child: Text(
                         'Enter your email address and we\'ll send you a verification PIN to reset your password.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.quicksand(
                           fontSize: 13,
                           color: Colors.grey[600],
                           height: 1.4,
@@ -213,7 +213,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     // Email Input
                     Text(
                       'Email Address',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.quicksand(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey[700],
@@ -229,7 +229,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       enabled: !_isLoading,
                       decoration: InputDecoration(
                         hintText: 'Enter your email address',
-                        hintStyle: GoogleFonts.inter(
+                        hintStyle: GoogleFonts.quicksand(
                           fontSize: 14,
                           color: Colors.grey[400],
                         ),
@@ -258,7 +258,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         ),
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.quicksand(
                         fontSize: 14,
                         color: Colors.grey[800],
                       ),
@@ -290,7 +290,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               )
                             : Text(
                                 'Send Verification PIN',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
@@ -308,14 +308,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         child: RichText(
                           text: TextSpan(
                             text: 'Remember your password? ',
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.quicksand(
                               fontSize: 14,
                               color: Colors.grey[600],
                             ),
                             children: [
                               TextSpan(
                                 text: 'Back to Login',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF4CAF50),
@@ -348,7 +348,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           Expanded(
                             child: Text(
                               'The verification PIN will be valid for 15 minutes. Check your spam folder if you don\'t receive it.',
-                              style: GoogleFonts.inter(
+                              style: GoogleFonts.quicksand(
                                 fontSize: 11,
                                 color: Colors.blue[700],
                               ),

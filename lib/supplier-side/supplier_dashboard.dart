@@ -14,6 +14,8 @@ import 'package:veggieconnect/supplier-side/supplier_add_product_page.dart';
 import 'package:veggieconnect/supplier-side/supplier_orders_page.dart';
 import 'package:veggieconnect/supplier-side/supplier_chat_list_page.dart';
 import 'package:veggieconnect/supplier-side/supplier_map_page.dart';
+import 'package:veggieconnect/widgets/modern_app_bar.dart';
+import 'package:veggieconnect/widgets/role_page_header.dart';
 import '../widgets/modern_wave_drawer.dart';
 import '../services/cloudinary_service.dart';
 import '../services/auth_state_service.dart';
@@ -33,6 +35,7 @@ class SupplierDashboard extends StatefulWidget {
 }
 
 class _SupplierDashboardState extends State<SupplierDashboard> with TickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   String? _localProfileImagePath;
   bool _showVerificationNotification = false;
@@ -367,19 +370,19 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
   Widget build(BuildContext context) {
     final cardRadius = BorderRadius.circular(20);
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
+      appBar: _selectedIndex == 0 ? ModernAppBar(
         title: Text(
           'Supplier Dashboard',
           style: GoogleFonts.quicksand(
-            fontSize: 20,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
+            fontSize: 22,
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: Colors.white,
+        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
         actions: [
           StreamBuilder<int>(
             stream: _notificationService.getUnreadCountStream(),
@@ -400,7 +403,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                     },
                     icon: const Icon(
                       Icons.notifications,
-                      color: Colors.white,
+                      color: Color(0xFF4CAF50),
                       size: 24,
                     ),
                   ),
@@ -434,7 +437,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             },
           ),
         ],
-      ),
+      ) : null,
       drawer: StreamBuilder<DocumentSnapshot>(
         stream: _authService.currentUser != null 
           ? FirebaseFirestore.instance.collection('users').doc(_authService.currentUser!.uid).snapshots()
@@ -551,7 +554,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             _selectedIndex = index;
           });
         },
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: Color(0xFF4CAF50),
         color: Colors.white,
         height: 60,
         animationDuration: const Duration(milliseconds: 300),
@@ -650,18 +653,302 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             ],
           ),
           const SizedBox(height: 20),
-          Text(
-            'Stock Management',
-            style: GoogleFonts.quicksand(
-              fontSize: 18,
-              color: Color(0xFF222222),
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 10),
-          _buildStockOverview(),
+          // Quick stock summary
+          _buildQuickStockSummary(),
         ],
       ),
+    );
+  }
+
+  Widget _buildQuickStockSummary() {
+    final user = _authService.currentUser;
+    
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+    
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('products')
+          .where('sellerId', isEqualTo: user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildStandardCard(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: const Color(0xFF757575),
+                  size: 32,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No products yet',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 16,
+                    color: const Color(0xFF757575),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add your first product to get started',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 14,
+                    color: const Color(0xFF757575),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddProductPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(
+                    'Add Product',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        int lowStockProducts = 0;
+        int outOfStockProducts = 0;
+        
+        for (var doc in snapshot.data!.docs) {
+          final product = doc.data() as Map<String, dynamic>;
+          final quantity = product['quantity'] ?? 0;
+          
+          if (quantity <= 0) {
+            outOfStockProducts++;
+          } else if (quantity <= 5) {
+            lowStockProducts++;
+          }
+        }
+        
+        return _buildStandardCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.inventory_2,
+                    color: const Color(0xFF4CAF50),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Stock Summary',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedIndex = 2; // Switch to Stock Management tab
+                      });
+                    },
+                    child: Text(
+                      'Manage',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        color: const Color(0xFF4CAF50),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickStatItem(
+                      'Low Stock',
+                      '$lowStockProducts',
+                      Colors.orange,
+                      Icons.warning,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildQuickStatItem(
+                      'Out of Stock',
+                      '$outOfStockProducts',
+                      Colors.red,
+                      Icons.remove_shopping_cart,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickStatItem(String title, String value, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.quicksand(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: GoogleFonts.quicksand(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper method to create standard cards that match application design
+  Widget _buildStandardCard({required Widget child, EdgeInsetsGeometry? padding, EdgeInsetsGeometry? margin}) {
+    return Container(
+      margin: margin,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(20),
+        child: child,
+      ),
+    );
+  }
+
+  // Helper method to create stat cards that match application design (replaces StatCard widget)
+  Widget _buildStatCardWidget({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double w = constraints.maxWidth;
+        // Scale sizes based on available width to avoid overflow on small screens
+        final double iconSize = w * 0.16; // smaller icons to prevent overflow
+        final double trendSize = w * 0.12;
+        final double titleSize = w * 0.10;
+        final double valueSize = w * 0.16;  // reduce value font a bit
+        final double gapLarge = w * 0.06;   // tighter spacing
+        final double gapSmall = w * 0.02;
+
+        return _buildStandardCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(w * 0.08),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: iconSize.clamp(16, 24)),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.trending_up,
+                    color: color,
+                    size: trendSize.clamp(12, 18),
+                  ),
+                ],
+              ),
+              SizedBox(height: gapLarge.clamp(8, 14)),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.quicksand(
+                  fontSize: titleSize.clamp(9, 12),
+                  color: const Color(0xFF757575),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: gapSmall.clamp(2, 6)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: GoogleFonts.quicksand(
+                    fontSize: valueSize.clamp(12, 18),
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -736,54 +1023,39 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
   }
 
   Widget _buildProductsTab() {
-    
-    
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'My Products',
-                  style: GoogleFonts.quicksand(
-                    fontSize: 20,
-                    color: Color(0xFF222222),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => AddProductPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF6CA04A),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                ),
-                child: Text(
-                  'Add',
-                  style: GoogleFonts.quicksand(fontSize: 16),
-                ),
-              ),
-            ],
+    return Scaffold(
+      appBar: RolePageHeader(
+        title: 'Manage Products',
+        onBackTap: () {
+          setState(() { _selectedIndex = 0; });
+        },
+        trailing: ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => AddProductPage()),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF6CA04A),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            elevation: 0,
           ),
-          SizedBox(height: 12),
-          // Status toggle chips
-          _buildStatusToggle(),
-          SizedBox(height: 12),
-          _buildProductList(),
-        ],
+          child: Text('Add', style: GoogleFonts.quicksand(fontSize: 16)),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status toggle chips
+            _buildStatusToggle(),
+            SizedBox(height: 12),
+            _buildProductList(),
+          ],
+        ),
       ),
     );
   }
@@ -1133,16 +1405,42 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
   }
 
   Widget _buildStockManagementTab() {
-
-    
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Keep stock list only; the overview is shown on the Overview tab
-          _buildStockList(),
-        ],
+    return Scaffold(
+      appBar: RolePageHeader(title: 'Stock Management',
+      onBackTap: () {
+          setState(() { _selectedIndex = 0; });
+        },
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Stock overview section
+            Text(
+              'Stock Overview',
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildStockOverview(),
+            const SizedBox(height: 24),
+            // Stock list section
+            Text(
+              'Manage Products',
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildStockList(),
+          ],
+        ),
       ),
     );
   }
@@ -1151,7 +1449,15 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
     final user = _authService.currentUser;
     
     if (user == null) {
-      return const Center(child: Text('Not logged in.'));
+      return const Center(
+        child: Text(
+          'Not logged in.',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF757575),
+          ),
+        ),
+      );
     }
     
     return StreamBuilder<QuerySnapshot>(
@@ -1165,18 +1471,38 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             child: GroceryLoadingWidget(
               size: 100,
               showText: true,
-              loadingText: 'Loading...',
+              loadingText: 'Loading stock overview...',
             ),
           );
         }
         if (snapshot.hasError) {
           return Center(
-            child: Text(
+            child: _buildStandardCard(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
               'Error loading data',
-              style: GoogleFonts.quicksand(
-                fontSize: 14,
+                    style: GoogleFonts.quicksand(
+                      fontSize: 16,
                 color: Colors.red,
-                fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please try again later',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 14,
+                      color: const Color(0xFF757575),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -1188,6 +1514,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         int lowStockProducts = 0;
         int outOfStockProducts = 0;
         double totalValue = 0;
+        int totalProducts = snapshot.data!.docs.length;
         
         for (var doc in snapshot.data!.docs) {
           final product = doc.data() as Map<String, dynamic>;
@@ -1207,13 +1534,34 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.1,
           children: [
-            _buildStatCard(BorderRadius.circular(20), 'Low Stock', '$lowStockProducts', Icons.warning, Colors.orange),
-            _buildStatCard(BorderRadius.circular(20), 'Out of Stock', '$outOfStockProducts', Icons.remove_shopping_cart, Colors.red),
-            _buildStatCard(BorderRadius.circular(20), 'Total Value', '₱${totalValue.toStringAsFixed(2)}', Icons.attach_money, Colors.green),
+            _buildStatCardWidget(
+              title: 'Total Products',
+              value: '$totalProducts',
+              icon: Icons.inventory_2,
+              color: const Color(0xFF4CAF50),
+            ),
+            _buildStatCardWidget(
+              title: 'Low Stock',
+              value: '$lowStockProducts',
+              icon: Icons.warning,
+              color: Colors.orange,
+            ),
+            _buildStatCardWidget(
+              title: 'Out of Stock',
+              value: '$outOfStockProducts',
+              icon: Icons.remove_shopping_cart,
+              color: Colors.red,
+            ),
+            _buildStatCardWidget(
+              title: 'Total Value',
+              value: '₱${totalValue.toStringAsFixed(2)}',
+              icon: Icons.attach_money,
+              color: const Color(0xFF6CA04A),
+            ),
           ],
         );
         
@@ -1226,7 +1574,28 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
     final user = _authService.currentUser;
     
     if (user == null) {
-      return Center(child: Text('Not logged in.', style: GoogleFonts.quicksand(fontSize: 16)));
+      return Center(
+        child: _buildStandardCard(
+          child: Column(
+            children: [
+              Icon(
+                Icons.person_off,
+                color: const Color(0xFF757575),
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Not logged in',
+                style: GoogleFonts.quicksand(
+                  fontSize: 16,
+                  color: const Color(0xFF757575),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
     
     return StreamBuilder<QuerySnapshot>(
@@ -1241,15 +1610,73 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             child: GroceryLoadingWidget(
               size: 100,
               showText: true,
-              loadingText: 'Loading orders...',
+              loadingText: 'Loading products...',
             ),
           );
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}', style: GoogleFonts.quicksand(fontSize: 14)));
+          return Center(
+            child: _buildStandardCard(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading products',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 16,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please try again later',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 14,
+                      color: const Color(0xFF757575),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text('No products yet.', style: GoogleFonts.quicksand(fontSize: 16)));
+          return Center(
+            child: _buildStandardCard(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    color: const Color(0xFF757575),
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No products yet',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 16,
+                      color: const Color(0xFF757575),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your first product to get started',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 14,
+                      color: const Color(0xFF757575),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
         
         final products = snapshot.data!.docs;
@@ -1264,169 +1691,343 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             final price = product['price'] ?? 0;
             
             Color stockColor;
+            String stockStatus;
             if (quantity <= 0) {
               stockColor = Colors.red;
+              stockStatus = 'Out of Stock';
             } else if (quantity <= 5) {
               stockColor = Colors.orange;
+              stockStatus = 'Low Stock';
             } else {
-              stockColor = Colors.green;
+              stockColor = const Color(0xFF4CAF50);
+              stockStatus = 'In Stock';
             }
             
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
+            return _buildStandardCard(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // Product image placeholder
+                      Container(
+                        width: 60,
+                        height: 60,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Color(0xFF8D9773).withOpacity(0.08),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: product['imageUrl'] != null && product['imageUrl'].isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  product['imageUrl'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.image,
+                                      color: Color(0xFFBDBDBD),
+                                      size: 24,
+                                    );
+                                  },
+                                ),
+                              )
+                            : const Icon(
+                                Icons.image,
+                                color: Color(0xFFBDBDBD),
+                                size: 24,
+                              ),
+                      ),
+                      const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             product['name'] ?? 'Unknown Product',
-                            style: GoogleFonts.quicksand(
+                              style: GoogleFonts.quicksand(
                               fontSize: 16,
-                              color: Color(0xFF222222),
-                              fontWeight: FontWeight.w400,
+                                color: const Color(0xFF1A1A1A),
+                                fontWeight: FontWeight.w600,
                             ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                           ),
-                          SizedBox(height: 5),
+                            const SizedBox(height: 4),
                           Text(
                             '₱${price.toStringAsFixed(2)}',
-                            style: GoogleFonts.quicksand(
-                              fontSize: 14,
-                              color: Color(0xFF6CA04A),
-                              fontWeight: FontWeight.w400,
+                              style: GoogleFonts.quicksand(
+                                fontSize: 18,
+                                color: const Color(0xFF4CAF50),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 5),
-                          Row(
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: stockColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.inventory_2,
-                                size: 16,
+                                        size: 14,
                                 color: stockColor,
                               ),
-                              SizedBox(width: 10),
+                                      const SizedBox(width: 4),
                               Text(
                                 '$quantity ${product['unit'] ?? ''}',
-                                style: GoogleFonts.quicksand(
-                                  fontSize: 14,
+                                        style: GoogleFonts.quicksand(
+                                          fontSize: 12,
                                   color: stockColor,
-                                  fontWeight: FontWeight.w400,
+                                          fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: stockColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    stockStatus,
+                                    style: GoogleFonts.quicksand(
+                                      fontSize: 12,
+                                      color: stockColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                                ),
+                              ],
+                            ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showStockUpdateDialog(docId, product['name'] ?? 'Product', quantity, true),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(
+                            'Add Stock',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
                       ),
-                    ),
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () async {
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Confirm Increase'),
-                                content: Text('Increase stock for this product by 1?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                  ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: quantity > 0 
+                              ? () => _showStockUpdateDialog(docId, product['name'] ?? 'Product', quantity, false)
+                              : null,
+                          icon: const Icon(Icons.remove, size: 18),
+                          label: Text(
+                            'Remove',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            disabledBackgroundColor: const Color(0xFFE0E0E0),
+                            disabledForegroundColor: const Color(0xFF9E9E9E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                                 ],
                               ),
                             );
-                            if (confirmed == true) {
-                              _updateStock(docId, quantity + 1);
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Color(0xFF6CA04A),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  spreadRadius: 1,
-                                  blurRadius: 3,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              child: Icon(Icons.add, color: Colors.white, size: 20),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: () async {
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Confirm Decrease'),
-                                content: Text('Decrease stock for this product by 1?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                  ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
-                                ],
-                              ),
-                            );
-                            if (confirmed == true) {
-                              _updateStock(docId, quantity > 0 ? quantity - 1 : 0);
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  spreadRadius: 1,
-                                  blurRadius: 3,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              child: Icon(Icons.remove, color: Colors.white, size: 20),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
           },
         );
       },
+    );
+  }
+
+  void _showStockUpdateDialog(String productId, String productName, int currentQuantity, bool isAdding) {
+    final TextEditingController quantityController = TextEditingController();
+    quantityController.text = '1';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              isAdding ? Icons.add_circle_outline : Icons.remove_circle_outline,
+              color: isAdding ? const Color(0xFF4CAF50) : Colors.red,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isAdding ? 'Add Stock' : 'Remove Stock',
+                style: GoogleFonts.quicksand(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1A1A1A),
+                ),
+              ),
+                                ),
+                              ],
+                            ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Product: $productName',
+              style: GoogleFonts.quicksand(
+                fontSize: 16,
+                color: const Color(0xFF757575),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Current stock: $currentQuantity',
+              style: GoogleFonts.quicksand(
+                fontSize: 14,
+                color: const Color(0xFF757575),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Quantity to ${isAdding ? 'add' : 'remove'}:',
+              style: GoogleFonts.quicksand(
+                fontSize: 16,
+                color: const Color(0xFF1A1A1A),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: quantityController,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.quicksand(
+                fontSize: 16,
+                color: const Color(0xFF1A1A1A),
+              ),
+              decoration: InputDecoration(
+                hintText: 'Enter quantity',
+                hintStyle: GoogleFonts.quicksand(
+                  fontSize: 16,
+                  color: const Color(0xFF9E9E9E),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+                    ),
+                  ],
+                ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.quicksand(
+                fontSize: 16,
+                color: const Color(0xFF757575),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final quantity = int.tryParse(quantityController.text);
+              if (quantity != null && quantity > 0) {
+                final newQuantity = isAdding 
+                    ? currentQuantity + quantity 
+                    : (currentQuantity - quantity).clamp(0, double.infinity).toInt();
+                _updateStock(productId, newQuantity);
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid quantity'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isAdding ? const Color(0xFF4CAF50) : Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text(
+              isAdding ? 'Add Stock' : 'Remove Stock',
+              style: GoogleFonts.quicksand(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1438,11 +2039,37 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
           .update({'quantity': newQuantity});
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Stock updated to $newQuantity')),
+        SnackBar(
+          content: Text(
+            'Stock updated to $newQuantity',
+            style: GoogleFonts.quicksand(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: const Color(0xFF4CAF50),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update stock: $e')),
+        SnackBar(
+          content: Text(
+            'Failed to update stock: $e',
+            style: GoogleFonts.quicksand(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     }
   }
@@ -1469,7 +2096,12 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         
         final data = snapshot.data!.data() as Map<String, dynamic>;
         
-        return SingleChildScrollView(
+        return Scaffold(
+          appBar: RolePageHeader(title: 'Profile Management',
+      onBackTap: () {
+          setState(() { _selectedIndex = 0; });
+        },),
+          body: SingleChildScrollView(
           padding: EdgeInsets.all(screenWidth * 0.04),
           child: Column(
             children: [
@@ -1765,6 +2397,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                 ),
               ),
             ],
+          ),
           ),
         );
       },

@@ -78,7 +78,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             SizedBox(width: 8),
             Text(
               'Error',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.red,
@@ -88,7 +88,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         ),
         content: Text(
           message,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 14,
             color: Colors.grey[700],
           ),
@@ -98,7 +98,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'OK',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -128,7 +128,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             SizedBox(width: 8),
             Text(
               'Success',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -138,7 +138,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         ),
         content: Text(
           'Your password has been reset successfully. You can now login with your new password.',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 14,
             color: Colors.grey[700],
           ),
@@ -156,7 +156,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             },
             child: Text(
               'Go to Login',
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF4CAF50),
@@ -266,7 +266,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             SizedBox(width: 8),
             Text(
               getStrengthText(),
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: getStrengthColor(),
@@ -277,7 +277,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         SizedBox(height: 4),
         Text(
           'Must contain: 8+ characters, uppercase, lowercase, number',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 11,
             color: Colors.grey[500],
           ),
@@ -296,7 +296,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         leading: SizedBox(), // Remove back button since this is final step
         title: Text(
           'Reset Password',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.grey[800],
@@ -337,7 +337,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 Center(
                   child: Text(
                     'Create New Password',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.quicksand(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.grey[800],
@@ -352,7 +352,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   child: Text(
                     'Your new password must be different from your previous password.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.quicksand(
                       fontSize: 14,
                       color: Colors.grey[600],
                       height: 1.5,
@@ -365,7 +365,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 // New Password Input
                 Text(
                   'New Password',
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.quicksand(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Colors.grey[700],
@@ -382,7 +382,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   onChanged: (value) => setState(() {}), // Trigger rebuild for strength indicator
                   decoration: InputDecoration(
                     hintText: 'Enter your new password',
-                    hintStyle: GoogleFonts.inter(
+                    hintStyle: GoogleFonts.quicksand(
                       fontSize: 14,
                       color: Colors.grey[400],
                     ),
@@ -423,7 +423,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.quicksand(
                     fontSize: 14,
                     color: Colors.grey[800],
                   ),
@@ -438,7 +438,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 // Confirm Password Input
                 Text(
                   'Confirm New Password',
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.quicksand(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Colors.grey[700],
@@ -454,7 +454,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   enabled: !_isLoading,
                   decoration: InputDecoration(
                     hintText: 'Confirm your new password',
-                    hintStyle: GoogleFonts.inter(
+                    hintStyle: GoogleFonts.quicksand(
                       fontSize: 14,
                       color: Colors.grey[400],
                     ),
@@ -495,7 +495,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.quicksand(
                     fontSize: 14,
                     color: Colors.grey[800],
                   ),
@@ -527,7 +527,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           )
                         : Text(
                             'Reset Password',
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.quicksand(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -557,7 +557,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       Expanded(
                         child: Text(
                           'Your password is encrypted and stored securely. Make sure to remember your new password.',
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.quicksand(
                             fontSize: 12,
                             color: Colors.green[700],
                           ),

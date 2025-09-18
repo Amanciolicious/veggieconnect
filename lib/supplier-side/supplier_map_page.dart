@@ -15,6 +15,13 @@ import '../services/farm_location_request_service.dart';
 import '../services/farm_location_countdown_service.dart';
 import '../services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
+import '../widgets/modern_wave_drawer.dart';
+import '../authentication/login_page.dart';
+import 'supplier_orders_page.dart';
+import 'supplier_chat_list_page.dart';
+import 'supplier_dashboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 
 class SupplierLocationPage extends StatefulWidget {
@@ -1599,10 +1606,89 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
 // Approximately 5km radius
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Supplier Map'),
-        backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
+      appBar: const RolePageHeader(title: 'My Location'),
+      drawer: StreamBuilder<DocumentSnapshot>(
+        stream: user != null 
+          ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
+          : null,
+        builder: (context, snapshot) {
+          final userData = snapshot.data?.data() as Map<String, dynamic>?;
+          final displayName = userData?['name'] ?? user?.displayName ?? 'Supplier';
+          final email = user?.email ?? 'supplier@email.com';
+          final profileImageUrl = userData?['avatarUrl'] as String?;
+          
+          return ModernWaveDrawer(
+            selectedIndex: -1, // No main tab selected since we're on location page
+            onItemTap: (index) {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SupplierDashboard(),
+                ),
+              );
+            },
+            headerName: displayName,
+            headerEmail: email,
+            headerAvatarUrl: profileImageUrl,
+            items: [
+              DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
+              DrawerItem(icon: Icons.inventory, title: 'Manage Products', index: 1),
+              DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
+              DrawerItem(icon: Icons.person, title: 'Profile', index: 3),
+            ],
+            additionalItems: [
+              DrawerItem(
+                icon: Icons.shopping_cart,
+                title: 'Orders Management',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SupplierOrdersPage()),
+                  );
+                },
+              ),
+              DrawerItem(
+                icon: Icons.person_pin,
+                title: 'My Location',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  // Already on location page, no navigation needed
+                },
+              ),
+              DrawerItem(
+                icon: Icons.message,
+                title: 'Messages',
+                index: -1,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SupplierChatListPage()),
+                  );
+                },
+              ),
+              DrawerItem(
+                icon: Icons.logout,
+                title: 'Logout',
+                index: -1,
+                isDestructive: true,
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (!mounted) return;
+             
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
       body: _isLoading
           ? const Center(
@@ -1614,6 +1700,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
             )
           : Stack(
               children: [
+                // Removed inline header; now using RolePageHeader app bar
                 MouseRegion(
                   onHover: _isFarmRequestMode ? (event) {
                     setState(() {

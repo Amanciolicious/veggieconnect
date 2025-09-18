@@ -7,6 +7,8 @@ import '../services/content_filter_service.dart';
 import '../services/auth_state_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
+import 'admin_dashboard.dart';
 
 class AdminVerifyListingsPage extends StatefulWidget {
   const AdminVerifyListingsPage({super.key});
@@ -29,52 +31,38 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Verify Listings',
-                style: TextStyle(
-                  fontSize: screenWidth * 0.055,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+      appBar: RolePageHeader(
+        title: 'Verify Listings',
+        onBackTap: () {
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          } else {
+            navigator.pushReplacement(
+              MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            );
+          }
+        },
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            setState(() {
+              _filterStatus = value;
+              _productsStream = _buildProductsStream();
+            });
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 'all', child: Text('All Products')),
+            PopupMenuItem(value: 'pending', child: Text('Pending Review')),
+            PopupMenuItem(value: 'flagged', child: Text('Content Flagged')),
+            PopupMenuItem(value: 'approved', child: Text('Approved')),
+            PopupMenuItem(value: 'rejected', child: Text('Rejected')),
+            PopupMenuItem(value: 'recently_processed', child: Text('Recently Processed')),
           ],
-        ),
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                _filterStatus = value;
-                _productsStream = _buildProductsStream();
-              });
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'all', child: Text('All Products')),
-              const PopupMenuItem(value: 'pending', child: Text('Pending Review')),
-              const PopupMenuItem(value: 'flagged', child: Text('Content Flagged')),
-              const PopupMenuItem(value: 'approved', child: Text('Approved')),
-              const PopupMenuItem(value: 'rejected', child: Text('Rejected')),
-              const PopupMenuItem(value: 'recently_processed', child: Text('Recently Processed')),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Icon(Icons.filter_list, color: Colors.white),
-            ),
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Icon(Icons.filter_list, color: Color(0xFF4CAF50)),
           ),
-        ],
+        ),
       ),
       body: Padding(
         padding: EdgeInsets.all(screenWidth * 0.04),

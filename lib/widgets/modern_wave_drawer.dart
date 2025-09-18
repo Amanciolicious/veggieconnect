@@ -232,7 +232,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
             const SizedBox(height: 16),
             Text(
               widget.headerName,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -243,7 +243,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
             const SizedBox(height: 4),
             Text(
               widget.headerEmail,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.quicksand(
                 color: Colors.white70,
                 fontSize: 14,
               ),
@@ -329,7 +329,7 @@ class _ModernWaveDrawerState extends State<ModernWaveDrawer>
                         Expanded(
                           child: Text(
                             item.title,
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.quicksand(
                               fontSize: 16,
                               fontWeight: isSelected
                                   ? FontWeight.w600

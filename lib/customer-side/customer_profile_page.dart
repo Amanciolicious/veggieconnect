@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:veggieconnect/customer-side/customer_dashboard.dart';
 import 'package:veggieconnect/customer-side/customer_order_history_page.dart';
 import 'package:veggieconnect/services/cloudinary_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -303,17 +305,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'Profile',
-          style: GoogleFonts.quicksand(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        actions: const [],
+      appBar: RolePageHeader(
+        title: 'Profile Management',
+        onBackTap: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+            );
+          }
+        },
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),

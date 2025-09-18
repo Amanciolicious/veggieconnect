@@ -7,6 +7,7 @@ import '../widgets/product_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'customer_chat_page.dart';
 import 'customer_dashboard.dart';
+import '../widgets/role_page_header.dart';
 import '../services/auth_state_service.dart';
 
 class ProductDetailsPage extends StatefulWidget {
@@ -179,25 +180,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     final showReadMore = desc.length > 90;
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
-            );
-          },
-        ),
-        elevation: 0,
-        title: Text(
-          'Product Details',
-          style: GoogleFonts.quicksand(
-            fontSize: screenWidth * 0.055,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
+      appBar: RolePageHeader(
+        title: 'Product Details',
+        onBackTap: () {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+          );
+        },
       ),
       body: Stack(
         children: [
@@ -884,17 +873,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             },
                           ),
                           SizedBox(height: screenWidth * 0.04),
-                          Text(
-                            'Related Products',
-                            style: GoogleFonts.quicksand(
-                              fontSize: screenWidth * 0.05,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF222222),
-                            ),
-                          ),
-                          SizedBox(height: screenWidth * 0.03),
-                          _buildRelatedProductsSection(),
-                          
+                          // Related Products moved below description outside this details card
                           SizedBox(height: screenWidth * 0.04),
                           Text(
                             'Description',
@@ -923,6 +902,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 ),
                               ),
                             ),
+
+                          SizedBox(height: screenWidth * 0.04),
+                          Text(
+                            'Related Products',
+                            style: GoogleFonts.quicksand(
+                              fontSize: screenWidth * 0.05,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF222222),
+                            ),
+                          ),
+                          SizedBox(height: screenWidth * 0.03),
+                          _buildRelatedProductsSection(),
                         ],
                       ),
                     ),
@@ -932,6 +923,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               SizedBox(height: screenWidth * 0.2), // Space for bottom buttons
             ],
           ),
+          // Related Products moved inside the details above; remove positioned block
           // Bottom action buttons
           if (user != null && product['sellerId'] != user?.uid)
             Positioned(

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../widgets/role_page_header.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:path/path.dart';
 import '../services/supplier_report_service.dart';
@@ -49,18 +50,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'Manage Accounts',
-          style: TextStyle(
-            fontSize: screenWidth * 0.055,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        elevation: 0,
-      ),
+      appBar: const RolePageHeader(title: 'Manage Accounts'),
       body: Padding(
         padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(

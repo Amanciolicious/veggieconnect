@@ -20,6 +20,7 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
   
   List<SupplierLocation> _supplierLocations = [];
   bool _isLoading = true;
+  bool _mapReady = false;
 
   @override
   void initState() {
@@ -34,6 +35,13 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
         _supplierLocations = locations;
         _isLoading = false;
       });
+
+      // Center map similarly to supplier map behavior
+      if (_mapReady) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _centerMapToBogoOrMarkers();
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -41,6 +49,37 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading supplier locations: $e')),
       );
+    }
+  }
+
+  void _centerMapToBogoOrMarkers() {
+    const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
+    try {
+      if (_supplierLocations.isNotEmpty) {
+        // Fit bounds to all supplier markers with padding, limited zoom range
+        final lats = _supplierLocations.map((e) => e.latitude).toList();
+        final lngs = _supplierLocations.map((e) => e.longitude).toList();
+        final southWest = LatLng(
+          lats.reduce((a, b) => a < b ? a : b),
+          lngs.reduce((a, b) => a < b ? a : b),
+        );
+        final northEast = LatLng(
+          lats.reduce((a, b) => a > b ? a : b),
+          lngs.reduce((a, b) => a > b ? a : b),
+        );
+        _mapController.fitCamera(
+          CameraFit.bounds(
+            bounds: LatLngBounds(southWest, northEast),
+            padding: const EdgeInsets.all(24),
+          ),
+        );
+      } else {
+        // Default closer view on Bogo City
+        _mapController.move(bogoCityCenter, 14.0);
+      }
+    } catch (_) {
+      // Fallback to safe move
+      _mapController.move(bogoCityCenter, 14.0);
     }
   }
 
@@ -165,8 +204,12 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
                         mapController: _mapController,
                         options: MapOptions(
                           initialCenter: bogoCityCenter,
-                          initialZoom: 12,
-                          maxZoom: 16,
+                          initialZoom: 14,
+                          onMapReady: () {
+                            _mapReady = true;
+                            _centerMapToBogoOrMarkers();
+                          },
+                          maxZoom: 18,
                           minZoom: 10,
                         ),
                         children: [

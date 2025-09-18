@@ -8,15 +8,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:image_picker/image_picker.dart';
-import '../widgets/analytics_widgets.dart';
+import '../widgets/modern_analytics_widgets.dart';
+import '../services/modern_analytics_service.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:veggieconnect/admin-side/admin_farm_map_page.dart';
 import 'package:veggieconnect/services/tax_service.dart';
 import 'package:veggieconnect/widgets/notification_center.dart';
 import '../services/revenue_service.dart';
-import '../services/analytics_service.dart';
-import '../services/seasonal_analytics_service.dart';
 import '../authentication/login_page.dart';
 import '../services/cloudinary_service.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -26,7 +25,7 @@ import 'admin_verification_review_page.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../widgets/modern_app_bar.dart';
-import '../widgets/modern_card.dart';
+import '../widgets/role_page_header.dart';
 import '../widgets/modern_wave_drawer.dart';
 import '../services/auth_state_service.dart';
 import '../services/notification_service.dart';
@@ -51,22 +50,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   AuthUser? get user => _authService.currentUser;
 
-  Widget _expandableCard({required String title, required Widget child, bool initiallyExpanded = false}) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
-        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: child,
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   void initState() {
@@ -334,12 +317,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
-      appBar: ModernAppBar(
+      appBar: _selectedIndex == 0 ? ModernAppBar(
         title: Text(
           'Admin Dashboard',
           style: GoogleFonts.quicksand(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
             color: const Color(0xFF1A1A1A),
           ),
         ),
@@ -356,8 +339,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   IconButton(
                     icon: const Icon(
                       Icons.notifications,
-                      color: Color(0xFF1A1A1A),
-                      size: 28,
+                      color: Color(0xFF4CAF50),
+                      size: 24,
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -399,7 +382,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
           const SizedBox(width: 8),
         ],
-      ),
+      ) : null,
       drawer: _buildModernDrawer(),
       body: IndexedStack(
         index: _selectedIndex,
@@ -414,11 +397,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          setState(() { _selectedIndex = index; });
         },
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: Color(0xFF4CAF50),
         color: Colors.white,
         height: 60,
         animationDuration: const Duration(milliseconds: 300),
@@ -432,6 +413,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       ),
     );
   }
+
+  
 
   Widget _buildModernDrawer() {
     return StreamBuilder<DocumentSnapshot>(
@@ -532,14 +515,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           // Quick Actions first
           Text(
             'Quick Actions',
-            style: GoogleFonts.inter(
+            style: GoogleFonts.quicksand(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1A1A1A),
             ),
           ),
           const SizedBox(height: 20),
-          ActionCard(
+          _buildActionCard(
             title: 'Manage Accounts',
             subtitle: 'View and manage user accounts',
             icon: Icons.manage_accounts,
@@ -550,7 +533,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               );
             },
           ),
-          ActionCard(
+          _buildActionCard(
             title: 'Supplier Verification',
             subtitle: 'Review supplier ID verification requests',
             icon: Icons.verified_user,
@@ -561,7 +544,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               );
             },
           ),
-          ActionCard(
+          _buildActionCard(
             title: 'Verify Listings',
             subtitle: 'Review pending product listings',
             icon: Icons.verified,
@@ -589,7 +572,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             crossAxisCount: 2,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            childAspectRatio: 1.25,
+            childAspectRatio: 1.35,
             children: [
               // Total Users (suppliers and buyers only, exclude admins)
               StreamBuilder<QuerySnapshot>(
@@ -606,7 +589,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       return role == 'supplier' || role == 'buyer';
                     }).length;
                   }
-                  return StatCard(
+                  return _buildStatCard(
                     title: 'Total Users',
                     value: '$count',
                     icon: Icons.people,
@@ -622,7 +605,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return StatCard(
+                  return _buildStatCard(
                     title: 'Total Products',
                     value: '$count',
                     icon: Icons.inventory,
@@ -637,7 +620,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return StatCard(
+                  return _buildStatCard(
                     title: 'Total Orders',
                     value: '$count',
                     icon: Icons.shopping_cart,
@@ -650,7 +633,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 stream: RevenueService.getTotalRevenueStream(),
                 builder: (context, snapshot) {
                   final revenue = snapshot.data ?? 0.0;
-                  return StatCard(
+                  return _buildStatCard(
                     title: 'Total Revenue',
                     value: RevenueService.formatCurrency(revenue),
                     icon: Icons.attach_money,
@@ -663,7 +646,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 future: TaxService.getTotalTaxCollected(),
                 builder: (context, snapshot) {
                   final taxCollected = snapshot.data ?? 0.0;
-                  return StatCard(
+                  return _buildStatCard(
                     title: 'Tax Collected',
                     value: TaxService.formatCurrency(taxCollected),
                     icon: Icons.account_balance,
@@ -673,310 +656,530 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
             ],
           ),
-          const SizedBox(height: 24),
-
-          // Quick notifications (recent)
-          Text(
-            'Quick Notifications',
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A1A),
-            ),
-          ),
           const SizedBox(height: 12),
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('notifications')
-                .orderBy('createdAt', descending: true)
-                .limit(5)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text('No recent notifications');
-              }
-              return Column(
-                children: [
-                  for (final doc in snapshot.data!.docs)
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      dense: true,
-                      leading: const Icon(Icons.notifications, color: Colors.green),
-                      title: Text((doc.data() as Map<String, dynamic>)['title']?.toString() ?? 'Notification'),
-                      subtitle: Text((doc.data() as Map<String, dynamic>)['message']?.toString() ?? ''),
-                    ),
-                ],
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
   Widget _buildAnalyticsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+    return Scaffold(
+      appBar: RolePageHeader(
+        title: 'Analytics',
+        onBackTap: () => setState(() { _selectedIndex = 0; }),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Analytics',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          // Revenue Overview (real-time)
-          StreamBuilder<Map<String, double>>(
-            stream: RevenueService.getRevenueAnalyticsStream(),
+            // Real-time KPIs Section
+            _buildRealTimeKPIsSection(),
+            const SizedBox(height: 24),
+            
+            // Business Performance Section
+            _buildBusinessPerformanceSection(),
+            const SizedBox(height: 24),
+            
+            // User Engagement Section
+            _buildUserEngagementSection(),
+            const SizedBox(height: 24),
+            
+            // Product Performance Section
+            _buildProductPerformanceSection(),
+            const SizedBox(height: 24),
+            
+            // Market Trends Section
+            _buildMarketTrendsSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRealTimeKPIsSection() {
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: ModernAnalyticsService.getRealTimeKPIsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard('Real-time KPIs', 'Loading real-time data...');
+        }
+
+        final data = snapshot.data ?? {};
+        final todayRevenue = data['todayRevenue'] ?? 0.0;
+        final todayOrders = data['todayOrders'] ?? 0;
+        final todayCustomers = data['todayCustomers'] ?? 0;
+        final dailyGrowth = data['dailyGrowth'] ?? 0.0;
+        final todayAOV = data['todayAOV'] ?? 0.0;
+        final aovGrowth = data['aovGrowth'] ?? 0.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Real-time KPIs',
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.88,
+              children: [
+                _buildKPICard(
+                  title: 'Today\'s Revenue',
+                  value: ModernAnalyticsService.formatCurrency(todayRevenue),
+                  change: dailyGrowth != 0 ? '${dailyGrowth > 0 ? '+' : ''}${dailyGrowth.toStringAsFixed(1)}%' : null,
+                  icon: Icons.attach_money,
+                  color: const Color(0xFF4CAF50),
+                  isPositive: dailyGrowth >= 0,
+                ),
+                _buildKPICard(
+                  title: 'Today\'s Orders',
+                  value: todayOrders.toString(),
+                  change: data['yesterdayOrders'] != null && data['yesterdayOrders'] > 0 
+                      ? '${((todayOrders - data['yesterdayOrders']) / data['yesterdayOrders'] * 100).toStringAsFixed(1)}%'
+                      : null,
+                  icon: Icons.shopping_cart,
+                  color: const Color(0xFF2196F3),
+                  isPositive: todayOrders >= (data['yesterdayOrders'] ?? 0),
+                ),
+                _buildKPICard(
+                  title: 'Active Customers',
+                  value: todayCustomers.toString(),
+                  subtitle: 'Today',
+                  icon: Icons.people,
+                  color: const Color(0xFF9C27B0),
+                ),
+                _buildKPICard(
+                  title: 'Average Order Value',
+                  value: ModernAnalyticsService.formatCurrency(todayAOV),
+                  change: aovGrowth != 0 ? '${aovGrowth > 0 ? '+' : ''}${aovGrowth.toStringAsFixed(1)}%' : null,
+                  icon: Icons.trending_up,
+                  color: const Color(0xFFFF9800),
+                  isPositive: aovGrowth >= 0,
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBusinessPerformanceSection() {
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: ModernAnalyticsService.getBusinessPerformanceStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard('Business Performance', 'Loading business metrics...');
+        }
+
+        final data = snapshot.data ?? {};
+        final totalRevenue = data['totalRevenue'] ?? 0.0;
+        final totalOrders = data['totalOrders'] ?? 0;
+        final completionRate = data['completionRate'] ?? 0.0;
+        final averageOrderValue = data['averageOrderValue'] ?? 0.0;
+        final conversionFunnel = data['conversionFunnel'] as Map<String, dynamic>? ?? {};
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Business Performance',
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildKPICard(
+                    title: 'Total Revenue',
+                    value: ModernAnalyticsService.formatCurrency(totalRevenue),
+                    icon: Icons.account_balance_wallet,
+                    color: const Color(0xFF4CAF50),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildKPICard(
+                    title: 'Total Orders',
+                    value: ModernAnalyticsService.formatNumber(totalOrders),
+                    icon: Icons.receipt_long,
+                    color: const Color(0xFF2196F3),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildProgressCard(
+                    title: 'Order Completion Rate',
+                    value: completionRate,
+                    maxValue: 100,
+                    color: const Color(0xFF4CAF50),
+                    description: 'Orders successfully completed',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildKPICard(
+                    title: 'Average Order Value',
+                    value: ModernAnalyticsService.formatCurrency(averageOrderValue),
+                    icon: Icons.trending_up,
+                    color: const Color(0xFFFF9800),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildConversionFunnelChart(conversionFunnel),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUserEngagementSection() {
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: ModernAnalyticsService.getUserEngagementStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard('User Engagement', 'Loading user data...');
+        }
+
+        final data = snapshot.data ?? {};
+        final totalUsers = data['totalUsers'] ?? 0;
+        final activeUsers = data['activeUsers'] ?? 0;
+        final newUsers = data['newUsers'] ?? 0;
+        final activeUserRate = data['activeUserRate'] ?? 0.0;
+        final topActiveUsers = data['topActiveUsers'] as List<dynamic>? ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'User Engagement',
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.05,
+              children: [
+                _buildKPICard(
+                  title: 'Total Users',
+                  value: ModernAnalyticsService.formatNumber(totalUsers),
+                  icon: Icons.people,
+                  color: const Color(0xFF9C27B0),
+                ),
+                _buildKPICard(
+                  title: 'Active Users',
+                  value: ModernAnalyticsService.formatNumber(activeUsers),
+                  subtitle: 'Last 7 days',
+                  icon: Icons.people_alt,
+                  color: const Color(0xFF4CAF50),
+                ),
+                _buildKPICard(
+                  title: 'New Users',
+                  value: ModernAnalyticsService.formatNumber(newUsers),
+                  subtitle: 'Last 30 days',
+                  icon: Icons.person_add,
+                  color: const Color(0xFF2196F3),
+                ),
+                _buildProgressCard(
+                  title: 'Active User Rate',
+                  value: activeUserRate,
+                  maxValue: 100,
+                  color: const Color(0xFF4CAF50),
+                  description: 'Users active in last 7 days',
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildTopPerformersCard(
+              title: 'Most Active Users',
+              items: topActiveUsers.cast<Map<String, dynamic>>(),
+              nameKey: 'name',
+              valueKey: 'activityScore',
+              subtitleKey: 'role',
+              itemIcon: Icons.star,
+              iconColor: const Color(0xFFFF9800),
+              valueSuffix: ' pts',
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProductPerformanceSection() {
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: ModernAnalyticsService.getProductPerformanceStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
+          return ModernAnalyticsCard(
+            title: 'Product Performance',
+            icon: Icons.inventory,
+            iconColor: const Color(0xFFFF9800),
+            isLoading: true,
+            loadingText: 'Loading product data...',
+            child: const SizedBox.shrink(),
+          );
+        }
+
+        final data = snapshot.data ?? {};
+        final totalProducts = data['totalProducts'] ?? 0;
+        final activeProducts = data['activeProducts'] ?? 0;
+        final lowStockProducts = data['lowStockProducts'] ?? 0;
+        final outOfStockProducts = data['outOfStockProducts'] ?? 0;
+        final stockHealthScore = data['stockHealthScore'] ?? 0.0;
+        final topPerformingProducts = data['topPerformingProducts'] as List<dynamic>? ?? [];
+        final lowStockAlerts = data['lowStockAlerts'] as List<dynamic>? ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Product Performance',
+              style: GoogleFonts.quicksand(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.1,
+              children: [
+                ModernKPIWidget(
+                  title: 'Total Products',
+                  value: ModernAnalyticsService.formatNumber(totalProducts),
+                  icon: Icons.inventory,
+                  color: const Color(0xFF9C27B0),
+                ),
+                ModernKPIWidget(
+                  title: 'Active Products',
+                  value: ModernAnalyticsService.formatNumber(activeProducts),
+                  icon: Icons.check_circle,
+                  color: const Color(0xFF4CAF50),
+                ),
+                ModernKPIWidget(
+                  title: 'Low Stock',
+                  value: ModernAnalyticsService.formatNumber(lowStockProducts),
+                  icon: Icons.warning,
+                  color: const Color(0xFFFF9800),
+                ),
+                ModernKPIWidget(
+                  title: 'Out of Stock',
+                  value: ModernAnalyticsService.formatNumber(outOfStockProducts),
+                  icon: Icons.error,
+                  color: Colors.red,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            PerformanceIndicatorWidget(
+              title: 'Stock Health Score',
+              value: stockHealthScore,
+              maxValue: 100,
+              color: stockHealthScore >= 80 ? const Color(0xFF4CAF50) : 
+                     stockHealthScore >= 60 ? const Color(0xFFFF9800) : Colors.red,
+              description: 'Percentage of products with healthy stock levels',
+            ),
+            const SizedBox(height: 20),
+            if (topPerformingProducts.isNotEmpty)
+              TopPerformersWidget(
+                title: 'Top Performing Products',
+                items: topPerformingProducts.cast<Map<String, dynamic>>(),
+                nameKey: 'name',
+                valueKey: 'revenue',
+                subtitleKey: 'category',
+                itemIcon: Icons.star,
+                iconColor: const Color(0xFF4CAF50),
+                valueSuffix: '',
+              ),
+            if (lowStockAlerts.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              TopPerformersWidget(
+                title: 'Stock Alerts',
+                items: lowStockAlerts.cast<Map<String, dynamic>>(),
+                nameKey: 'name',
+                valueKey: 'quantity',
+                subtitleKey: 'status',
+                itemIcon: Icons.warning,
+                iconColor: Colors.red,
+                valueSuffix: ' units',
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMarketTrendsSection() {
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: ModernAnalyticsService.getMarketTrendsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return ModernAnalyticsCard(
+            title: 'Market Trends',
+            icon: Icons.trending_up,
+            iconColor: const Color(0xFF2196F3),
+            isLoading: true,
+            loadingText: 'Loading market data...',
+            child: const SizedBox.shrink(),
+          );
+        }
+
+        final data = snapshot.data ?? {};
+        final peakHours = data['peakHours'] as List<dynamic>? ?? [];
+        final categoryTrends = data['categoryTrends'] as Map<String, dynamic>? ?? {};
+        final currentSeason = data['currentSeason'] ?? 'Unknown';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Market Trends',
+              style: GoogleFonts.quicksand(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ),
-                );
-              }
-              
-              final analytics = snapshot.data ?? {};
-              final thisMonth = analytics['thisMonth'] ?? 0.0;
-              final lastMonth = analytics['lastMonth'] ?? 0.0;
-              final thisYear = analytics['thisYear'] ?? 0.0;
-              final lastYear = analytics['lastYear'] ?? 0.0;
-              final monthlyGrowth = analytics['monthlyGrowth'] ?? 0.0;
-              final yearlyGrowth = analytics['yearlyGrowth'] ?? 0.0;
-              
-              return _expandableCard(
-                title: 'Revenue Overview',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Expanded(
-                          child: _buildAnalyticsItem(
-                            'This Month', 
-                            RevenueService.formatCurrencyCompact(thisMonth), 
-                            RevenueService.formatGrowthPercentage(monthlyGrowth)
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildAnalyticsItem(
-                            'Last Month', 
-                            RevenueService.formatCurrencyCompact(lastMonth), 
-                            ''
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildAnalyticsItem(
-                            'This Year', 
-                            RevenueService.formatCurrencyCompact(thisYear), 
-                            RevenueService.formatGrowthPercentage(yearlyGrowth)
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildAnalyticsItem(
-                            'Last Year', 
-                            RevenueService.formatCurrencyCompact(lastYear), 
-                            ''
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                initiallyExpanded: true,
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          // Product Category Analytics (uses AnalyticsService + Analytics Widgets)
-          StreamBuilder<Map<String, dynamic>>(
-            stream: AnalyticsService.getProductCategoryAnalyticsStream(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading categories...'
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              final data = snapshot.data ?? {};
-              final totalProducts = (data['totalProducts'] ?? 0).toString();
-              final avgPrice = AnalyticsService.formatCurrency((data['averagePrice'] ?? 0.0) as double);
-              final organicPct = AnalyticsService.formatPercentage((data['organicPercentage'] ?? 0.0) as double);
-
-              return AnalyticsCard(
-                title: 'Product Categories',
-                icon: Icons.category,
-                initiallyExpanded: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnalyticsMetricItem(label: 'Total Active Products', value: totalProducts, icon: Icons.inventory_2),
-                    const SizedBox(height: 12),
-                    AnalyticsMetricItem(label: 'Average Price', value: avgPrice, valueColor: Colors.green, icon: Icons.attach_money),
-                    const SizedBox(height: 12),
-                    AnalyticsMetricItem(label: 'Organic Products', value: organicPct, icon: Icons.eco),
-                  ],
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 20),
-          // Seasonal Analytics (uses SeasonalAnalyticsService + SeasonIndicator)
-          StreamBuilder<Map<String, dynamic>>(
-            stream: SeasonalAnalyticsService.getSeasonalAnalyticsStream(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading seasonal data...'
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              final seasonal = snapshot.data ?? {};
-              final currentSeason = (seasonal['currentSeason'] ?? 'Unknown').toString();
-              final topSeasonalProducts = (seasonal['topSeasonalProducts'] as List<dynamic>?) ?? const [];
-
-              return AnalyticsCard(
-                title: 'Seasonal Insights',
-                icon: Icons.timeline,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        SeasonIndicator(season: currentSeason, isCurrent: true),
-                        const SizedBox(width: 12),
-                        Text('Current Season', style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    AnalyticsMetricItem(
-                      label: 'Top Seasonal Products',
-                      value: topSeasonalProducts.length.toString(),
-                      icon: Icons.star,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-
-          // Order Counts (real-time)
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orders').snapshots(),
-            builder: (context, orderSnap) {
-              if (orderSnap.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: GroceryLoadingWidget(
-                        size: 80,
-                        showText: true,
-                        loadingText: 'Loading...',
-                      ),
-                    ),
-                  ),
-                );
-              }
-              final now = DateTime.now();
-              final Map<String, double> dailySales = {};
-              final Map<String, double> weeklySales = {};
-              if (orderSnap.hasData) {
-                for (var doc in orderSnap.data!.docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-                  final amount = (data['totalPrice'] ?? 0).toDouble();
-                  if (createdAt == null) continue;
-                  final dayKey = '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
-                  if (now.difference(createdAt).inDays < 7) {
-                    dailySales[dayKey] = (dailySales[dayKey] ?? 0) + amount;
-                  }
-                  if (now.difference(createdAt).inDays < 30) {
-                    final weekKey = 'Week ${((now.difference(createdAt).inDays) ~/ 7) + 1}';
-                    weeklySales[weekKey] = (weeklySales[weekKey] ?? 0) + amount;
-                  }
-                }
-              }
-              final sortedDaily = dailySales.entries.toList()
-                ..sort((a, b) => a.key.compareTo(b.key));
-              final sortedWeekly = weeklySales.entries.toList()
-                ..sort((a, b) => a.key.compareTo(b.key));
-              return _expandableCard(
-                title: 'Sales Trend',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Last 7 Days:'),
-                    for (var entry in sortedDaily)
-                      Text('${entry.key}: ₱${entry.value.toStringAsFixed(0)}'),
-                    const SizedBox(height: 12),
-                    const Text('Last 30 Days (by week):'),
-                    for (var entry in sortedWeekly)
-                      Text('${entry.key}: ₱${entry.value.toStringAsFixed(0)}'),
-                    if (sortedDaily.isNotEmpty)
-                      SizedBox(
-                        height: 200,
-                        child: LineChart(
-                          LineChartData(
-                            titlesData: FlTitlesData(
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                ),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final idx = value.toInt();
-                                    if (idx < 0 || idx >= sortedDaily.length) return const SizedBox();
-                                    return Text(sortedDaily[idx].key.substring(5));
-                                  },
-                                ),
+                            Icon(
+                              Icons.wb_sunny,
+                              color: const Color(0xFF4CAF50),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Current Season',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
                               ),
                             ),
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: [
-                                  for (int i = 0; i < sortedDaily.length; i++)
-                                    FlSpot(i.toDouble(), sortedDaily[i].value),
-                                ],
-                                isCurved: true,
-                                color: Colors.green,
-                                barWidth: 3,
-                                dotData: FlDotData(show: false),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                        Text(
+                          currentSeason,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.quicksand(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1A1A1A),
+                          ),
+                    ),
+                  ],
+                ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              color: const Color(0xFF2196F3),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Peak Hours',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          peakHours.isNotEmpty ? peakHours.first['hour'] : 'N/A',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        if (peakHours.isNotEmpty)
+                          Text(
+                            '${peakHours.first['orders']} orders',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
                               ),
                             ],
                           ),
@@ -984,47 +1187,536 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       ),
                   ],
                 ),
-              );
-            },
+            if (categoryTrends.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _buildCategoryTrendsChart(categoryTrends),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildConversionFunnelChart(Map<String, dynamic> funnel) {
+    final totalOrders = funnel['totalOrders'] ?? 0;
+    final completedOrders = funnel['completedOrders'] ?? 0;
+    final pendingOrders = funnel['pendingOrders'] ?? 0;
+    final cancelledOrders = funnel['cancelledOrders'] ?? 0;
+
+    return ModernChartWidget(
+      title: 'Order Conversion Funnel',
+      subtitle: 'Order status distribution',
+      chart: PieChart(
+        PieChartData(
+          sections: [
+            PieChartSectionData(
+              value: completedOrders.toDouble(),
+              title: 'Completed\n${((completedOrders / totalOrders) * 100).toStringAsFixed(1)}%',
+              color: const Color(0xFF4CAF50),
+              radius: 60,
+              titleStyle: GoogleFonts.quicksand(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            PieChartSectionData(
+              value: pendingOrders.toDouble(),
+              title: 'Pending\n${((pendingOrders / totalOrders) * 100).toStringAsFixed(1)}%',
+              color: const Color(0xFFFF9800),
+              radius: 60,
+              titleStyle: GoogleFonts.quicksand(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            PieChartSectionData(
+              value: cancelledOrders.toDouble(),
+              title: 'Cancelled\n${((cancelledOrders / totalOrders) * 100).toStringAsFixed(1)}%',
+              color: Colors.red,
+              radius: 60,
+              titleStyle: GoogleFonts.quicksand(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+          centerSpaceRadius: 40,
+          sectionsSpace: 2,
+        ),
+      ),
+      legends: ['Completed', 'Pending', 'Cancelled'],
+      legendColors: [const Color(0xFF4CAF50), const Color(0xFFFF9800), Colors.red],
+    );
+  }
+
+  Widget _buildCategoryTrendsChart(Map<String, dynamic> trends) {
+    final entries = trends.entries.toList()
+      ..sort((a, b) => (b.value as double).compareTo(a.value as double));
+    
+    final topCategories = entries.take(5).toList();
+    
+    return ModernChartWidget(
+      title: 'Top Product Categories',
+      subtitle: 'Revenue by category',
+      chart: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: topCategories.isNotEmpty ? (topCategories.first.value as double) * 1.2 : 100,
+          barTouchData: BarTouchData(enabled: false),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index >= 0 && index < topCategories.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        topCategories[index].key.length > 8 
+                            ? '${topCategories[index].key.substring(0, 8)}...'
+                            : topCategories[index].key,
+                        style: GoogleFonts.quicksand(fontSize: 10),
+                      ),
+                    );
+                  }
+                  return const Text('');
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    ModernAnalyticsService.formatCurrency(value),
+                    style: GoogleFonts.quicksand(fontSize: 10),
+                  );
+                },
+              ),
+            ),
           ),
-          const SizedBox(height: 20),
-        ],
+          borderData: FlBorderData(show: false),
+          barGroups: topCategories.asMap().entries.map((entry) {
+            final index = entry.key;
+            final category = entry.value;
+            return BarChartGroupData(
+              x: index,
+              barRods: [
+                BarChartRodData(
+                  toY: category.value as double,
+                  color: const Color(0xFF4CAF50),
+                  width: 20,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(4),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildAnalyticsItem(String label, String value, String change) {
-    final isPositive = change.startsWith('+');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
+
+  Widget _buildKPICard({
+    required String title,
+    required String value,
+    String? subtitle,
+    String? change,
+    required IconData icon,
+    required Color color,
+    bool isPositive = true,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        Row(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              isPositive ? Icons.trending_up : Icons.trending_down,
-              color: isPositive ? Colors.green : Colors.red,
-              size: 16,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 16,
+                  ),
+                ),
+                const Spacer(),
+                if (change != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isPositive 
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isPositive ? Icons.trending_up : Icons.trending_down,
+                          color: isPositive ? Colors.green : Colors.red,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          change,
+                          style: GoogleFonts.quicksand(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isPositive ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 4),
+            const SizedBox(height: 10),
             Text(
-              change,
-              style: TextStyle(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.quicksand(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.quicksand(
                 fontSize: 12,
-                color: isPositive ? Colors.green : Colors.red,
+                color: const Color(0xFF757575),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.quicksand(
+                  fontSize: 11,
+                  color: const Color(0xFF757575),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressCard({
+    required String title,
+    required double value,
+    required double maxValue,
+    required Color color,
+    String? description,
+  }) {
+    final percentage = (value / maxValue * 100).clamp(0, 100);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.quicksand(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF757575),
+                    ),
+                  ),
+                ),
+                Text(
+                  '${value.toStringAsFixed(1)}%',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: percentage / 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ),
+            if (description != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: GoogleFonts.quicksand(
+                  fontSize: 12,
+                  color: const Color(0xFF757575),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopPerformersCard({
+    required String title,
+    required List<Map<String, dynamic>> items,
+    required String nameKey,
+    required String valueKey,
+    String? subtitleKey,
+    IconData? itemIcon,
+    Color? iconColor,
+    int maxItems = 5,
+    String valueSuffix = '',
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...items.take(maxItems).toList().asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final isTopThree = index < 3;
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isTopThree 
+                      ? (iconColor ?? const Color(0xFF4CAF50)).withOpacity(0.05)
+                      : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: isTopThree 
+                      ? Border.all(
+                          color: (iconColor ?? const Color(0xFF4CAF50)).withOpacity(0.2),
+                          width: 1,
+                        )
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isTopThree 
+                            ? (iconColor ?? const Color(0xFF4CAF50))
+                            : Colors.grey[400],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    if (itemIcon != null) ...[
+                      Icon(
+                        itemIcon,
+                        color: iconColor ?? const Color(0xFF4CAF50),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item[nameKey]?.toString() ?? 'Unknown',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          if (subtitleKey != null && item[subtitleKey] != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              item[subtitleKey].toString(),
+                              style: GoogleFonts.quicksand(
+                                fontSize: 12,
+                                color: const Color(0xFF757575),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${item[valueKey]?.toString() ?? '0'}$valueSuffix',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isTopThree 
+                            ? (iconColor ?? const Color(0xFF4CAF50))
+                            : const Color(0xFF757575),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingCard(String title, String loadingText) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.quicksand(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              loadingText,
+              style: GoogleFonts.quicksand(
+                fontSize: 14,
+                color: const Color(0xFF757575),
               ),
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
@@ -1054,7 +1746,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         
         final data = snapshot.data!.data() as Map<String, dynamic>;
         
-        return SingleChildScrollView(
+        return Scaffold(
+          appBar: RolePageHeader(title: 'Profile Management',
+          onBackTap: () {
+          setState(() { _selectedIndex = 0; });
+        },
+          ),
+          body: SingleChildScrollView(
           padding: EdgeInsets.all(screenWidth * 0.04),
           child: Column(
             children: [
@@ -1268,13 +1966,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               const SizedBox(height: 24),
               
               // System Statistics Section
-              ModernCard(
+              _buildModernCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'System Overview',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.quicksand(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF1A1A1A),
@@ -1326,6 +2024,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ),
             ],
           ),
+          ),
         );
       },
     );
@@ -1361,7 +2060,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       children: [
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF4CAF50),
@@ -1370,12 +2069,192 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.quicksand(
             fontSize: 14,
             color: const Color(0xFF757575),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF8D9773).withOpacity(0.08),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF4CAF50),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        color: const Color(0xFF757575),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: const Color(0xFF757575),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const Spacer(),
+                Icon(Icons.trending_up, color: color, size: 14),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: GoogleFonts.quicksand(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: GoogleFonts.quicksand(
+                fontSize: 12,
+                color: const Color(0xFF757575),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernCard({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF8D9773).withOpacity(0.08),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ignore: unused_element
+class _AdminSubpage extends StatelessWidget {
+  final String title;
+  final Widget content;
+  const _AdminSubpage({required this.title, required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: RolePageHeader(
+        title: title,
+        onBackTap: () => Navigator.of(context).pop(),
+      ),
+      body: content,
     );
   }
 }

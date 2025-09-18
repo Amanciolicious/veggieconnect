@@ -234,7 +234,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                       children: [
                         Text(
                           'Rate Experience',
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.quicksand(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A1A1A),
@@ -243,7 +243,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                         const SizedBox(height: 4),
                         Text(
                           'How was your experience with ${widget.supplierName}?',
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.quicksand(
                             fontSize: 14,
                             color: const Color(0xFF757575),
                           ),
@@ -295,7 +295,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                 const SizedBox(height: 16),
                 Text(
                   _getRatingText(_rating),
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.quicksand(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF4CAF50),
@@ -318,13 +318,13 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                 child: TextField(
                   controller: _feedbackController,
                   maxLines: 4,
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.quicksand(
                     fontSize: 16,
                     color: const Color(0xFF1A1A1A),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Share your experience (optional)',
-                    hintStyle: GoogleFonts.inter(
+                    hintStyle: GoogleFonts.quicksand(
                       fontSize: 16,
                       color: const Color(0xFF9E9E9E),
                     ),
@@ -353,7 +353,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                         ),
                         child: Text(
                           'Cancel',
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.quicksand(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -388,7 +388,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                               )
                             : Text(
                                 'Submit Rating',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.quicksand(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),

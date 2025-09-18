@@ -15,6 +15,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/scheduler.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/modern_app_bar.dart';
 import 'supplier_dashboard.dart';
 import 'supplier_chat_list_page.dart';
 import 'supplier_map_page.dart';
@@ -29,6 +30,7 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthStateService _authService = AuthStateService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -575,18 +577,20 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: ModernAppBar(
         title: Text(
           widget.product != null ? 'Edit Product' : 'Add Product',
           style: GoogleFonts.quicksand(
-            color: Colors.white,
+            color: Color(0xFF1A1A1A),
             fontWeight: FontWeight.w400,
           ),
         ),
+        backgroundColor: Colors.white,
+        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+        showBackButton: true,
+        onBackTap: () => Navigator.pop(context),
       ),
       drawer: _buildSupplierDrawer(context),
       bottomNavigationBar: CurvedNavigationBar(

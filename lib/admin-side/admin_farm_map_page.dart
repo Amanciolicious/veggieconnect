@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:veggieconnect/widgets/role_page_header.dart';
 import '../models/farm_location.dart';
 import '../models/farm_location_request.dart';
 import '../services/farm_location_service.dart';
@@ -11,6 +12,7 @@ import '../services/farm_location_request_service.dart';
 import '../services/map_service.dart';
 import 'admin_supplier_location_page.dart';
 import '../widgets/lottie_loading_widget.dart';
+import 'admin_dashboard.dart';
 
 class AdminFarmMapPage extends StatefulWidget {
   const AdminFarmMapPage({super.key});
@@ -31,11 +33,13 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
   bool _isAddingPin = false;
   String _selectedSupplierFilter = 'All Suppliers';
   List<String> _supplierNames = ['All Suppliers'];
+  bool _mapReady = false;
 
   @override
   void initState() {
     super.initState();
     _loadFarmLocations();
+    // Centering will run when map is ready
   }
 
   Future<void> _loadFarmLocations() async {
@@ -53,6 +57,13 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
         _supplierNames = ['All Suppliers', ...supplierNames];
         _isLoading = false;
       });
+
+      // Recenter after data loads
+      if (_mapReady) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _centerMapToBogoOrMarkers();
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -60,6 +71,34 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading farm locations: $e')),
       );
+    }
+  }
+
+  void _centerMapToBogoOrMarkers() {
+    const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
+    try {
+      if (_farmLocations.isNotEmpty) {
+        final lats = _farmLocations.map((e) => e.latitude).toList();
+        final lngs = _farmLocations.map((e) => e.longitude).toList();
+        final southWest = LatLng(
+          lats.reduce((a, b) => a < b ? a : b),
+          lngs.reduce((a, b) => a < b ? a : b),
+        );
+        final northEast = LatLng(
+          lats.reduce((a, b) => a > b ? a : b),
+          lngs.reduce((a, b) => a > b ? a : b),
+        );
+        _mapController.fitCamera(
+          CameraFit.bounds(
+            bounds: LatLngBounds(southWest, northEast),
+            padding: const EdgeInsets.all(24),
+          ),
+        );
+      } else {
+        _mapController.move(bogoCityCenter, 14.0);
+      }
+    } catch (_) {
+      _mapController.move(bogoCityCenter, 14.0);
     }
   }
 
@@ -588,38 +627,48 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
     const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        title: Text('Farm Locations (Admin Only)', style: TextStyle(fontSize: screenWidth * 0.055, fontWeight: FontWeight.bold)),
-        backgroundColor: green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.filter_list, color: Colors.white),
-            onSelected: (value) {
-              setState(() {
-                _selectedSupplierFilter = value;
-              });
-            },
-            itemBuilder: (context) => _supplierNames.map((supplier) {
-              return PopupMenuItem(
-                value: supplier,
-                child: Text(supplier),
-              );
-            }).toList(),
-          ),
-          IconButton(
-            icon: Icon(Icons.person_pin, color: Colors.white),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const AdminSupplierLocationPage(),
-                ),
-              );
-            },
-            tooltip: 'Manage Supplier Locations',
-          ),
-        ],
+      appBar: RolePageHeader(
+        title: 'Farm Locations',
+        onBackTap: () {
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          } else {
+            navigator.pushReplacement(
+              MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            );
+          }
+        },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PopupMenuButton<String>(
+              icon: Icon(Icons.filter_list, color: Color(0xFF4CAF50)),
+              onSelected: (value) {
+                setState(() {
+                  _selectedSupplierFilter = value;
+                });
+              },
+              itemBuilder: (context) => _supplierNames.map((supplier) {
+                return PopupMenuItem(
+                  value: supplier,
+                  child: Text(supplier),
+                );
+              }).toList(),
+            ),
+            IconButton(
+              icon: Icon(Icons.person_pin, color: Color(0xFF4CAF50)),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AdminSupplierLocationPage(),
+                  ),
+                );
+              },
+              tooltip: 'Manage Supplier Locations',
+            ),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(
@@ -641,9 +690,13 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                   mapController: _mapController,
                   options: MapOptions(
                     initialCenter: bogoCityCenter,
-                    initialZoom: 12,
+                    initialZoom: 14,
                     onTap: _onMapTap,
-                    maxZoom: 16,
+                    onMapReady: () {
+                      _mapReady = true;
+                      _centerMapToBogoOrMarkers();
+                    },
+                    maxZoom: 18,
                     minZoom: 10,
                   ),
                   children: [
@@ -711,83 +764,81 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                 Positioned(
                   top: screenWidth * 0.04,
                   left: screenWidth * 0.04,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
-                    decoration: BoxDecoration(
-                      color: green.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                      boxShadow: neumorphicShadow,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.location_on, color: Colors.white, size: screenWidth * 0.04),
-                        SizedBox(width: screenWidth * 0.01),
-                        Text(
-                          'Bogo City Boundary',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.03,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: EdgeInsets.only(bottom: screenWidth * 0.02),
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                        decoration: BoxDecoration(
+                          color: green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                          boxShadow: neumorphicShadow,
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: screenWidth * 0.04,
-                  right: screenWidth * 0.04,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                      boxShadow: neumorphicShadow,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.pending_actions, color: Colors.white, size: screenWidth * 0.04),
-                        SizedBox(width: screenWidth * 0.01),
-                        Text(
-                          'Pending Requests',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.03,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.location_on, color: Colors.white, size: screenWidth * 0.04),
+                            SizedBox(width: screenWidth * 0.01),
+                            Text(
+                              'Bogo City Boundary',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.03,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Positioned(
-                  top: screenWidth * 0.12,
-                  right: screenWidth * 0.04,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
-                    decoration: BoxDecoration(
-                      color: green.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                      boxShadow: neumorphicShadow,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.agriculture, color: Colors.white, size: screenWidth * 0.04),
-                        SizedBox(width: screenWidth * 0.01),
-                        Text(
-                          'Approved Farms',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.03,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      Container(
+                        margin: EdgeInsets.only(bottom: screenWidth * 0.02),
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                          boxShadow: neumorphicShadow,
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.pending_actions, color: Colors.white, size: screenWidth * 0.04),
+                            SizedBox(width: screenWidth * 0.01),
+                            Text(
+                              'Pending Requests',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.03,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                        decoration: BoxDecoration(
+                          color: green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                          boxShadow: neumorphicShadow,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.agriculture, color: Colors.white, size: screenWidth * 0.04),
+                            SizedBox(width: screenWidth * 0.01),
+                            Text(
+                              'Approved Farms',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.03,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (_isAddingPin)

@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
+import 'package:veggieconnect/widgets/modern_app_bar.dart';
 import 'supplier_chat_page.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import '../widgets/lottie_loading_widget.dart';
@@ -23,6 +24,7 @@ class SupplierChatListPage extends StatefulWidget {
 }
 
 class _SupplierChatListPageState extends State<SupplierChatListPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ChatService _chatService = ChatService();
   final AuthStateService _authService = AuthStateService();
   final Set<String> _selectedConversations = {};
@@ -44,27 +46,27 @@ class _SupplierChatListPageState extends State<SupplierChatListPage> {
     final padding = screenWidth * 0.04; // ~29px
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
+      appBar: ModernAppBar(
         title: Text(
           _isSelectionMode ? '${_selectedConversations.length} selected' : 'Messages',
           style: GoogleFonts.quicksand(
             fontSize: screenWidth * 0.045,
             fontWeight: FontWeight.w400,
-            color: Colors.white,
+            color: Color(0xFF1A1A1A),
           ),
         ),
-        backgroundColor: Color(0xFF6CA04A),
-        elevation: 0,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
         actions: [
           if (_isSelectionMode) ...[
             IconButton(
-              icon: Icon(Icons.delete, color: Colors.white, size: screenWidth * 0.05),
+              icon: Icon(Icons.delete, color: Color(0xFF4CAF50), size: screenWidth * 0.05),
               onPressed: _deleteSelectedConversations,
             ),
             IconButton(
-              icon: Icon(Icons.close, color: Colors.white, size: screenWidth * 0.05),
+              icon: Icon(Icons.close, color: Color(0xFF4CAF50), size: screenWidth * 0.05),
               onPressed: () {
                 setState(() {
                   _isSelectionMode = false;

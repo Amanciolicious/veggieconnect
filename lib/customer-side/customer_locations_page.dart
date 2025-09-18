@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import '../widgets/role_page_header.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -997,11 +998,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.green,
-        title: Text('Supplier Locations', style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.055)),
-        elevation: 0,
-      ),
+      appBar: RolePageHeader(title: 'Supplier Locations'),
       body: Column(
         children: [
           // Header Section - Remove the search field
