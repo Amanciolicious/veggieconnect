@@ -8,6 +8,7 @@ import '../services/auth_state_service.dart';
 import '../services/paymongo_gcash_service.dart';
 import 'customer_digital_receipt_page.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class PaymentProcessingPage extends StatefulWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems;
@@ -353,16 +354,9 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
     return HeroMode(
       enabled: false,
       child: Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Processing Payment',
-          style: GoogleFonts.quicksand(
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color(0xFF6CA04A),
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const RolePageHeader(
+        title: 'Processing Payment',
+        showBackButton: true,
       ),
       body: Container(
         width: double.infinity,

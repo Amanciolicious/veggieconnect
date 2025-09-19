@@ -6,6 +6,7 @@ import '../services/notification_service.dart';
 import '../customer-side/customer_navigation_screen.dart';
 import './lottie_loading_widget.dart';
 import '../services/auth_state_service.dart';
+import './role_page_header.dart';
 
 class NotificationCenter extends StatefulWidget {
   const NotificationCenter({super.key});
@@ -35,9 +36,9 @@ class _NotificationCenterState extends State<NotificationCenter> {
     
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Notifications'),
-          backgroundColor: const Color(0xFF6CA04A),
+        appBar: const RolePageHeader(
+          title: 'Notifications',
+          showBackButton: true,
         ),
         body: const Center(
           child: Text('Please log in to view notifications'),
@@ -46,31 +47,23 @@ class _NotificationCenterState extends State<NotificationCenter> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+      appBar: RolePageHeader(
+        title: 'Notifications',
+        showBackButton: true,
+        trailing: StreamBuilder<int>(
+          stream: _notificationService.getUnreadCountStream(),
+          builder: (context, snapshot) {
+            final unreadCount = snapshot.data ?? 0;
+            return IconButton(
+              onPressed: unreadCount > 0 ? _markAllAsRead : null,
+              icon: Icon(
+                Icons.done_all, 
+                color: unreadCount > 0 ? const Color(0xFF4CAF50) : Colors.grey,
+              ),
+              tooltip: unreadCount > 0 ? 'Mark all as read' : 'All notifications read',
+            );
+          },
         ),
-        backgroundColor: const Color(0xFF6CA04A),
-        actions: [
-          StreamBuilder<int>(
-            stream: _notificationService.getUnreadCountStream(),
-            builder: (context, snapshot) {
-              final unreadCount = snapshot.data ?? 0;
-              return IconButton(
-                onPressed: unreadCount > 0 ? _markAllAsRead : null,
-                icon: Icon(
-                  Icons.done_all, 
-                  color: unreadCount > 0 ? Colors.white : Colors.white.withOpacity(0.5),
-                ),
-                tooltip: unreadCount > 0 ? 'Mark all as read' : 'All notifications read',
-              );
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<List<NotificationData>>(
         stream: _notificationService.getNotificationHistory(),

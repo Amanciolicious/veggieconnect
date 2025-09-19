@@ -5,6 +5,7 @@ import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
 import 'package:intl/intl.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class BuyerChatPage extends StatefulWidget {
   final String supplierId;
@@ -65,17 +66,9 @@ class _BuyerChatPageState extends State<BuyerChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
-        title: Text(
-          'Chat with ${widget.supplierName}',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        elevation: 0,
+      appBar: RolePageHeader(
+        title: 'Chat with ${widget.supplierName}',
+        showBackButton: true,
       ),
       body: _conversationId == null
           ? const Center(

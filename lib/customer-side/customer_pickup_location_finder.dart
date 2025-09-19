@@ -11,6 +11,7 @@ import '../services/location_service.dart';
 import '../services/map_service.dart';
 import '../models/farm_location.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class PickupLocationFinder extends StatefulWidget {
   const PickupLocationFinder({super.key});
@@ -710,28 +711,22 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Pickup Locations',
-          style: TextStyle(fontWeight: FontWeight.bold),
+      appBar: RolePageHeader(
+        title: 'Pickup Locations',
+        showBackButton: true,
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.filter_list, color: Color(0xFF4CAF50)),
+          onSelected: (value) {
+            setState(() {
+              _selectedFilter = value;
+            });
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: 'All', child: Text('All Locations')),
+            const PopupMenuItem(value: 'Suppliers', child: Text('Suppliers Only')),
+            const PopupMenuItem(value: 'Farms', child: Text('Farms Only')),
+          ],
         ),
-        backgroundColor: const Color(0xFF4CAF50),
-        foregroundColor: Colors.white,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (value) {
-              setState(() {
-                _selectedFilter = value;
-              });
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'All', child: Text('All Locations')),
-              const PopupMenuItem(value: 'Suppliers', child: Text('Suppliers Only')),
-              const PopupMenuItem(value: 'Farms', child: Text('Farms Only')),
-            ],
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _refreshCurrentLocation,

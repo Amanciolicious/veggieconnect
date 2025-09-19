@@ -12,6 +12,7 @@ import 'dart:io';
 import 'customer_order_history_page.dart';
 import 'customer_buyer_products_page.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class DigitalReceiptPage extends StatefulWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> cartItems;
@@ -215,17 +216,9 @@ class _DigitalReceiptPageState extends State<DigitalReceiptPage> {
     final orderStatus = 'Order Placed';
     
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'Order Receipt',
-          style: GoogleFonts.quicksand(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const RolePageHeader(
+        title: 'Order Receipt',
+        showBackButton: true,
       ),
       backgroundColor: Color(0xFFF8FAF5),
       body: Screenshot(

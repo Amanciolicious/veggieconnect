@@ -6,6 +6,7 @@ import 'package:veggieconnect/services/chat_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
 import 'package:intl/intl.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/role_page_header.dart';
 
 class SupplierChatPage extends StatefulWidget {
   final String conversationId;
@@ -53,17 +54,9 @@ class _SupplierChatPageState extends State<SupplierChatPage> {
     
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          widget.buyerName,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+      appBar: RolePageHeader(
+        title: widget.buyerName,
+        showBackButton: true,
       ),
       body: Column(
         children: [

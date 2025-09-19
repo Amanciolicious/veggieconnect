@@ -10,6 +10,7 @@ import 'customer_digital_receipt_page.dart';
 import '../services/promo_service.dart';
 import '../services/notification_service.dart';
 import '../services/auth_state_service.dart';
+import '../widgets/role_page_header.dart';
 // Added for debugPrint
 
 class CheckoutSummaryPage extends StatefulWidget {
@@ -451,17 +452,9 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
       enabled: false,
       child: Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        title: Text(
-          'Order Summary',
-          style: GoogleFonts.quicksand(
-            fontSize: screenWidth * 0.055,
-            color: Colors.white,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        elevation: 0,
+      appBar: RolePageHeader(
+        title: 'Order Summary',
+        showBackButton: true,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(screenWidth * 0.04),
