@@ -582,42 +582,45 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
             
             return AlertDialog(
               insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              title: Stack(
+              title: Row(
                 children: [
-                  Text('Ban User: ${user['fullName'] ?? 'Unknown'}'),
-                  // Live countdown timer showing ban duration in upper right corner
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.red, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
+                  Expanded(
+                    child: Text(
+                      'Ban User: ${user['fullName'] ?? 'Unknown'}',
+                      style: const TextStyle(fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.red, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.timer, size: 18, color: Colors.red),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${selectedDays}d Ban',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.timer, size: 18, color: Colors.red),
-                          SizedBox(width: 6),
-                          Text(
-                            '${selectedDays}d Ban',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -639,7 +642,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                             Navigator.of(context).pop();
                             _showTemporaryBanDialog(context, screenWidth, userId, user);
                           },
-                          child: Text('Temporary Ban'),
+                          child: Text('Temporary Ban', style: TextStyle(fontSize: 10)),
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.02),
@@ -654,7 +657,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                             Navigator.of(context).pop();
                             _showPermanentBanDialog(context, screenWidth, userId, user);
                           },
-                          child: Text('Permanent Ban'),
+                          child: Text('Permanent Ban', style: TextStyle(fontSize: 10)),
                         ),
                       ),
                     ],
@@ -722,42 +725,48 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
             });
             
             return AlertDialog(
-              title: Stack(
+              title: Row(
                 children: [
-                  Text('Temporary Ban'),
-                  // Live countdown timer showing exact ban duration in upper right corner
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.orange, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orange.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                  Expanded(
+                    child: Text(
+                      'Temporary Ban',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.timer, size: 18, color: Colors.orange),
-                          SizedBox(width: 6),
-                          Text(
-                            '${selectedDays}d Duration',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange,
-                            ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.orange, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.timer, size: 18, color: Colors.orange),
+                        SizedBox(width: 6),
+                        Text(
+                          '${selectedDays}d Duration',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -898,7 +907,8 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
               Text(
                 'Permanent Ban',
                 style: TextStyle(
-                  fontSize: screenWidth * 0.05,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: Colors.red,
                 ),
               ),
@@ -972,8 +982,8 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                         child: Text(
                           'Cancel',
                           style: TextStyle(
-                            color: Color(0xFF6CA04A),
-                            fontSize: screenWidth * 0.04,
+                            color: Colors.white,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -992,7 +1002,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                           'Permanent Ban',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: screenWidth * 0.04,
+                            fontSize: 12,
                           ),
                         ),
                       ),

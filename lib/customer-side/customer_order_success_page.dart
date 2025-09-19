@@ -6,6 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'customer_digital_receipt_page.dart';
 import 'customer_order_history_page.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/modern_app_bar.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'customer_dashboard.dart';
 
 class OrderSuccessPage extends StatefulWidget {
   final String? orderId;
@@ -61,33 +64,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
           final firstOrder = ordersQuery.docs.first;
           final orderData = firstOrder.data();
           
-          // Check if any orders are still processing
-          bool hasProcessingOrders = false;
-          for (final doc in ordersQuery.docs) {
-            final data = doc.data();
-            if (data['status'] == 'processing' || data['status'] == 'pending') {
-              hasProcessingOrders = true;
-              break;
-            }
-          }
-          
-          // Update all orders to completed if any are still processing
-          if (hasProcessingOrders) {
-            final batch = FirebaseFirestore.instance.batch();
-            for (final doc in ordersQuery.docs) {
-              batch.update(doc.reference, {
-                'status': 'completed',
-                'completedAt': FieldValue.serverTimestamp(),
-                'paymentStatus': 'completed',
-                'updatedAt': FieldValue.serverTimestamp(),
-              });
-            }
-            await batch.commit();
-            
-            // Update the order data
-            orderData['status'] = 'completed';
-            orderData['paymentStatus'] = 'completed';
-          }
+          // Do NOT auto-complete here. Keep order status as-is (e.g., 'pending').
           
           setState(() {
             _orderData = orderData;
@@ -152,7 +129,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
 
       final String paymentMethod = (ordersQuery.docs.first.data()['paymentMethod'] as String?) ?? 'online_payment';
 
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => DigitalReceiptPage(
@@ -179,16 +156,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
       );
     }
   }
-
-  void _viewOrders() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const BuyerOrderHistoryPage(),
-      ),
-    );
-  }
-
+  
   String _getPaymentMethodDisplayName(String paymentMethod) {
     switch (paymentMethod.toLowerCase()) {
       case 'gcash':
@@ -210,9 +178,43 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF5),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        // Ensure back navigates to the logged-in dashboard and preserves session
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+          (route) => false,
+        );
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAF5),
+        appBar: const ModernAppBar(
+          title: 'Payment Successful',
+          showSearch: false,
+          showBackButton: true,
+        ),
+        bottomNavigationBar: CurvedNavigationBar(
+          backgroundColor: const Color(0xFF4CAF50),
+          color: Colors.white,
+          height: 60,
+          animationDuration: const Duration(milliseconds: 300),
+          items: const [
+            Icon(Icons.home, size: 30, color: Colors.green),
+            Icon(Icons.favorite, size: 30, color: Colors.green),
+            Icon(Icons.shopping_cart, size: 30, color: Colors.green),
+            Icon(Icons.search, size: 30, color: Colors.green),
+            Icon(Icons.person, size: 30, color: Colors.green),
+          ],
+          onTap: (index) {
+            // Navigate back to dashboard; default to its home tab
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+              (route) => false,
+            );
+          },
+        ),
+        body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(screenWidth * 0.06),
           child: Column(
@@ -258,13 +260,18 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+                      (route) => false,
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6CA04A),
                     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   ),
                   child: Text(
-                    'Go Back',
+                    'Go to Dashboard',
                     style: GoogleFonts.quicksand(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -306,18 +313,20 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                       const SizedBox(height: 30),
                       
                       // Success Message
-                      Text(
-                        'Payment Successful!',
-                        style: GoogleFonts.quicksand(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF6CA04A),
+                      Center(
+                        child: Text(
+                          'Payment Successful!',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF6CA04A),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 15),
                       
                       Text(
-                        'Your order has been placed successfully. Welcome to the league!',
+                        'Your order has been placed successfully.',
                         style: GoogleFonts.quicksand(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -326,65 +335,81 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                       ),
                       const SizedBox(height: 30),
                       
-                      // Order Info
+                     // Order Info
                       if (_orderData != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAF5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF6CA04A).withOpacity(0.2),
+                        SizedBox( // ✅ keeps fixed width
+                          width: 250, // set your desired fixed width here
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAF5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF6CA04A).withOpacity(0.2),
+                              ),
                             ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Order #${widget.orderId!.substring(0, 8).toUpperCase()}',
-                                    style: GoogleFonts.quicksand(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF6CA04A),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'Processing',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start, // align everything left
+                              children: [
+                                // Order ID + Processing (stacked vertically on the left)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Order #${widget.orderId!.substring(0, 8).toUpperCase()}',
                                       style: GoogleFonts.quicksand(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.visible, // ✅ prevents cropping
+                                      softWrap: true,
+                                    ),
+                                    const SizedBox(height: 7),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF6CA04A),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        'Processing',
+                                        style: GoogleFonts.quicksand(
+                                          fontSize: 11,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  const Icon(Icons.payment, color: Color(0xFF6CA04A), size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _getPaymentMethodDisplayName(_orderData!['paymentMethod'] ?? 'Online Payment'),
-                                    style: GoogleFonts.quicksand(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Payment method row
+                                Row(
+                                  children: [
+                                    const SizedBox(width: 8),
+                                    Flexible( // ✅ avoids overflow while keeping fixed container width
+                                      child: Text(
+                                        _getPaymentMethodDisplayName(
+                                          _orderData!['paymentMethod'] ?? 'Online Payment',
+                                        ),
+                                        style: GoogleFonts.quicksand(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                        overflow: TextOverflow.visible,
+                                        softWrap: true,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
                       ],
+
                       
                       // Action Buttons
                       SizedBox(
@@ -409,11 +434,15 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                         ),
                       ),
                       const SizedBox(height: 15),
-                      
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
-                          onPressed: _viewOrders,
+                          onPressed: () {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+                              (route) => false,
+                            );
+                          },
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFF6CA04A), width: 2),
                             padding: const EdgeInsets.symmetric(vertical: 15),
@@ -422,7 +451,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                             ),
                           ),
                           child: Text(
-                            'View All Orders',
+                            'Continue Shopping',
                             style: GoogleFonts.quicksand(
                               fontSize: 16,
                               color: const Color(0xFF6CA04A),
@@ -439,6 +468,6 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

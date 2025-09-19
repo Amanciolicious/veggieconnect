@@ -46,7 +46,8 @@ class PaymentCompletionService {
             'quantity': item['quantity'],
             'unit': item['unit'],
             'price': item['price'],
-            'status': 'completed',
+            // After payment, orders should be created as 'pending' for fulfillment
+            'status': 'pending',
             'createdAt': FieldValue.serverTimestamp(),
             'paymentMethod': _getPaymentMethodDisplayName('online_payment'),
             'paymentStatus': 'completed',
@@ -60,7 +61,7 @@ class PaymentCompletionService {
             'supplierName': item['supplierName'],
             'orderId': orderId,
             'totalAmount': tempOrderData['amount'],
-            'completedAt': FieldValue.serverTimestamp(),
+            // completedAt will be set when order is fulfilled/picked up
             'updatedAt': FieldValue.serverTimestamp(),
           });
         }
@@ -112,21 +113,19 @@ class PaymentCompletionService {
       print('Found ${ordersQuery.docs.length} orders with orderId: $orderId');
 
       if (ordersQuery.docs.isNotEmpty) {
-        // Update all orders with the same orderId to completed
+        // Do NOT auto-complete existing orders here. Only mark payment as completed
         final batch = _firestore.batch();
         
         for (final orderDoc in ordersQuery.docs) {
           print('Updating order: ${orderDoc.id}');
           batch.update(orderDoc.reference, {
-            'status': 'completed',
-            'completedAt': FieldValue.serverTimestamp(),
             'paymentStatus': 'completed',
             'updatedAt': FieldValue.serverTimestamp(),
           });
         }
 
         await batch.commit();
-        print('Orders completed: $orderId (${ordersQuery.docs.length} orders)');
+        print('Orders payment marked completed (status unchanged): $orderId (${ordersQuery.docs.length} orders)');
         
         // Send notifications to suppliers for existing orders
         await _sendOrderNotificationsForExistingOrders(ordersQuery.docs, orderId);

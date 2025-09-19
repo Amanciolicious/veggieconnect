@@ -90,13 +90,13 @@ class _CartPageState extends State<CartPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('💵', style: GoogleFonts.quicksand(fontSize: 20)),
+                    Text('', style: GoogleFonts.quicksand(fontSize: 16)),
                     const SizedBox(width: 8),
                     const Text('Cash on Pickup'),
                   ],
                 ),
                 subtitle: Text(
-                  'Pay on Pickup',
+                  '  Pay on Pickup',
                   style: GoogleFonts.quicksand(
                     color: Colors.green,
                     fontSize: 12,
@@ -111,13 +111,13 @@ class _CartPageState extends State<CartPage> {
                 onChanged: (val) => setState(() => tempMethod = val!),
                 title: Row(
                   children: [
-                    Text('💳', style: GoogleFonts.quicksand(fontSize: 20)),
+                    Text('', style: GoogleFonts.quicksand(fontSize: 16)),
                     const SizedBox(width: 8),
                     const Text('Online Payment'),
                   ],
                 ),
                 subtitle: Text(
-                  'Pay online',
+                  '  Pay online',
                   style: GoogleFonts.quicksand(
                     color: Colors.blue,
                     fontSize: 12,

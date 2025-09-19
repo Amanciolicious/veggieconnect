@@ -607,26 +607,11 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final green = const Color(0xFFA7C957);
-    final bg = const Color(0xFFF6F6F6);
-    final cardRadius = BorderRadius.circular(screenWidth * 0.05);
-    final neumorphicShadow = [
-      BoxShadow(
-        color: Colors.grey.shade300,
-        offset: Offset(screenWidth * 0.015, screenWidth * 0.015),
-        blurRadius: screenWidth * 0.04,
-      ),
-      BoxShadow(
-        color: Colors.white,
-        offset: Offset(-screenWidth * 0.015, -screenWidth * 0.015),
-        blurRadius: screenWidth * 0.04,
-      ),
-    ];
+   
     // Bogo City, Cebu, Philippines coordinates
     const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor:Color(0xFFF6F6F6),
       appBar: RolePageHeader(
         title: 'Farm Locations',
         onBackTap: () {
@@ -657,7 +642,7 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
               }).toList(),
             ),
             IconButton(
-              icon: Icon(Icons.person_pin, color: Color(0xFF4CAF50)),
+              icon: Icon(Icons.person_pin, color: Color(0xFF4CAF50), size: 24,),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -709,8 +694,8 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                         CircleMarker(
                           point: bogoCityCenter,
                           radius: 5000, // 5km radius in meters
-                          color: green.withOpacity(0.1),
-                          borderColor: green.withOpacity(0.5),
+                          color: Color(0xFFA7C957).withOpacity(0.1),
+                          borderColor: Color(0xFFA7C957).withOpacity(0.5),
                           borderStrokeWidth: 3,
                         ),
                       ],
@@ -721,18 +706,17 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                         ..._filteredFarmLocations.map((location) {
                           return Marker(
                             point: LatLng(location.latitude, location.longitude),
-                            width: screenWidth * 0.08,
-                            height: screenWidth * 0.08,
+                            width: 33,
+                            height: 33,
                             child: GestureDetector(
                               onTap: () => _showFarmDetails(location),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: green,
+                                  color: Color(0xFFA7C957),
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
-                                  boxShadow: neumorphicShadow,
                                 ),
-                                child: Icon(Icons.agriculture, color: Colors.white, size: screenWidth * 0.05),
+                                child: Icon(Icons.agriculture, color: Colors.white, size: 24),
                               ),
                             ),
                           );
@@ -741,8 +725,8 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                         ..._pendingRequests.map((request) {
                           return Marker(
                             point: LatLng(request.latitude, request.longitude),
-                            width: screenWidth * 0.08,
-                            height: screenWidth * 0.08,
+                            width: 33,
+                            height: 33,
                             child: GestureDetector(
                               onTap: () => _showPendingRequestDetails(request),
                               child: Container(
@@ -750,9 +734,8 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                                   color: Colors.orange,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
-                                  boxShadow: neumorphicShadow,
                                 ),
-                                child: Icon(Icons.pending_actions, color: Colors.white, size: screenWidth * 0.05),
+                                child: Icon(Icons.pending_actions, color: Colors.white, size: 24),
                               ),
                             ),
                           );
@@ -762,29 +745,28 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                   ],
                 ),
                 Positioned(
-                  top: screenWidth * 0.04,
-                  left: screenWidth * 0.04,
+                  top: 14,
+                  left: 14,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        margin: EdgeInsets.only(bottom: screenWidth * 0.02),
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                        margin: EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: green.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                          boxShadow: neumorphicShadow,
+                          color: Color(0xFFA7C957).withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.location_on, color: Colors.white, size: screenWidth * 0.04),
-                            SizedBox(width: screenWidth * 0.01),
+                            Icon(Icons.location_on, color: Colors.white, size: 14),
+                            SizedBox(width: 11),
                             Text(
                               'Bogo City Boundary',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: screenWidth * 0.03,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -792,23 +774,22 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                         ),
                       ),
                       Container(
-                        margin: EdgeInsets.only(bottom: screenWidth * 0.02),
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                        margin: EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.orange.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                          boxShadow: neumorphicShadow,
+                          borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.pending_actions, color: Colors.white, size: screenWidth * 0.04),
-                            SizedBox(width: screenWidth * 0.01),
+                            Icon(Icons.pending_actions, color: Colors.white, size: 14),
+                            SizedBox(width: 11),
                             Text(
                               'Pending Requests',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: screenWidth * 0.03,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -816,22 +797,21 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: green.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                          boxShadow: neumorphicShadow,
+                          color: Color(0xFFA7C957).withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.agriculture, color: Colors.white, size: screenWidth * 0.04),
-                            SizedBox(width: screenWidth * 0.01),
+                            Icon(Icons.agriculture, color: Colors.white, size: 14),
+                            SizedBox(width: 11),
                             Text(
                               'Approved Farms',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: screenWidth * 0.03,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -843,27 +823,27 @@ class _AdminFarmMapPageState extends State<AdminFarmMapPage> {
                 ),
                 if (_isAddingPin)
                   Positioned(
-                    bottom: screenWidth * 0.04,
-                    right: screenWidth * 0.04,
+                    bottom: 14,
+                    right: 14,
                     child: FloatingActionButton.extended(
-                      backgroundColor: green,
+                      backgroundColor: Color(0xFFA7C957),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: cardRadius),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       onPressed: _cancelPinAdditionMode,
-                      label: Text('Cancel Pin', style: TextStyle(fontSize: screenWidth * 0.04)),
-                      icon: Icon(Icons.cancel, size: screenWidth * 0.05),
+                      label: Text('Cancel Pin', style: TextStyle(fontSize: 14)),
+                      icon: Icon(Icons.cancel, size: 15),
                     ),
                   ),
                 Positioned(
-                  bottom: screenWidth * 0.04,
-                  left: screenWidth * 0.04,
+                  bottom: 14,
+                  left: 14,
                   child: FloatingActionButton.extended(
-                    backgroundColor: green,
+                    backgroundColor: Color(0xFFA7C957),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: cardRadius),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     onPressed: _enablePinAdditionMode,
-                    label: Text('Add Pin', style: TextStyle(fontSize: screenWidth * 0.04)),
-                    icon: Icon(Icons.add_location, size: screenWidth * 0.05),
+                    label: Text('Add Pin', style: TextStyle(fontSize: 14)),
+                    icon: Icon(Icons.add_location, size: 15),
                   ),
                 ),
               ],

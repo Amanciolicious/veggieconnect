@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import '../models/supplier_location.dart';
 import '../widgets/app_loader.dart';
 import '../services/supplier_location_service.dart';
+import '../widgets/role_page_header.dart';
+import 'admin_dashboard.dart';
 
 class AdminSupplierLocationPage extends StatefulWidget {
   const AdminSupplierLocationPage({super.key});
@@ -117,40 +119,28 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final green = const Color(0xFFA7C957);
-    final bg = const Color(0xFFF6F6F6);
-    final cardRadius = BorderRadius.circular(screenWidth * 0.05);
-    final neumorphicShadow = [
-      BoxShadow(
-        color: Colors.grey.shade300,
-        offset: Offset(screenWidth * 0.015, screenWidth * 0.015),
-        blurRadius: screenWidth * 0.04,
-      ),
-      BoxShadow(
-        color: Colors.white,
-        offset: Offset(-screenWidth * 0.015, -screenWidth * 0.015),
-        blurRadius: screenWidth * 0.04,
-      ),
-    ];
+    
     // Bogo City, Cebu, Philippines coordinates
     const LatLng bogoCityCenter = LatLng(11.0474, 124.0051);
     return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        title: Text('Supplier Locations - Bogo City', style: TextStyle(fontSize: screenWidth * 0.055, fontWeight: FontWeight.bold)),
-        backgroundColor: green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              _loadSupplierLocations();
-            },
-            tooltip: 'Refresh',
-          ),
-        ],
+      backgroundColor: Color(0xFFF6F6F6),
+      appBar: RolePageHeader(
+        title: 'Supplier Locations',
+        onBackTap: () {
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          } else {
+            navigator.pushReplacement(
+              MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            );
+          }
+        },
+        trailing: IconButton(
+          icon: const Icon(Icons.refresh, color: Color(0xFF4CAF50)),
+          onPressed: _loadSupplierLocations,
+          tooltip: 'Refresh',
+        ),
       ),
       body: _isLoading
           ? const Center(child: AppLoader(width: 160, height: 160))
@@ -159,39 +149,38 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
                 // Summary card
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(screenWidth * 0.04),
-                  margin: EdgeInsets.all(screenWidth * 0.04),
+                  padding: EdgeInsets.all(14),
+                  margin: EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: cardRadius,
-                    boxShadow: neumorphicShadow,
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.person_pin, color: green, size: screenWidth * 0.06),
-                          SizedBox(width: screenWidth * 0.02),
+                          Icon(Icons.person_pin, color: Color(0xFFA7C957), size: 24),
+                          SizedBox(width: 12),
                           Text(
                             'Supplier Locations Summary',
                             style: TextStyle(
-                              fontSize: screenWidth * 0.045,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.bold,
-                              color: green,
+                              color: Color(0xFFA7C957),
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: screenWidth * 0.02),
+                      SizedBox(height: 12),
                       Text(
                         'Total Supplier Locations: ${_supplierLocations.length}',
-                        style: TextStyle(fontSize: screenWidth * 0.04),
+                        style: TextStyle(fontSize: 14),
                       ),
                       if (_supplierLocations.isNotEmpty)
                         Text(
                           'Active Suppliers: ${_supplierLocations.map((loc) => loc.supplierName).toSet().length}',
-                          style: TextStyle(fontSize: screenWidth * 0.04),
+                          style: TextStyle(fontSize: 14),
                         ),
                     ],
                   ),
@@ -223,8 +212,8 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
                               CircleMarker(
                                 point: bogoCityCenter,
                                 radius: 5000, // 5km radius in meters
-                                color: green.withOpacity(0.1),
-                                borderColor: green.withOpacity(0.5),
+                                color: Color(0xFFA7C957).withOpacity(0.1),
+                                borderColor: Color(0xFFA7C957).withOpacity(0.5),
                                 borderStrokeWidth: 3,
                               ),
                             ],
@@ -234,21 +223,20 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
                             markers: _supplierLocations.map((location) {
                               return Marker(
                                 point: LatLng(location.latitude, location.longitude),
-                                width: screenWidth * 0.08,
-                                height: screenWidth * 0.08,
+                                width: 33,
+                                height: 33,
                                 child: GestureDetector(
                                   onTap: () => _showSupplierLocationDetails(location),
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: green,
+                                      color: Color(0xFFA7C957),
                                       shape: BoxShape.circle,
                                       border: Border.all(color: Colors.white, width: 2),
-                                      boxShadow: neumorphicShadow,
                                     ),
                                     child: Icon(
                                       Icons.person_pin,
                                       color: Colors.white,
-                                      size: screenWidth * 0.05,
+                                      size: 24,
                                     ),
                                   ),
                                 ),
@@ -259,25 +247,24 @@ class _AdminSupplierLocationPageState extends State<AdminSupplierLocationPage> {
                       ),
                       // Boundary indicator
                       Positioned(
-                        top: screenWidth * 0.04,
-                        left: screenWidth * 0.04,
+                        top: 14,
+                        left: 14,
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: green.withOpacity(0.9),
-                            borderRadius: cardRadius,
-                            boxShadow: neumorphicShadow,
+                            color: Color(0xFFA7C957).withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(15),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.location_on, color: Colors.white, size: screenWidth * 0.04),
-                              SizedBox(width: screenWidth * 0.01),
+                              Icon(Icons.location_on, color: Colors.white, size: 14),
+                              SizedBox(width: 11),
                               Text(
                                 'Bogo City Boundary',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: screenWidth * 0.03,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

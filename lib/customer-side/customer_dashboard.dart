@@ -691,9 +691,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             children: [
               _buildQuickActionCard(
                 'Cash on Pickup',
-                Icons.local_shipping,
+                Icons.handshake,
                 const Color(0xFF4CAF50),
-                () => _showQuickActionModal('Cash on Pickup', Icons.local_shipping, const Color(0xFF4CAF50), 'cashOnPickup'),
+                () => _showQuickActionModal('Cash on Pickup', Icons.handshake, const Color(0xFF4CAF50), 'cashOnPickup'),
                 isSmallScreen,
                 _buildCashOnPickupBadge(),
               ),
