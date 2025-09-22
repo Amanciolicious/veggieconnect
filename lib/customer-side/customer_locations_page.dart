@@ -145,7 +145,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 _showRouteDirectionsSupplier(nearestSupplier, 'foot-walking');
               },
               icon: Icon(Icons.directions_walk),
-              label: Text('Walking Directions', style: TextStyle(fontSize: 14)),
+              label: Text('Walking Directions', style: TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -157,7 +157,10 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 _showRouteDirectionsSupplier(nearestSupplier, 'driving-car');
               },
               icon: Icon(Icons.directions_car),
-              label: Text('Driving Directions'),
+             label: Text(
+                'Driving Directions',
+                style: TextStyle(fontSize: 12),
+                ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -512,43 +515,20 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                       child: _buildRouteInstructions(route),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.map),
-                    label: const Text('Show Route on Map'),
-                    onPressed: () {
-                      setState(() {
-                        _routeLine = [];
-                      });
-                      Navigator.of(context).pop();
-                      // Fit map to route
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _fitMapToRoute();
-                      });
-                    },
-                  ),
                 ],
               );
             },
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showSupplierDetails(supplier);
+              },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.green,
               ),
-              child: const Text('Close'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _openInMapsSupplier(supplier);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Open in Maps'),
+              child: const Text('Back'),
             ),
           ],
           actionsPadding: EdgeInsets.all(16),
@@ -754,9 +734,9 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       // Close loading dialog
       Navigator.of(context).pop();
 
-      if (route != null) {
+      if (route != null && route['points'] != null) {
         setState(() {
-          _routeLine = [];
+          _routeLine = List<LatLng>.from(route['points']);
         });
 
         // Fit map to show the route

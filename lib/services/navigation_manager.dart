@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'location_service.dart';
@@ -91,6 +92,15 @@ class NavigationManager {
   final LocationService _locationService = LocationService();
   final _stateController = StreamController<NavigationState>.broadcast();
   StreamSubscription<Position>? _positionSubscription;
+  
+  // Cache for routes to avoid repeated API calls
+  final Map<String, Map<String, dynamic>> _routeCache = {};
+  final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _cacheExpiry = Duration(minutes: 5);
+  // Realistic speeds (meters per second)
+  static const double _walkingSpeedMps = 1.3;   // ~4.7 km/h
+  static const double _drivingSpeedMps = 11.11; // 40 km/h
+  static const String _prefsModeKey = 'navigation_last_travel_mode';
 
   NavigationState _state = NavigationState(
     customerLocation: null,
@@ -114,7 +124,7 @@ class NavigationManager {
     required String orderId,
     required String customerUserId,
     TravelMode initialMode = TravelMode.walking,
-    int recalcEveryMeters = 15,
+    int recalcEveryMeters = 8,
   }) async {
     _currentOrderId = orderId;
     _currentUserId = customerUserId;
@@ -123,8 +133,12 @@ class NavigationManager {
     final isReadyForPickup = await _checkIfOrderIsReadyForPickup(orderId);
     final supplierId = await _getSupplierIdFromOrder(orderId);
     
+    // Load last saved mode; fall back to provided initialMode
+    final savedMode = await _loadSavedMode();
+    final modeToUse = savedMode ?? initialMode;
+
     _state = _state.copyWith(
-      mode: initialMode, 
+      mode: modeToUse, 
       arrived: false, 
       traveledPoints: [],
       isRouteLocked: isReadyForPickup,
@@ -157,6 +171,7 @@ class NavigationManager {
     }
 
     LatLng? lastRecalcPoint = _state.customerLocation;
+    DateTime lastRecalcTime = DateTime.now();
 
     _positionSubscription = _locationService.positionStream.listen((pos) async {
       // Validate GPS coordinates before using them
@@ -177,12 +192,14 @@ class NavigationManager {
       _checkArrivalAndMaybeStop();
       _emit();
 
-      // Recalculate route if moved enough
+      // Recalculate route if moved enough OR a time window elapsed (to stay accurate in traffic or map updates)
       final shouldRecalc = lastRecalcPoint == null
           ? false // Already handled above
-          : _distanceMeters(lastRecalcPoint!, curr) >= recalcEveryMeters;
+          : _distanceMeters(lastRecalcPoint!, curr) >= recalcEveryMeters ||
+            DateTime.now().difference(lastRecalcTime) >= const Duration(seconds: 5);
       if (shouldRecalc) {
         lastRecalcPoint = curr;
+        lastRecalcTime = DateTime.now();
         await _fetchAndApplyRoute();
       }
     });
@@ -190,8 +207,36 @@ class NavigationManager {
 
   Future<void> changeMode(TravelMode mode) async {
     if (_state.mode == mode) return;
+    print('Changing mode from ${_state.mode} to $mode');
+    
+    // Update mode immediately and emit state
     _state = _state.copyWith(mode: mode);
+    _emit();
+
+    // Persist selection
+    await _saveMode(mode);
+    
+    // Invalidate any cached route for current start/end and this mode to force fresh fetch
+    final start = _state.customerLocation;
+    final end = _state.supplierLocation;
+    if (start != null && end != null) {
+      _invalidateCacheFor(start, end, mode);
+    }
+
+    // Show loading state
+    _state = _state.copyWith(
+      routePoints: [],
+      steps: [NavigationStep(
+        instruction: 'Calculating route...',
+        distanceMeters: 0,
+        durationSeconds: 0,
+      )],
+    );
+    _emit();
+    
+    // Fetch new route
     await _fetchAndApplyRoute();
+    print('Mode change completed. New mode: ${_state.mode}, Distance: ${_state.distanceMeters}m, Duration: ${_state.durationSeconds}s');
   }
 
   Future<void> stop() async {
@@ -225,7 +270,12 @@ class NavigationManager {
   Future<void> _fetchAndApplyRoute() async {
     final start = _state.customerLocation;
     final end = _state.supplierLocation;
-    if (start == null || end == null) return;
+    if (start == null || end == null) {
+      print('Cannot fetch route: missing locations');
+      return;
+    }
+    final currentMode = _state.mode;
+    print('Fetching route for mode: ${currentMode}');
     
     // Validate both coordinates before fetching route
     if (!_isValidCoordinate(start.latitude, start.longitude) || 
@@ -238,16 +288,23 @@ class NavigationManager {
     final distance = _distanceMeters(start, end);
     if (distance < 50) {
       print('Locations are very close ($distance meters), creating direct route');
+      
+      // Calculate duration based on selected mode
+      final speed = currentMode == TravelMode.driving ? _drivingSpeedMps : _walkingSpeedMps;
+      final duration = distance / speed;
+      
       // Create a simple direct route for very close locations
       _state = _state.copyWith(
         routePoints: [start, end],
         distanceMeters: distance,
-        durationSeconds: distance / 1.4, // Walking speed ~1.4 m/s
+        durationSeconds: duration,
         steps: [
           NavigationStep(
-            instruction: 'Walk directly to destination',
+            instruction: _state.mode == TravelMode.driving 
+                ? 'Drive directly to destination'
+                : 'Walk directly to destination',
             distanceMeters: distance,
-            durationSeconds: distance / 1.4,
+            durationSeconds: duration,
           ),
         ],
       );
@@ -265,21 +322,76 @@ class NavigationManager {
 
     try {
       print('Fetching route from OSRM: start=(${start.latitude}, ${start.longitude}), end=(${end.latitude}, ${end.longitude})');
-      final response = await _fetchRouteFromOsrm(start, end, _state.mode);
+      final response = await _fetchRouteFromOsrm(start, end, currentMode);
       if (response == null) {
         print('OSRM response is null, creating fallback route');
-        // Create fallback route
+        
+        // Calculate duration based on selected mode
+        final speed = currentMode == TravelMode.driving ? _drivingSpeedMps : _walkingSpeedMps;
+        final duration = distance / speed;
+        
+        // Create fallback route with more detailed instructions
+        final steps = <NavigationStep>[];
+        
+        if (distance < 100) {
+          // Very short distance
+          steps.add(NavigationStep(
+            instruction: currentMode == TravelMode.driving 
+                ? 'Drive directly to destination'
+                : 'Walk directly to destination',
+            distanceMeters: distance,
+            durationSeconds: duration,
+          ));
+        } else if (distance < 500) {
+          // Short distance
+          steps.addAll([
+            NavigationStep(
+              instruction: currentMode == TravelMode.driving 
+                  ? 'Start driving towards destination'
+                  : 'Start walking towards destination',
+              distanceMeters: distance * 0.3,
+              durationSeconds: duration * 0.3,
+            ),
+            NavigationStep(
+              instruction: currentMode == TravelMode.driving 
+                  ? 'Continue driving to destination'
+                  : 'Continue walking to destination',
+              distanceMeters: distance * 0.7,
+              durationSeconds: duration * 0.7,
+            ),
+          ]);
+        } else {
+          // Longer distance
+          steps.addAll([
+            NavigationStep(
+              instruction: currentMode == TravelMode.driving 
+                  ? 'Start driving towards destination'
+                  : 'Start walking towards destination',
+              distanceMeters: distance * 0.2,
+              durationSeconds: duration * 0.2,
+            ),
+            NavigationStep(
+              instruction: currentMode == TravelMode.driving 
+                  ? 'Continue driving on main road'
+                  : 'Continue walking on main path',
+              distanceMeters: distance * 0.6,
+              durationSeconds: duration * 0.6,
+            ),
+            NavigationStep(
+              instruction: currentMode == TravelMode.driving 
+                  ? 'Approach destination'
+                  : 'Approach destination',
+              distanceMeters: distance * 0.2,
+              durationSeconds: duration * 0.2,
+            ),
+          ]);
+        }
+        
         _state = _state.copyWith(
           routePoints: [start, end],
           distanceMeters: distance,
-          durationSeconds: distance / 1.4,
-          steps: [
-            NavigationStep(
-              instruction: 'Navigate to destination',
-              distanceMeters: distance,
-              durationSeconds: distance / 1.4,
-            ),
-          ],
+          durationSeconds: duration,
+          steps: steps,
         );
         _updateTraveledPolyline();
         _emit();
@@ -292,15 +404,22 @@ class NavigationManager {
       // Check if geometry is too short (likely malformed for close distances)
       if (geometry.length < 10) {
         print('Geometry too short, creating direct route');
+        
+        // Calculate duration based on selected mode
+        final speed = currentMode == TravelMode.driving ? _drivingSpeedMps : _walkingSpeedMps;
+        final duration = distance / speed;
+        
         _state = _state.copyWith(
           routePoints: [start, end],
           distanceMeters: distance,
-          durationSeconds: distance / 1.4,
+          durationSeconds: duration,
           steps: [
             NavigationStep(
-              instruction: 'Walk directly to destination',
+              instruction: currentMode == TravelMode.driving 
+                  ? 'Drive directly to destination'
+                  : 'Walk directly to destination',
               distanceMeters: distance,
-              durationSeconds: distance / 1.4,
+              durationSeconds: duration,
             ),
           ],
         );
@@ -311,11 +430,22 @@ class NavigationManager {
       
       final points = _decodeOsrmPolyline(geometry);
       final routeDistance = (response['routes'][0]['distance'] as num).toDouble();
-      final duration = (response['routes'][0]['duration'] as num).toDouble();
+      // Always compute display duration using realistic speed per mode so
+      // walking is slower than driving even on very short routes.
+      final speed = currentMode == TravelMode.driving ? _drivingSpeedMps : _walkingSpeedMps; // m/s
+      final double duration = routeDistance / speed;
       final steps = _parseOsrmSteps(response);
+      
+      print('OSRM route fetched: Distance=${routeDistance}m, Duration=${duration}s, Steps=${steps.length}');
 
       // Validate route points before applying
       final validRoute = points.where((point) => _isValidCoordinate(point.latitude, point.longitude)).toList();
+      // Ensure the polyline starts with current position for smooth traveled fade
+      if (validRoute.isNotEmpty && _state.customerLocation != null) {
+        if (_distanceMeters(_state.customerLocation!, validRoute.first) > 5) {
+          validRoute.insert(0, _state.customerLocation!);
+        }
+      }
       
       if (validRoute.isEmpty) {
         print('No valid route points found, creating fallback route');
@@ -337,18 +467,26 @@ class NavigationManager {
       }
       _updateTraveledPolyline();
       _emit();
+      print('Route applied: Mode=${currentMode}, Distance=${_state.distanceMeters}m, Duration=${_state.durationSeconds}s');
     } catch (e) {
       print('OSRM routing failed: $e');
+      
+      // Calculate duration based on selected mode
+      final speed = currentMode == TravelMode.driving ? _drivingSpeedMps : _walkingSpeedMps;
+      final duration = distance / speed;
+      
       // Create fallback route on any error
       _state = _state.copyWith(
         routePoints: [start, end],
         distanceMeters: distance,
-        durationSeconds: distance / 1.4,
+        durationSeconds: duration,
         steps: [
           NavigationStep(
-            instruction: 'Navigate to destination',
+            instruction: currentMode == TravelMode.driving 
+                ? 'Drive to destination'
+                : 'Walk to destination',
             distanceMeters: distance,
-            durationSeconds: distance / 1.4,
+            durationSeconds: duration,
           ),
         ],
       );
@@ -358,14 +496,70 @@ class NavigationManager {
   }
 
   Future<Map<String, dynamic>?> _fetchRouteFromOsrm(LatLng start, LatLng end, TravelMode mode) async {
-    final profile = mode == TravelMode.driving ? 'driving' : 'foot';
-    final url = Uri.parse('https://router.project-osrm.org/route/v1/$profile/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=polyline6&steps=true');
-    final res = await http.get(url, headers: { 'Accept': 'application/json' });
-    if (res.statusCode != 200) {
-      print('OSRM error: ${res.statusCode} ${res.body}');
+    try {
+      final profile = mode == TravelMode.driving ? 'driving' : 'foot';
+      final cacheKey = '${start.latitude},${start.longitude}-${end.latitude},${end.longitude}-$profile';
+      
+      // Check cache first
+      if (_routeCache.containsKey(cacheKey)) {
+        final cacheTime = _cacheTimestamps[cacheKey];
+        if (cacheTime != null && DateTime.now().difference(cacheTime) < _cacheExpiry) {
+          print('Using cached route for $profile mode');
+          return _routeCache[cacheKey];
+        } else {
+          // Remove expired cache
+          _routeCache.remove(cacheKey);
+          _cacheTimestamps.remove(cacheKey);
+        }
+      }
+      
+      final url = Uri.parse('https://router.project-osrm.org/route/v1/$profile/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=polyline6&steps=true');
+      print('OSRM URL: $url');
+      
+      final res = await http.get(url, headers: { 
+        'Accept': 'application/json',
+        'User-Agent': 'VeggieConnect/1.0',
+      }).timeout(Duration(seconds: 8));
+      
+      if (res.statusCode != 200) {
+        print('OSRM error: ${res.statusCode} ${res.body}');
+        return null;
+      }
+      
+      final result = json.decode(res.body) as Map<String, dynamic>;
+      
+      // Check if the response has valid route data
+      if (result['code'] != 'Ok') {
+        print('OSRM returned error code: ${result['code']}');
+        return null;
+      }
+      
+      final routes = result['routes'] as List?;
+      if (routes == null || routes.isEmpty) {
+        print('OSRM returned no routes');
+        return null;
+      }
+      
+      // Cache the result
+      _routeCache[cacheKey] = result;
+      _cacheTimestamps[cacheKey] = DateTime.now();
+      
+      print('OSRM response received for $profile mode: ${routes.length} routes');
+      return result;
+    } catch (e) {
+      print('OSRM API call failed: $e');
       return null;
     }
-    return json.decode(res.body) as Map<String, dynamic>;
+  }
+
+  void _invalidateCacheFor(LatLng start, LatLng end, TravelMode mode) {
+    final profile = mode == TravelMode.driving ? 'driving' : 'foot';
+    final cacheKey = '${start.latitude},${start.longitude}-${end.latitude},${end.longitude}-$profile';
+    if (_routeCache.containsKey(cacheKey)) {
+      _routeCache.remove(cacheKey);
+      _cacheTimestamps.remove(cacheKey);
+      print('Invalidated route cache for key: $cacheKey');
+    }
   }
 
   List<LatLng> _decodeOsrmPolyline(String encoded) {
@@ -432,43 +626,95 @@ class NavigationManager {
   }
 
   List<NavigationStep> _parseOsrmSteps(Map<String, dynamic> jsonBody) {
-    final legs = (jsonBody['routes'] as List).first['legs'] as List;
-    final List<NavigationStep> steps = [];
-    for (final leg in legs) {
-      for (final step in (leg['steps'] as List)) {
-        final maneuver = step['maneuver'];
-        final instruction = _formatInstruction(maneuver, step['name']);
+    try {
+      final routes = jsonBody['routes'] as List;
+      if (routes.isEmpty) return [];
+      
+      final legs = routes.first['legs'] as List;
+      final List<NavigationStep> steps = [];
+      
+      for (final leg in legs) {
+        final legSteps = leg['steps'] as List;
+        for (final step in legSteps) {
+          final maneuver = step['maneuver'];
+          final streetName = step['name'] as String?;
+          final distance = (step['distance'] as num).toDouble();
+          final duration = (step['duration'] as num).toDouble();
+          
+          // Only include steps with meaningful distance (more than 10 meters)
+          if (distance > 10) {
+            final instruction = _formatInstruction(maneuver, streetName);
+            steps.add(NavigationStep(
+              instruction: instruction,
+              distanceMeters: distance,
+              durationSeconds: duration,
+            ));
+          }
+        }
+      }
+      
+      // If no meaningful steps found, create a simple direct route
+      if (steps.isEmpty) {
+        final totalDistance = (routes.first['distance'] as num).toDouble();
+        final totalDuration = (routes.first['duration'] as num).toDouble();
         steps.add(NavigationStep(
-          instruction: instruction,
-          distanceMeters: (step['distance'] as num).toDouble(),
-          durationSeconds: (step['duration'] as num).toDouble(),
+          instruction: 'Follow the route to your destination',
+          distanceMeters: totalDistance,
+          durationSeconds: totalDuration,
         ));
       }
+      
+      return steps;
+    } catch (e) {
+      print('Error parsing OSRM steps: $e');
+      return [];
     }
-    return steps;
   }
 
   String _formatInstruction(dynamic maneuver, String? street) {
     try {
       final type = (maneuver['type'] as String?) ?? 'continue';
       final modifier = (maneuver['modifier'] as String?) ?? '';
-      final name = (street ?? '').isEmpty ? '' : ' onto $street';
+      
+      // Use street name if available, otherwise use generic direction
+      String streetName = (street ?? '').trim();
+      if (streetName.isEmpty) {
+        streetName = 'the road';
+      }
+      
       switch (type) {
         case 'depart':
-          return 'Start$name';
+          return streetName.isNotEmpty ? 'Start on $streetName' : 'Start your journey';
         case 'arrive':
-          return 'Arrive at destination';
+          return 'Arrive at your destination';
         case 'turn':
-          return 'Turn ${modifier.isNotEmpty ? modifier : ''}$name'.trim();
+          if (modifier.isNotEmpty) {
+            return 'Turn $modifier onto $streetName';
+          } else {
+            return 'Turn onto $streetName';
+          }
         case 'new name':
-          return 'Continue$name';
+          return 'Continue on $streetName';
         case 'roundabout':
-          return 'Enter roundabout$name';
+          return 'Enter roundabout and take exit onto $streetName';
+        case 'merge':
+          return 'Merge onto $streetName';
+        case 'ramp':
+          return 'Take ramp onto $streetName';
+        case 'fork':
+          return 'Keep $modifier at fork onto $streetName';
+        case 'end of road':
+          return 'At end of road, turn $modifier onto $streetName';
+        case 'continue':
+          return 'Continue straight on $streetName';
+        case 'notification':
+          return 'Continue on $streetName';
         default:
-          return 'Continue$name';
+          return 'Continue on $streetName';
       }
-    } catch (_) {
-      return 'Continue';
+    } catch (e) {
+      print('Error formatting instruction: $e');
+      return 'Continue on the road';
     }
   }
 
@@ -611,7 +857,10 @@ class NavigationManager {
 
   void _emit() {
     if (!_stateController.isClosed) {
+      print('Emitting state: Mode=${_state.mode}, Distance=${_state.distanceMeters}m, Duration=${_state.durationSeconds}s');
       _stateController.add(_state);
+    } else {
+      print('State controller is closed, cannot emit state');
     }
   }
 
@@ -631,8 +880,41 @@ class NavigationManager {
     );
   }
 
+  // Clear cache when needed
+  void clearCache() {
+    _routeCache.clear();
+    _cacheTimestamps.clear();
+    print('Route cache cleared');
+  }
+
+  // Force refresh current route
+  Future<void> refreshRoute() async {
+    print('Refreshing current route...');
+    await _fetchAndApplyRoute();
+  }
+
   void dispose() {
     _stateController.close();
     stop();
+  }
+
+  // Persistence helpers
+  Future<void> _saveMode(TravelMode mode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefsModeKey, mode == TravelMode.driving ? 'driving' : 'walking');
+    } catch (_) {}
+  }
+
+  Future<TravelMode?> _loadSavedMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final v = prefs.getString(_prefsModeKey);
+      if (v == 'driving') return TravelMode.driving;
+      if (v == 'walking') return TravelMode.walking;
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

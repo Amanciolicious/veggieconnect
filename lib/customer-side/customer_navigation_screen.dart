@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_print
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -53,7 +53,18 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
     _pulseController.repeat(reverse: true);
     
     _sub = _manager.stream.listen((s) async {
+      print('Navigation state received: Mode=${s.mode}, Distance=${s.distanceMeters}m, Duration=${s.durationSeconds}s');
+      
+      // Force UI update by checking if state actually changed
+      final hasChanged = _state?.mode != s.mode || 
+                        _state?.distanceMeters != s.distanceMeters || 
+                        _state?.durationSeconds != s.durationSeconds ||
+                        _state?.steps.length != s.steps.length;
+      
+      if (hasChanged || _state != s) {
       setState(() => _state = s);
+        print('UI state updated: Mode=${_state?.mode}, Distance=${_state?.distanceMeters}m, Duration=${_state?.durationSeconds}s');
+      }
       
       // Auto-zoom to fit route when first loaded
       if (!_hasInitialized && s.customerLocation != null && s.supplierLocation != null) {
@@ -154,6 +165,406 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
     if (s?.customerLocation != null) {
       _mapController.move(s!.customerLocation!, 16.0);
     }
+  }
+
+  void _toggleDrivingMode() {
+    final s = _state;
+    if (s == null) return;
+    
+    // Show detailed driving directions modal
+    _showDrivingDirectionsModal();
+  }
+
+  void _showWalkingDirectionsModal() async {
+    final s = _state;
+    if (s?.customerLocation == null || s?.supplierLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Ensure the route is recalculated for walking before showing modal
+    await _manager.changeMode(TravelMode.walking);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Listen to navigation state changes
+            return StreamBuilder<NavigationState>(
+              stream: _manager.stream,
+              builder: (context, snapshot) {
+                final currentState = snapshot.data ?? s!;
+                
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.directions_walk, color: Colors.green),
+              const SizedBox(width: 8),
+              Text(
+                'Walking Directions',
+                        style: TextStyle(fontSize: 12),
+              )
+            ],
+          ),
+                  content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Route Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                            Text('Distance: ${_formatDistance(currentState.distanceMeters)}'),
+                        Text('Mode: Walking'),
+                        Text('Time: ${_formatDuration(_durationSecondsFor(currentState.distanceMeters, TravelMode.walking))}'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Walking Time', style: TextStyle(fontSize: 12)),
+                              Text(_formatDuration(_durationSecondsFor(currentState.distanceMeters, TravelMode.walking)), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Driving Time', style: TextStyle(fontSize: 12)),
+                              Text(_formatDuration(_durationSecondsFor(currentState.distanceMeters, TravelMode.driving)), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Step-by-step Directions:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 200,
+                    child: SingleChildScrollView(
+                          child: _buildWalkingInstructionsFromState(currentState),
+                    ),
+                  ),
+                ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(foregroundColor: Colors.green),
+              child: const Text('Close'),
+            ),
+          ],
+          actionsPadding: EdgeInsets.all(16),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDrivingDirectionsModal() async {
+    final s = _state;
+    if (s?.customerLocation == null || s?.supplierLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Ensure the route is recalculated for driving before showing modal
+    await _manager.changeMode(TravelMode.driving);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Listen to navigation state changes
+            return StreamBuilder<NavigationState>(
+              stream: _manager.stream,
+              builder: (context, snapshot) {
+                final currentState = snapshot.data ?? s!;
+                
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.directions_car, color: Colors.blue),
+              const SizedBox(width: 8),
+              Text(
+                  'Driving Directions',
+                        style: TextStyle(fontSize: 12),
+                )
+            ],
+          ),
+                  content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Route Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                            Text('Distance: ${_formatDistance(currentState.distanceMeters)}'),
+                        Text('Mode: Driving'),
+                        Text('Time: ${_formatDuration(_durationSecondsFor(currentState.distanceMeters, TravelMode.driving))}'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Walking Time', style: TextStyle(fontSize: 12)),
+                              Text(_formatDuration(_durationSecondsFor(currentState.distanceMeters, TravelMode.walking)), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Driving Time', style: TextStyle(fontSize: 12)),
+                              Text(_formatDuration(_durationSecondsFor(currentState.distanceMeters, TravelMode.driving)), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Step-by-step Directions:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 200,
+                    child: SingleChildScrollView(
+                          child: _buildDrivingInstructionsFromState(currentState),
+                    ),
+                  ),
+                ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(foregroundColor: Colors.green),
+              child: const Text('Close'),
+            ),
+          ],
+          actionsPadding: EdgeInsets.all(16),
+        );
+      },
+    );
+          },
+        );
+      },
+    );
+  }
+
+
+
+  Widget _buildWalkingStep(int stepNumber, String instruction, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                stepNumber.toString(),
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.grey, size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    instruction,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrivingStep(int stepNumber, String instruction, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                stepNumber.toString(),
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.grey, size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    instruction,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDistance(double distanceMeters) {
+    if (distanceMeters < 1000) {
+      return '${distanceMeters.toStringAsFixed(0)} m';
+    } else {
+      return '${(distanceMeters / 1000).toStringAsFixed(1)} km';
+    }
+  }
+
+  String _formatDuration(double durationSeconds) {
+    if (durationSeconds < 60) {
+      return '${durationSeconds.toStringAsFixed(0)}s';
+    } else {
+      final minutes = (durationSeconds / 60).round();
+      return minutes < 60 ? '$minutes min' : '${(minutes / 60).toStringAsFixed(1)} hr';
+    }
+  }
+
+  double _durationSecondsFor(double distanceMeters, TravelMode mode) {
+    const double walkingSpeedMps = 1.3;
+    const double drivingSpeedMps = 11.11;
+    final speed = mode == TravelMode.driving ? drivingSpeedMps : walkingSpeedMps;
+    return distanceMeters / speed;
+  }
+
+  Widget _buildWalkingInstructionsFromState(NavigationState? s) {
+    if (s == null || s.steps.isEmpty) {
+      return const Text('No walking directions available');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: s.steps.asMap().entries.map((entry) {
+        final index = entry.key;
+        final step = entry.value;
+        return _buildWalkingStep(
+          index + 1,
+          step.instruction,
+          Icons.directions_walk,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDrivingInstructionsFromState(NavigationState? s) {
+    if (s == null || s.steps.isEmpty) {
+      return const Text('No driving directions available');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: s.steps.asMap().entries.map((entry) {
+        final index = entry.key;
+        final step = entry.value;
+        return _buildDrivingStep(
+          index + 1,
+          step.instruction,
+          Icons.directions_car,
+        );
+      }).toList(),
+    );
   }
 
   Future<void> _showArrivalDialog() async {
@@ -283,8 +694,8 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                         if (s?.customerLocation != null)
                           Marker(
                             point: s!.customerLocation!,
-                            width: 50,
-                            height: 50,
+                            width: 36,
+                            height: 36,
                             child: AnimatedBuilder(
                               animation: _pulseAnimation,
                               builder: (context, child) {
@@ -294,16 +705,16 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                                     decoration: BoxDecoration(
                                       color: Colors.blue,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 3),
+                                      border: Border.all(color: Colors.white, width: 2),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.blue.withOpacity(0.4),
-                                          blurRadius: 8 * _pulseAnimation.value,
-                                          spreadRadius: 2 * _pulseAnimation.value,
+                                          color: Colors.blue.withOpacity(0.25),
+                                          blurRadius: 6 * _pulseAnimation.value,
+                                          spreadRadius: 1.5 * _pulseAnimation.value,
                                         ),
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.3),
-                                          blurRadius: 4,
+                                          blurRadius: 3,
                                           offset: const Offset(0, 2),
                                         ),
                                       ],
@@ -311,7 +722,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                                     child: const Icon(
                                       Icons.person,
                                       color: Colors.white,
-                                      size: 24,
+                                      size: 18,
                                     ),
                                   ),
                                 );
@@ -321,17 +732,17 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                         if (s?.supplierLocation != null)
                           Marker(
                             point: s!.supplierLocation!,
-                            width: 50,
-                            height: 50,
+                            width: 36,
+                            height: 36,
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 3),
+                                border: Border.all(color: Colors.white, width: 2),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 4,
+                                    blurRadius: 3,
                                     offset: const Offset(0, 2),
                                   ),
                                 ],
@@ -339,7 +750,7 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                               child: const Icon(
                                 Icons.store,
                                 color: Colors.white,
-                                size: 24,
+                                size: 18,
                               ),
                             ),
                           ),
@@ -372,6 +783,9 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
   Widget _buildControlsAndStats(NavigationState? s) {
     final distance = s?.distanceMeters ?? 0;
     final duration = s?.durationSeconds ?? 0;
+    print('UI Stats: Mode=${s?.mode}, Distance=${distance}m, Duration=${duration}s');
+    final bool isWalking = s?.mode == TravelMode.walking;
+    final bool isDriving = s?.mode == TravelMode.driving;
     String etaText;
     if (duration < 60) {
       etaText = '${duration.toStringAsFixed(0)}s';
@@ -384,32 +798,59 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
         : '${(distance / 1000).toStringAsFixed(1)} km';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
+          // Left: stats in one tidy row
           Expanded(
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.timer, color: Colors.black54),
-                const SizedBox(width: 6),
-                Text(etaText, style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(width: 12),
-                const Icon(Icons.social_distance, color: Colors.black54),
-                const SizedBox(width: 6),
-                Text(distText, style: const TextStyle(fontWeight: FontWeight.w600)),
+                const Icon(Icons.timer, color: Colors.black54, size: 14),
+                const SizedBox(width: 4),
+                Text(etaText, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                const SizedBox(width: 10),
+                const Icon(Icons.social_distance, color: Colors.black54, size: 14),
+                const SizedBox(width: 4),
+                Text(distText, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
               ],
             ),
           ),
-          SegmentedButton<TravelMode>(
-            segments: const [
-              ButtonSegment(value: TravelMode.walking, icon: Icon(Icons.directions_walk), label: Text('Walk')),
-              ButtonSegment(value: TravelMode.driving, icon: Icon(Icons.directions_car), label: Text('Drive')),
+          // Right: walking/driving buttons with labels in a single row, responsive with Wrap if needed
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Walking button with selected color state
+              OutlinedButton.icon(
+                onPressed: _showWalkingDirectionsModal,
+                icon: Icon(Icons.directions_walk, size: 16, color: isWalking ? Colors.white : Colors.green),
+                label: Text('Walking', style: TextStyle(fontSize: 12, color: isWalking ? Colors.white : Colors.green)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  foregroundColor: isWalking ? Colors.white : Colors.green,
+                  backgroundColor: isWalking ? Colors.green : Colors.transparent,
+                  side: BorderSide(color: Colors.green.withOpacity(0.6)),
+                  visualDensity: VisualDensity.compact,
+                  minimumSize: const Size(0, 32),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Driving button with selected color state
+              OutlinedButton.icon(
+                onPressed: _toggleDrivingMode,
+                icon: Icon(Icons.directions_car, size: 16, color: isDriving ? Colors.white : Colors.blue),
+                label: Text('Driving', style: TextStyle(fontSize: 12, color: isDriving ? Colors.white : Colors.blue)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  foregroundColor: isDriving ? Colors.white : Colors.blue,
+                  backgroundColor: isDriving ? Colors.blue : Colors.transparent,
+                  side: BorderSide(color: Colors.blue.withOpacity(0.6)),
+                  visualDensity: VisualDensity.compact,
+                  minimumSize: const Size(0, 32),
+                ),
+              ),
             ],
-            selected: {s?.mode ?? TravelMode.walking},
-            onSelectionChanged: (set) {
-              final mode = set.first;
-              _manager.changeMode(mode);
-            },
           ),
         ],
       ),
