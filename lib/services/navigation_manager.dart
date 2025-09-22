@@ -275,7 +275,7 @@ class NavigationManager {
       return;
     }
     final currentMode = _state.mode;
-    print('Fetching route for mode: ${currentMode}');
+    print('Fetching route for mode: $currentMode');
     
     // Validate both coordinates before fetching route
     if (!_isValidCoordinate(start.latitude, start.longitude) || 
@@ -467,7 +467,7 @@ class NavigationManager {
       }
       _updateTraveledPolyline();
       _emit();
-      print('Route applied: Mode=${currentMode}, Distance=${_state.distanceMeters}m, Duration=${_state.durationSeconds}s');
+      print('Route applied: Mode=$currentMode, Distance=${_state.distanceMeters}m, Duration=${_state.durationSeconds}s');
     } catch (e) {
       print('OSRM routing failed: $e');
       

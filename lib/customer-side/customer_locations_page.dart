@@ -670,24 +670,6 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
     );
   }
 
-  void _openInMapsSupplier(SupplierLocation supplier) {
-    // Open supplier location in OpenStreetMap
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Opening ${supplier.locationName} in OpenStreetMap...'),
-          action: SnackBarAction(
-            label: 'Open',
-            onPressed: () {
-              // Note: In a real app, you would use url_launcher package to open the URL
-              // await launchUrl(Uri.parse(url));
-            },
-          ),
-        ),
-      );
-    }
-  }
 
   void _fitMapToRoute() {
     if (_routeLine == null || _routeLine!.isEmpty) return;
