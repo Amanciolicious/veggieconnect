@@ -8,6 +8,7 @@ import 'package:veggieconnect/services/supplier_location_service.dart';
 import 'package:veggieconnect/services/navigation_manager.dart';
 import 'package:veggieconnect/services/notification_service.dart';
 import 'package:veggieconnect/services/auth_state_service.dart';
+import 'package:veggieconnect/services/stock_management_service.dart';
 import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import 'package:veggieconnect/widgets/role_page_header.dart';
 import 'supplier_chat_page.dart';
@@ -538,20 +539,30 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
           .doc(orderId)
           .update(statusUpdate);
 
-      // Increment soldCount when order is marked as picked_up
+      // Update product stock when order is marked as picked_up
       if (newStatus == 'picked_up' && productId != null) {
-        try {
-          await FirebaseFirestore.instance
-              .collection('products')
-              .doc(productId)
-              .update({
-            'soldCount': FieldValue.increment(quantity),
-            'lastSoldAt': FieldValue.serverTimestamp(),
-          });
-        } catch (e) {
-          print('Failed to update product soldCount: $e');
-          // Continue with the rest of the process even if soldCount update fails
+        final stockUpdateSuccess = await StockManagementService.updateStockOnPickup(
+          productId: productId,
+          orderQuantity: quantity,
+          orderId: orderId,
+        );
+        
+        if (!stockUpdateSuccess) {
+          // Log the issue but continue with order processing
+          print('Stock update failed for order $orderId, but order processing continues');
         }
+      }
+
+      // Restore stock when order is cancelled
+      if (newStatus == 'cancelled' && productId != null) {
+        final originalStatus = orderData['status'] as String?;
+        
+        await StockManagementService.restoreStockOnCancellation(
+          productId: productId,
+          orderQuantity: quantity,
+          orderId: orderId,
+          originalStatus: originalStatus ?? 'unknown',
+        );
       }
 
       // Handle route locking/unlocking based on status

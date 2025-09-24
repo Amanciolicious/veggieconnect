@@ -1214,12 +1214,18 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                                   color: Color(0xFF6CA04A),
                                 ),
                               ),
-                              Text(
-                                'Stock: ${product['quantity'] ?? 0}',
-                                style: GoogleFonts.quicksand(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Stock: ${product['quantity'] ?? 0}',
+                                    style: GoogleFonts.quicksand(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  StockIndicator(quantity: product['quantity'] ?? 0),
+                                ],
                               ),
                             ],
                           ),
@@ -3139,5 +3145,53 @@ class _VerificationDialogState extends State<VerificationDialog> {
         ),
       ),
     );
+  }
+
+  // (migrated to standalone widget StockIndicator below)
+}
+
+class StockIndicator extends StatelessWidget {
+  final int quantity;
+  const StockIndicator({super.key, required this.quantity});
+
+  @override
+  Widget build(BuildContext context) {
+    if (quantity == 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.red.withOpacity(0.3)),
+        ),
+        child: const Text(
+          'OUT',
+          style: TextStyle(
+            fontSize: 8,
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    if (quantity <= 5) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        ),
+        child: const Text(
+          'LOW',
+          style: TextStyle(
+            fontSize: 8,
+            color: Colors.orange,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

@@ -465,6 +465,39 @@ class NotificationService {
     await _saveNotificationHistory();
   }
 
+  // Clear all notifications from Firestore
+  Future<void> clearAllNotifications() async {
+    final user = _currentUser;
+    if (user == null) return;
+
+    try {
+      // Get all notifications for the current user
+      final notificationsSnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .get();
+
+      if (notificationsSnapshot.docs.isNotEmpty) {
+        // Delete all notifications in batches
+        final batch = _firestore.batch();
+        
+        for (final doc in notificationsSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        
+        await batch.commit();
+        debugPrint('All notifications cleared for user ${user.uid}');
+      }
+      
+      // Also clear local history
+      await clearNotificationHistory();
+      
+    } catch (e) {
+      debugPrint('Error clearing all notifications: $e');
+    }
+  }
+
   // Send in-app notification
   Future<void> sendInAppNotification({
     required String title,
@@ -1103,6 +1136,25 @@ class NotificationService {
       debugPrint('All notifications marked as read');
     } catch (e) {
       debugPrint('Error marking all notifications as read: $e');
+    }
+  }
+
+  // Delete a specific notification
+  Future<void> deleteNotification(String notificationId) async {
+    final user = _currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .doc(notificationId)
+          .delete();
+      
+      debugPrint('Notification $notificationId deleted');
+    } catch (e) {
+      debugPrint('Error deleting notification: $e');
     }
   }
 

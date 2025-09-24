@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 // Removed AppLoader to avoid using Lottie in notifications loading state
@@ -18,6 +18,8 @@ class NotificationCenter extends StatefulWidget {
 class _NotificationCenterState extends State<NotificationCenter> {
   final NotificationService _notificationService = NotificationService();
   final AuthStateService _authService = AuthStateService();
+  bool _isSelectionMode = false;
+  final Set<String> _selectedNotifications = <String>{};
 
   AuthUser? get user => _authService.currentUser;
 
@@ -50,20 +52,90 @@ class _NotificationCenterState extends State<NotificationCenter> {
       appBar: RolePageHeader(
         title: 'Notifications',
         showBackButton: true,
-        trailing: StreamBuilder<int>(
-          stream: _notificationService.getUnreadCountStream(),
-          builder: (context, snapshot) {
-            final unreadCount = snapshot.data ?? 0;
-            return IconButton(
-              onPressed: unreadCount > 0 ? _markAllAsRead : null,
-              icon: Icon(
-                Icons.done_all, 
-                color: unreadCount > 0 ? const Color(0xFF4CAF50) : Colors.grey,
-              ),
-              tooltip: unreadCount > 0 ? 'Mark all as read' : 'All notifications read',
-            );
-          },
-        ),
+        trailing: _isSelectionMode 
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Cancel selection
+                IconButton(
+                  onPressed: _exitSelectionMode,
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Cancel selection',
+                ),
+                // Delete selected
+                IconButton(
+                  onPressed: _selectedNotifications.isNotEmpty ? _deleteSelectedNotifications : null,
+                  icon: Icon(
+                    Icons.delete,
+                    color: _selectedNotifications.isNotEmpty ? Colors.red : Colors.grey,
+                  ),
+                  tooltip: 'Delete selected notifications',
+                ),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Selection mode toggle
+                StreamBuilder<List<NotificationData>>(
+                  stream: _notificationService.getNotificationHistory(),
+                  builder: (context, snapshot) {
+                    final hasNotifications = snapshot.hasData && snapshot.data!.isNotEmpty;
+                    return IconButton(
+                      onPressed: hasNotifications ? _enterSelectionMode : null,
+                      icon: Icon(
+                        Icons.checklist,
+                        color: hasNotifications ? const Color(0xFF4CAF50) : Colors.grey,
+                      ),
+                      tooltip: hasNotifications ? 'Select notifications' : 'No notifications to select',
+                    );
+                  },
+                ),
+                // Clear all notifications button
+                StreamBuilder<List<NotificationData>>(
+  stream: _notificationService.getNotificationHistory(),
+  builder: (context, snapshot) {
+    final hasNotifications = snapshot.hasData && snapshot.data!.isNotEmpty;
+    return TooltipTheme(
+      data: const TooltipThemeData(
+        textStyle: TextStyle(fontSize: 10), // ✅ font size 12
+      ),
+     child: TooltipTheme(
+  data: const TooltipThemeData(
+    textStyle: TextStyle(fontSize: 10), // ✅ font size 12
+  ),
+  child: IconButton(
+    onPressed: hasNotifications ? _clearAllNotifications : null,
+    icon: Icon(
+      Icons.clear_all,
+      color: hasNotifications ? Colors.red : Colors.grey,
+    ),
+    tooltip: hasNotifications
+        ? 'Clear all notifications'
+        : 'No notifications to clear',
+  ),
+),
+
+    );
+  },
+),
+                // Mark all as read button
+                StreamBuilder<int>(
+                  stream: _notificationService.getUnreadCountStream(),
+                  builder: (context, snapshot) {
+                    final unreadCount = snapshot.data ?? 0;
+                    return IconButton(
+                      onPressed: unreadCount > 0 ? _markAllAsRead : null,
+                      icon: Icon(
+                        Icons.done_all, 
+                        color: unreadCount > 0 ? const Color(0xFF4CAF50) : Colors.grey,
+                      ),
+                      tooltip: unreadCount > 0 ? 'Mark all as read' : 'All notifications read',
+                    );
+                  },
+                ),
+              ],
+            ),
       ),
       body: StreamBuilder<List<NotificationData>>(
         stream: _notificationService.getNotificationHistory(),
@@ -136,13 +208,29 @@ class _NotificationCenterState extends State<NotificationCenter> {
 
           final notifications = snapshot.data!;
           
-          return ListView.builder(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            itemCount: notifications.length,
-            itemBuilder: (context, index) {
-              final notification = notifications[index];
-              return _buildNotificationCard(notification, screenWidth);
-            },
+          return Stack(
+            children: [
+              ListView.builder(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final notification = notifications[index];
+                  return _buildNotificationCard(notification, screenWidth);
+                },
+              ),
+              // Floating Action Button for Clear All
+              Positioned(
+                bottom: 20,
+                right: 20,
+                child: FloatingActionButton(
+                  onPressed: _clearAllNotifications,
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  tooltip: 'Clear all notifications',
+                  child: const Icon(Icons.clear_all),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -170,7 +258,13 @@ class _NotificationCenterState extends State<NotificationCenter> {
       ),
       child: ListTile(
         contentPadding: EdgeInsets.all(screenWidth * 0.04),
-        leading: _getNotificationIcon(notification.type, screenWidth, notification.isRead),
+        leading: _isSelectionMode 
+          ? Checkbox(
+              value: _selectedNotifications.contains(notification.id),
+              onChanged: (value) => _toggleNotificationSelection(notification.id),
+              activeColor: const Color(0xFF4CAF50),
+            )
+          : _getNotificationIcon(notification.type, screenWidth, notification.isRead),
         title: Text(
           notification.title,
           style: TextStyle(
@@ -223,17 +317,37 @@ class _NotificationCenterState extends State<NotificationCenter> {
           ],
         ),
         onTap: () => _handleNotificationTap(notification),
-        trailing: !notification.isRead
-            ? IconButton(
-                onPressed: () => _markAsRead(notification.id),
-                icon: Icon(
-                  Icons.mark_email_read,
-                  color: const Color(0xFF6CA04A),
-                  size: screenWidth * 0.04,
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) => _handleNotificationAction(value, notification),
+          itemBuilder: (context) => [
+            if (!notification.isRead)
+              const PopupMenuItem(
+                value: 'mark_read',
+                child: Row(
+                  children: [
+                    Icon(Icons.mark_email_read, color: Color(0xFF6CA04A)),
+                    SizedBox(width: 8),
+                    Text('Mark as read'),
+                  ],
                 ),
-                tooltip: 'Mark as read',
-              )
-            : null,
+              ),
+            const PopupMenuItem(
+              value: 'clear',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Delete'),
+                ],
+              ),
+            ),
+          ],
+          child: Icon(
+            Icons.more_vert,
+            color: Colors.grey[600],
+            size: screenWidth * 0.04,
+          ),
+        ),
       ),
     );
   }
@@ -455,6 +569,177 @@ class _NotificationCenterState extends State<NotificationCenter> {
       const SnackBar(
         content: Text('All notifications marked as read'),
         backgroundColor: Color(0xFF6CA04A),
+      ),
+    );
+  }
+
+  void _clearAllNotifications() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Clear All Notifications'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to clear all notifications? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _notificationService.clearAllNotifications();
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('All notifications cleared'),
+                    backgroundColor: Color(0xFF6CA04A),
+                  ),
+                );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleNotificationAction(String action, NotificationData notification) {
+    switch (action) {
+      case 'mark_read':
+        _markAsRead(notification.id);
+        break;
+      case 'clear':
+        _deleteNotification(notification);
+        break;
+    }
+  }
+
+  void _deleteNotification(NotificationData notification) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete Notification'),
+          ],
+        ),
+        content: Text('Are you sure you want to delete "${notification.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _notificationService.deleteNotification(notification.id);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Notification deleted'),
+                    backgroundColor: Color(0xFF6CA04A),
+                  ),
+                );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Selection mode methods
+  void _enterSelectionMode() {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedNotifications.clear();
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedNotifications.clear();
+    });
+  }
+
+  void _toggleNotificationSelection(String notificationId) {
+    setState(() {
+      if (_selectedNotifications.contains(notificationId)) {
+        _selectedNotifications.remove(notificationId);
+      } else {
+        _selectedNotifications.add(notificationId);
+      }
+    });
+  }
+
+  void _deleteSelectedNotifications() {
+    if (_selectedNotifications.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete Selected Notifications'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete ${_selectedNotifications.length} notification${_selectedNotifications.length > 1 ? 's' : ''}? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              
+              // Delete all selected notifications
+              for (final notificationId in _selectedNotifications) {
+                await _notificationService.deleteNotification(notificationId);
+              }
+              
+              // Exit selection mode
+              _exitSelectionMode();
+              
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${_selectedNotifications.length} notification${_selectedNotifications.length > 1 ? 's' : ''} deleted'),
+                    backgroundColor: const Color(0xFF6CA04A),
+                  ),
+                );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
