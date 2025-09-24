@@ -582,72 +582,94 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   Widget _buildHomeTab() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth <= 720;
-    final responsivePadding = isSmallScreen ? screenWidth * 0.03 : 20.0;
     final responsiveMargin = isSmallScreen ? screenWidth * 0.025 : 20.0;
 
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // Promotional Banner (responsive sizing)
-        Container(
-          margin: EdgeInsets.all(responsiveMargin),
-          padding: EdgeInsets.all(responsivePadding),
-          decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+        // Modern Promotional Banner (inline)
+// No shadow version
+Card(
+  elevation: 0, // 👈 removes shadow
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+  ),
+  margin: EdgeInsets.symmetric(
+    horizontal: MediaQuery.of(context).size.width * 0.04,
+    vertical: 12,
+  ),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => BuyerProductsPage()),
+      );
+    },
+    child: Container(
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF4CAF50).withOpacity(0.15),
+            const Color(0xFF4CAF50).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.local_offer_rounded,
+            color: const Color(0xFF4CAF50),
+            size: isSmallScreen ? 24 : 32,
           ),
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BuyerProductsPage(),
-                ),
-              );
-            },
-            child: Row(
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.local_offer, 
-                  color: const Color(0xFF4CAF50), 
-                  size: 28
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Get 40% discount on your first order from app.',
-                        style: GoogleFonts.quicksand(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Shop Now',
-                        style: GoogleFonts.quicksand(
-                          color: const Color(0xFF4CAF50),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Get 40% OFF on your first order!',
+                  style: GoogleFonts.quicksand(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Icon(
-                  Icons.eco, 
-                  color: const Color(0xFF4CAF50), 
-                  size: 32
+                const SizedBox(height: 6),
+                Text(
+                  'Limited time only. Don’t miss out.',
+                  style: GoogleFonts.quicksand(
+                    fontSize: isSmallScreen ? 12 : 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Shop Now →',
+                  style: GoogleFonts.quicksand(
+                    color: const Color(0xFF4CAF50),
+                    fontWeight: FontWeight.bold,
+                    fontSize: isSmallScreen ? 13 : 15,
+                  ),
                 ),
               ],
             ),
           ),
-        ),      
-        SizedBox(height: 20),
+          const SizedBox(width: 10),
+          Icon(
+            Icons.eco_rounded,
+            color: const Color(0xFF4CAF50),
+            size: isSmallScreen ? 28 : 36,
+          ),
+        ],
+      ),
+    ),
+  ),
+),
         // Smart Shopping Carousel
         Container(
           margin: EdgeInsets.all(responsiveMargin),
