@@ -632,7 +632,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         style: GoogleFonts.quicksand(
                           color: const Color(0xFF4CAF50),
                           fontWeight: FontWeight.w600,
-                          fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -641,7 +641,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 Icon(
                   Icons.eco, 
                   color: const Color(0xFF4CAF50), 
-                  size: isSmallScreen ? 28 : 32
+                  size: 32
                 ),
               ],
             ),
@@ -704,7 +704,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           child: Text(
             'Quick Actions',
             style: GoogleFonts.quicksand(
-              fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
+              fontSize: 16,
               fontWeight: FontWeight.w400,
             ),
           ),
