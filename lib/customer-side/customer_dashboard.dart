@@ -26,6 +26,40 @@ import '../services/auth_state_service.dart';
 
 // Chat and notification center removed
 
+// App-wide helper to append a cache-busting query param based on last update time
+String _versionedImageUrl(dynamic url, dynamic updatedAt) {
+  final base = (url ?? '').toString();
+  if (base.isEmpty) return base;
+  int version = 0;
+  try {
+    if (updatedAt is Timestamp) {
+      version = updatedAt.millisecondsSinceEpoch;
+    } else if (updatedAt is DateTime) {
+      version = updatedAt.millisecondsSinceEpoch;
+    }
+  } catch (_) {}
+  if (version == 0) return base;
+  final separator = base.contains('?') ? '&' : '?';
+  return '$base${separator}v=$version';
+}
+
+// Resolve a product's primary image URL from various possible fields
+String _resolveProductImageUrl(Map<String, dynamic> data) {
+  final direct = (data['imageUrl'] ?? data['image'] ?? '') as String?;
+  if (direct != null && direct.isNotEmpty) return direct;
+  final images = data['images'];
+  if (images is List && images.isNotEmpty) {
+    final first = images.first;
+    if (first is String && first.isNotEmpty) return first;
+    if (first is Map && first['url'] is String && (first['url'] as String).isNotEmpty) {
+      return first['url'] as String;
+    }
+  }
+  final photo = data['photoUrl'];
+  if (photo is String && photo.isNotEmpty) return photo;
+  return '';
+}
+
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
 
@@ -294,8 +328,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           'VeggieConnect',
           style: GoogleFonts.quicksand(
             fontSize: 20,
-            fontWeight: FontWeight.w400,
-            color: Colors.black,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1A1A1A),
           ),
         ),
         onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
@@ -576,9 +610,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 Icon(
                   Icons.local_offer, 
                   color: const Color(0xFF4CAF50), 
-                  size: isSmallScreen ? 20 : 24
+                  size: 28
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,18 +620,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       Text(
                         'Get 40% discount on your first order from app.',
                         style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: isSmallScreen ? 3 : 5),
+                      SizedBox(height: 16),
                       Text(
                         'Shop Now',
                         style: GoogleFonts.quicksand(
                           color: const Color(0xFF4CAF50),
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
                         ),
                       ),
@@ -612,11 +646,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               ],
             ),
           ),
-        ),
-
-        
-        SizedBox(height: isSmallScreen ? 25 : 30),
-
+        ),      
+        SizedBox(height: 20),
         // Smart Shopping Carousel
         Container(
           margin: EdgeInsets.all(responsiveMargin),
@@ -729,307 +760,185 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 isSmallScreen,
                 _buildBestDealsBadge(),
               ),
+              _buildQuickActionCard(
+                'Popular Products',
+                Icons.favorite,
+                const Color(0xFFE91E63),
+                () => _showQuickActionModal('Popular Products', Icons.favorite, const Color(0xFFE91E63), 'popular'),
+                isSmallScreen,
+                _buildPopularBadge(),
+              ),
             ],
           ),
         ),
 
         SizedBox(height: isSmallScreen ? 25 : 30),
 
-        // Popular Products Section
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
-          child: Text(
-            'Popular Products', 
-            style: GoogleFonts.quicksand(
-              fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
-              fontWeight: FontWeight.w400,
+        // Popular Products (favoriteCount > 0, ranked desc, hide when empty)
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('products')
+              .where('status', isEqualTo: 'approved')
+              .where('isActive', isEqualTo: true)
+              .where('favoriteCount', isGreaterThan: 0)
+              .orderBy('favoriteCount', descending: true)
+              .limit(6)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            final docs = snapshot.data!.docs;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
+                  child: Text(
+                    'Popular Products',
+                    style: GoogleFonts.quicksand(
+                      fontSize: isSmallScreen ? screenWidth * 0.045 : 18,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 12 : 15),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: isSmallScreen ? 12 : 15,
+                      mainAxisSpacing: isSmallScreen ? 12 : 15,
+                      childAspectRatio: isSmallScreen ? 0.75 : 0.8,
+                    ),
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      final doc = docs[index];
+                      final data = doc.data() as Map<String, dynamic>;
+                      final productId = doc.id;
+                      final favoriteCount = (data['favoriteCount'] ?? 0) as num;
+                     return GestureDetector(
+  onTap: () => _navigateToProductDetails(productId, data),
+  child: Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.1),
+          blurRadius: 5,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Stack(
+      children: [
+        // Product Image
+        ClipRRect(
+          borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
+          child: (() {
+                final img = _resolveProductImageUrl(data);
+                if (img.isNotEmpty) {
+                  return Image.network(
+                    _versionedImageUrl(img, data['updatedAt']),
+                    key: ValueKey(_versionedImageUrl(img, data['updatedAt'])),
+                    width: double.infinity,
+                    height: isSmallScreen ? screenWidth * 0.3 : 150,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                      );
+                    },
+                  );
+                }
+                return Container(
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.image, color: Colors.grey),
+                );
+              })()
+        ),
+        // Favorite Count Badge
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$favoriteCount♥',
+              style: GoogleFonts.quicksand(
+                color: Colors.white,
+                fontSize: isSmallScreen ? 10 : 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
-        SizedBox(height: isSmallScreen ? 12 : 15),
-
-        // Popular Products Stream
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: responsiveMargin),
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('products')
-                .limit(100)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: GroceryLoadingWidget(
-                    size: 120,
-                    showText: true,
-                    loadingText: 'Loading products...',
+        // Product Info Overlay
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.0),
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(isSmallScreen ? 8 : 10),
+                bottomRight: Radius.circular(isSmallScreen ? 8 : 10),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['name'] ?? 'Unknown Product',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white,
+                    fontSize: isSmallScreen ? 12 : 14,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.shopping_basket_outlined,
-                        size: isSmallScreen ? 40 : 48,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: isSmallScreen ? 10 : 12),
-                      Text(
-                        'No products available yet.',
-                        style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      SizedBox(height: isSmallScreen ? 6 : 8),
-                      Text(
-                        'Check back later for fresh produce!',
-                        style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w400,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              // Filter products with favorites and sort by popularity
-              final sortedDocs = snapshot.data!.docs
-                  .where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final isActive = data['isActive'] ?? true;
-                    if (!isActive) return false;
-                    final raw = data['favoriteCount'];
-                    final favoriteCount = raw is num ? raw : int.tryParse(raw?.toString() ?? '0') ?? 0;
-                    return favoriteCount > 0;
-                  })
-                  .toList()
-                ..sort((a, b) {
-                  final ad = a.data() as Map<String, dynamic>;
-                  final bd = b.data() as Map<String, dynamic>;
-                  final ar = ad['favoriteCount'];
-                  final br = bd['favoriteCount'];
-                  final ap = ar is num ? ar : int.tryParse(ar?.toString() ?? '0') ?? 0;
-                  final bp = br is num ? br : int.tryParse(br?.toString() ?? '0') ?? 0;
-                  return bp.compareTo(ap);
-                });
-              if (sortedDocs.isEmpty) {
-                return Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.favorite_border,
-                        size: isSmallScreen ? 40 : 48,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: isSmallScreen ? 10 : 12),
-                      Text(
-                        'No popular products yet.',
-                        style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      SizedBox(height: isSmallScreen ? 6 : 8),
-                      Text(
-                        'Start favoriting products to see them here!',
-                        style: GoogleFonts.quicksand(
-                          fontSize: isSmallScreen ? screenWidth * 0.035 : 14,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w400,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: isSmallScreen ? 12 : 15,
-                  mainAxisSpacing: isSmallScreen ? 12 : 15,
-                  childAspectRatio: isSmallScreen ? 0.75 : 0.8,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                itemCount: sortedDocs.length > 6 ? 6 : sortedDocs.length,
-                itemBuilder: (context, index) {
-                  final doc = sortedDocs[index];
-                  final data = doc.data() as Map<String, dynamic>;
-                  final productId = doc.id;
-                  final frc = data['favoriteCount'];
-                  final favoriteCount = frc is num ? frc : int.tryParse(frc?.toString() ?? '0') ?? 0;
-                  return GestureDetector(
-                    onTap: () => _navigateToProductDetails(doc.id, data),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AspectRatio(
-                                aspectRatio: 1.4,
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[100],
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(isSmallScreen ? 12 : 16),
-                                      topRight: Radius.circular(isSmallScreen ? 12 : 16),
-                                    ),
-                                  ),
-                                  child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
-                                      ? ClipRRect(
-                                          borderRadius: BorderRadius.only(
-                                            topLeft: Radius.circular(isSmallScreen ? 12 : 16),
-                                            topRight: Radius.circular(isSmallScreen ? 12 : 16),
-                                          ),
-                                          child: Image.network(
-                                            data['imageUrl'],
-                                            fit: BoxFit.cover,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.grey[400],
-                                          size: isSmallScreen ? 35.0 : 40.0,
-                                        ),
-                                ),
-                              ),
-                              Padding(
-                              padding: EdgeInsets.all(isSmallScreen ? screenWidth * 0.025 : 12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    data['name'] ?? 'Unknown Product',
-                                    style: GoogleFonts.quicksand(
-                                      fontSize: isSmallScreen ? screenWidth * 0.032 : 14.0,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '₱${(data['price'] ?? 0).toStringAsFixed(2)}/${data['unit'] ?? 'kg'}',
-                                          style: GoogleFonts.quicksand(
-                                            fontSize: isSmallScreen ? screenWidth * 0.03 : 13.0,
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF4CAF50),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      // Favorite count indicator (real-time count already streamed with product)
-                                      if (favoriteCount > 0)
-                                        Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: Colors.red.withOpacity(0.3)),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.favorite,
-                                                color: Colors.red,
-                                                size: isSmallScreen ? 10 : 12,
-                                              ),
-                                              SizedBox(width: 2),
-                                              Text(
-                                                '$favoriteCount',
-                                                style: GoogleFonts.quicksand(
-                                                  color: Colors.red,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: isSmallScreen ? screenWidth * 0.025 : 10,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              ),
-                          ],
-                        ),
-                        // Favorite button positioned over the image
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: StreamBuilder<DocumentSnapshot>(
-                            stream: user != null 
-                              ? FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots()
-                              : null,
-                            builder: (context, userSnap) {
-                              if (!userSnap.hasData) {
-                                return const SizedBox.shrink();
-                              }
-                              final userData = userSnap.data!.data() as Map<String, dynamic>?;
-                              final favorites = List<String>.from(userData?['favorites'] ?? []);
-                              final isFavorite = favorites.contains(productId);
-                              return GestureDetector(
-                                onTap: () => _toggleFavorite(productId),
-                                child: Container(
-                                  padding: EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.3),
-                                        spreadRadius: 1,
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                                    color: isFavorite ? Colors.red : Colors.grey[600],
-                                    size: 16,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                );
-            });
-            },
+                const SizedBox(height: 4),
+                Text(
+                  '₱${(data['price'] ?? 0).toStringAsFixed(2)}',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white,
+                    fontSize: isSmallScreen ? 12 : 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
+        ),
+      ],
+    ),
+  ),
+);
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 20),
       ],
@@ -1120,11 +1029,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     if (title.contains('Fresh')) {
       _showQuickActionModal('Fresh Today', Icons.schedule, const Color(0xFF2196F3), 'freshToday');
     } else if (title.contains('Trending')) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerProductsPage()));
+      // Navigate directly to the most sold product's details
+      _navigateToMostSoldProduct();
     } else if (title.contains('Flash')) {
       _showQuickActionModal('Best Deals', Icons.local_offer, const Color(0xFFFF5722), 'bestDeals');
     } else if (title.contains('Community')) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerProductsPage()));
+      // Navigate to Popular Products (sorted by favoriteCount)
+      _showQuickActionModal('Popular Products', Icons.favorite, const Color(0xFFE91E63), 'popular');
     } else {
       _showQuickActionModal('Best Deals', Icons.local_offer, const Color(0xFF4CAF50), 'bestDeals');
     }
@@ -1321,7 +1232,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           .collection('products')
           .where('status', isEqualTo: 'approved')
           .where('isActive', isEqualTo: true)
-          .where('rating', isGreaterThanOrEqualTo: 4.5)
+          .where('totalRatings', isGreaterThan: 0)
+          .where('averageRating', isGreaterThanOrEqualTo: 4.5)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -1390,6 +1302,31 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
+  Widget _buildPopularBadge() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
+          .where('favoriteCount', isGreaterThan: 0)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final count = snapshot.data!.docs.length;
+        return Text(
+          '$count+',
+          style: GoogleFonts.quicksand(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[600],
+          ),
+        );
+      },
+    );
+  }
+
   void _navigateToProductDetails(String productId, Map<String, dynamic> productData) {
     Navigator.push(
       context,
@@ -1399,62 +1336,77 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  Future<void> _toggleFavorite(String productId) async {
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to add favorites.')),
-      );
-      return;
-    }
+  // Navigate to the most sold product's details page
+  Future<void> _navigateToMostSoldProduct() async {
     try {
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(user!.uid);
-      final userData = await userDoc.get();
-      if (!userData.exists) {
-        await userDoc.set({
-          'favorites': [],
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: GroceryLoadingWidget(
+            size: 100,
+            showText: true,
+            loadingText: 'Finding trending product...',
+          ),
+        ),
+      );
+
+      // Query for the most sold product
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
+          .orderBy('soldCount', descending: true)
+          .limit(1)
+          .get();
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
       }
-      final favorites = List<String>.from((userData.data())?['favorites'] ?? []);
-      if (favorites.contains(productId)) {
-        // Remove from favorites
-        favorites.remove(productId);
-        await userDoc.update({
-          'favorites': favorites,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        await _updateProductFavoriteCount(productId, -1);
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final mostSoldDoc = querySnapshot.docs.first;
+        final productData = mostSoldDoc.data();
+        final productId = mostSoldDoc.id;
+        
+        // Navigate to product details
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Removed from favorites'),
-              backgroundColor: Colors.red,
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailsPage(
+                product: productData,
+                productId: productId,
+              ),
             ),
           );
         }
       } else {
-        // Add to favorites
-        favorites.add(productId);
-        await userDoc.update({
-          'favorites': favorites,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        await _updateProductFavoriteCount(productId, 1);
+        // No products found, show message and navigate to products page
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Added to favorites'),
-              backgroundColor: Color(0xFF6CA04A),
+              content: Text('No trending products found. Browse all products instead.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BuyerProductsPage(),
             ),
           );
         }
       }
     } catch (e) {
-      debugPrint('Error toggling favorite: $e');
+      // Close loading dialog if still open
       if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update favorites: ${e.toString()}'),
+            content: Text('Error finding trending product: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1462,53 +1414,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     }
   }
 
-  Future<void> _updateProductFavoriteCount(String productId, int change) async {
-    try {
-      final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final productDoc = await transaction.get(productRef);
-        if (productDoc.exists) {
-          final currentFavoriteCount = (productDoc.data()?['favoriteCount'] ?? 0) as num;
-          final nextValue = (currentFavoriteCount + change).clamp(0, double.maxFinite.toInt());
-          transaction.update(productRef, {
-            'favoriteCount': nextValue,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
-        } else {
-          // If product doesn't exist, initialize with proper count
-          if (change > 0) {
-            transaction.set(productRef, {
-              'favoriteCount': change.clamp(0, double.maxFinite.toInt()),
-              'lastUpdated': FieldValue.serverTimestamp(),
-            }, SetOptions(merge: true));
-          }
-        }
-      });
-    } catch (e) {
-      debugPrint('Failed to update product favorite count: $e');
-      // If transaction fails, try a direct update as fallback
-      try {
-        final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
-        final productDoc = await productRef.get();
-        if (productDoc.exists) {
-          final currentFavoriteCount = (productDoc.data()?['favoriteCount'] ?? 0) as num;
-          final nextValue = (currentFavoriteCount + change).clamp(0, double.maxFinite.toInt());
-          await productRef.update({
-            'favoriteCount': nextValue,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
-        } else if (change > 0) {
-          // Initialize product with favorite count if it doesn't exist
-          await productRef.set({
-            'favoriteCount': change.clamp(0, double.maxFinite.toInt()),
-            'lastUpdated': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        }
-      } catch (fallbackError) {
-        debugPrint('Fallback favorite count update also failed: $fallbackError');
-      }
-    }
-  }
+  // Removed unused _toggleFavorite; favorites are handled elsewhere
+
+  // Product favoriteCount is now maintained by Cloud Functions
 }
 
 // Quick Action Modal Widget
@@ -1531,6 +1439,108 @@ class QuickActionModal extends StatefulWidget {
 }
 
 class _QuickActionModalState extends State<QuickActionModal> {
+  @override
+  void initState() {
+    super.initState();
+    // Sync favorites when Popular Products modal is opened
+    if (widget.filterType == 'popular') {
+      _syncUserFavorites();
+      _debugUserFavorites();
+    }
+  }
+
+  // Debug method to check user's favorites
+  Future<void> _debugUserFavorites() async {
+    final authService = AuthStateService();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser == null) {
+      debugPrint('Popular Products: No user logged in');
+      return;
+    }
+    
+    try {
+      // Check array favorites
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final favoritesArray = List<String>.from(userData['favorites'] ?? []);
+        debugPrint('Popular Products: User favorites array: $favoritesArray');
+      }
+      
+      // Check subcollection favorites
+      final subcollectionSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('favorites')
+          .get();
+      
+      final subcollectionIds = subcollectionSnapshot.docs.map((doc) => doc.id).toList();
+      debugPrint('Popular Products: User favorites subcollection: $subcollectionIds');
+      
+    } catch (e) {
+      debugPrint('Popular Products: Error debugging favorites: $e');
+    }
+  }
+
+  // Utility method to sync favorites between array and subcollection
+  Future<void> _syncUserFavorites() async {
+    final authService = AuthStateService();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser == null) return;
+    
+    try {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(currentUser.uid);
+      final userDoc = await userRef.get();
+      
+      if (!userDoc.exists) return;
+      
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final favoritesArray = List<String>.from(userData['favorites'] ?? []);
+      
+      // Get subcollection favorites
+      final subcollectionSnapshot = await userRef.collection('favorites').get();
+      final subcollectionIds = subcollectionSnapshot.docs.map((doc) => doc.id).toList();
+      
+      // If arrays don't match, sync them
+      if (favoritesArray.length != subcollectionIds.length || 
+          !favoritesArray.every((id) => subcollectionIds.contains(id))) {
+        
+        debugPrint('Syncing favorites: Array has ${favoritesArray.length}, Subcollection has ${subcollectionIds.length}');
+        
+        // Update subcollection to match array
+        final batch = FirebaseFirestore.instance.batch();
+        
+        // Remove items not in array
+        for (final doc in subcollectionSnapshot.docs) {
+          if (!favoritesArray.contains(doc.id)) {
+            batch.delete(doc.reference);
+          }
+        }
+        
+        // Add items from array not in subcollection
+        for (final productId in favoritesArray) {
+          if (!subcollectionIds.contains(productId)) {
+            batch.set(userRef.collection('favorites').doc(productId), {
+              'productId': productId,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        }
+        
+        await batch.commit();
+        debugPrint('Favorites synced successfully');
+      }
+    } catch (e) {
+      debugPrint('Error syncing favorites: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -1558,13 +1568,26 @@ class _QuickActionModalState extends State<QuickActionModal> {
                   Icon(widget.icon, color: widget.color, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      widget.title,
-                      style: GoogleFonts.quicksand(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: widget.color,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: GoogleFonts.quicksand(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: widget.color,
+                          ),
+                        ),
+                        if (widget.filterType == 'popular')
+                          Text(
+                            'Your favorites with community counts',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 12,
+                              color: widget.color.withOpacity(0.7),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -1591,18 +1614,62 @@ class _QuickActionModalState extends State<QuickActionModal> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            widget.icon,
+                            widget.filterType == 'popular' ? Icons.favorite_border : widget.icon,
                             size: 64,
                             color: Colors.grey[400],
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No ${widget.title.toLowerCase()} products found',
+                            widget.filterType == 'popular' 
+                                ? 'No favorite products yet'
+                                : widget.filterType == 'topRated'
+                                    ? 'No rated products found'
+                                    : 'No ${widget.title.toLowerCase()} products found',
                             style: GoogleFonts.quicksand(
                               fontSize: 16,
                               color: Colors.grey[600],
                             ),
                           ),
+                          if (widget.filterType == 'popular') ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add products to your favorites to see them here',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Go to Browse Products and tap the heart icon on products you like',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 12,
+                                color: Colors.grey[400],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'You\'ll see how many other customers also favorited each product',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 11,
+                                color: Colors.grey[300],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                          if (widget.filterType == 'topRated') ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Products need customer reviews to appear here',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ],
                       ),
                     );
@@ -1639,34 +1706,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
                 },
               ),
             ),
-            // Footer with action button
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _navigateToFullProductsPage();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.color,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'View All ${widget.title}',
-                    style: GoogleFonts.quicksand(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // Footer removed: redundant "View All" quick action
           ],
         ),
       ),
@@ -1674,6 +1714,184 @@ class _QuickActionModalState extends State<QuickActionModal> {
   }
 
   Stream<QuerySnapshot> _getFilteredProductsStream() {
+    if (widget.filterType == 'popular') {
+      // Get current user's favorites and fetch those products
+      final authService = AuthStateService();
+      final currentUser = authService.currentUser;
+      
+      if (currentUser == null) {
+        // Return empty stream if no user
+        return Stream<QuerySnapshot>.empty();
+      }
+      
+      // First get the user's favorite product IDs from the subcollection
+      return FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('favorites')
+          .snapshots()
+          .asyncMap((favoritesSnapshot) async {
+            debugPrint('Popular Products: Found ${favoritesSnapshot.docs.length} favorites in subcollection');
+            
+            if (favoritesSnapshot.docs.isEmpty) {
+              // Also check the legacy array as fallback
+              final userDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUser.uid)
+                  .get();
+              
+              if (userDoc.exists) {
+                final userData = userDoc.data() as Map<String, dynamic>;
+                final favoritesArray = List<String>.from(userData['favorites'] ?? []);
+                debugPrint('Popular Products: Found ${favoritesArray.length} favorites in array');
+                
+                if (favoritesArray.isEmpty) {
+                  // Return empty query result
+                  return await FirebaseFirestore.instance
+                      .collection('products')
+                      .where('status', isEqualTo: 'nonexistent')
+                      .limit(0)
+                      .get();
+                }
+                
+                // Use array favorites as fallback
+                final productsQuery = await FirebaseFirestore.instance
+                    .collection('products')
+                    .where('status', isEqualTo: 'approved')
+                    .where('isActive', isEqualTo: true)
+                    .where(FieldPath.documentId, whereIn: favoritesArray)
+                    .limit(12)
+                    .get();
+                
+                debugPrint('Popular Products: Found ${productsQuery.docs.length} products from array fallback');
+                
+                // If still no products with strict criteria, try relaxed
+                if (productsQuery.docs.isEmpty) {
+                  debugPrint('Popular Products: Array fallback with strict criteria failed, trying relaxed...');
+                  
+                  final relaxedArrayQuery = await FirebaseFirestore.instance
+                      .collection('products')
+                      .where(FieldPath.documentId, whereIn: favoritesArray)
+                      .get();
+                  
+                  debugPrint('Popular Products: Relaxed array query found ${relaxedArrayQuery.docs.length} products');
+                  
+                  // Log details about each product for debugging
+                  for (final doc in relaxedArrayQuery.docs) {
+                    final data = doc.data();
+                    debugPrint('Array Product ${doc.id}: status=${data['status']}, isActive=${data['isActive']}, name=${data['name']}');
+                  }
+                  
+                  return relaxedArrayQuery;
+                }
+                
+                return productsQuery;
+              }
+              
+              // Return empty query result
+              return await FirebaseFirestore.instance
+                  .collection('products')
+                  .where('status', isEqualTo: 'nonexistent')
+                  .limit(0)
+                  .get();
+            }
+            
+            // Get product IDs from favorites subcollection
+            final productIds = favoritesSnapshot.docs.map((doc) => doc.id).toList();
+            debugPrint('Popular Products: Product IDs from subcollection: $productIds');
+            
+            // Fetch products that are in the user's favorites
+            final productsQuery = await FirebaseFirestore.instance
+                .collection('products')
+                .where('status', isEqualTo: 'approved')
+                .where('isActive', isEqualTo: true)
+                .where(FieldPath.documentId, whereIn: productIds)
+                .limit(12)
+                .get();
+            
+            debugPrint('Popular Products: Found ${productsQuery.docs.length} products from subcollection');
+            
+            // If no products found with strict criteria, try with relaxed criteria
+            if (productsQuery.docs.isEmpty) {
+              debugPrint('Popular Products: No products found with strict criteria, trying relaxed criteria...');
+              
+              final relaxedQuery = await FirebaseFirestore.instance
+                  .collection('products')
+                  .where(FieldPath.documentId, whereIn: productIds)
+                  .get();
+              
+              debugPrint('Popular Products: Relaxed query found ${relaxedQuery.docs.length} products');
+              
+              // Log details about each product for debugging
+              for (final doc in relaxedQuery.docs) {
+                final data = doc.data();
+                debugPrint('Product ${doc.id}: status=${data['status']}, isActive=${data['isActive']}, name=${data['name']}');
+              }
+              
+              return relaxedQuery;
+            }
+            
+            return productsQuery;
+          });
+    } else if (widget.filterType == 'topRated') {
+      // Fetch products that have ratings and are well-rated (3.5+ stars)
+      debugPrint('Top Rated: Starting query for top rated products...');
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
+          .where('totalRatings', isGreaterThan: 0)
+          .where('averageRating', isGreaterThanOrEqualTo: 3.5)
+          .orderBy('averageRating', descending: true)
+          .orderBy('totalRatings', descending: true)
+          .limit(20)
+          .snapshots()
+          .asyncMap((snapshot) async {
+            debugPrint('Top Rated: Found ${snapshot.docs.length} products with ratings >= 3.5');
+            
+            // If no products found with strict criteria, try more relaxed criteria
+            if (snapshot.docs.isEmpty) {
+              debugPrint('Top Rated: No products with strict criteria, trying relaxed criteria...');
+              
+              final relaxedSnapshot = await FirebaseFirestore.instance
+                  .collection('products')
+                  .where('status', isEqualTo: 'approved')
+                  .where('isActive', isEqualTo: true)
+                  .where('totalRatings', isGreaterThan: 0)
+                  .where('averageRating', isGreaterThan: 0.0) // Ensure rating is actually greater than 0
+                  .orderBy('averageRating', descending: true)
+                  .orderBy('totalRatings', descending: true)
+                  .limit(20)
+                  .get();
+              
+              debugPrint('Top Rated: Relaxed query found ${relaxedSnapshot.docs.length} products');
+              
+              for (final doc in relaxedSnapshot.docs) {
+                final data = doc.data();
+                final rating = (data['averageRating'] ?? 0.0) as num;
+                final totalRatings = (data['totalRatings'] ?? 0) as num;
+                debugPrint('Top Rated Product (relaxed): ${data['name']} - Rating: $rating, Total: $totalRatings');
+              }
+              
+              // If still no products found, return empty result instead of fallback
+              if (relaxedSnapshot.docs.isEmpty) {
+                debugPrint('Top Rated: No products with any ratings found');
+                // Return the empty snapshot as is - the UI will handle the empty state
+                return relaxedSnapshot;
+              }
+              
+              return relaxedSnapshot;
+            }
+            
+            for (final doc in snapshot.docs) {
+              final data = doc.data();
+              final rating = (data['averageRating'] ?? 0.0) as num;
+              final totalRatings = (data['totalRatings'] ?? 0) as num;
+              debugPrint('Top Rated Product: ${data['name']} - Rating: $rating, Total: $totalRatings');
+            }
+            return snapshot;
+          });
+    }
     return FirebaseFirestore.instance
         .collection('products')
         .where('status', isEqualTo: 'approved')
@@ -1695,14 +1913,20 @@ class _QuickActionModalState extends State<QuickActionModal> {
         case 'freshToday':
           return data['isFreshToday'] ?? false;
         case 'topRated':
-          final rating = (data['rating'] ?? 0.0) as num;
-          return rating >= 4.5;
+          final avg = (data['averageRating'] ?? 0.0) as num;
+          final totalRatings = (data['totalRatings'] ?? 0) as num;
+          // Show products that have ratings and are well-rated (3.5+ stars)
+          return totalRatings > 0 && avg >= 3.5;
         case 'nearMe':
           // For now, return all products. Location filtering would need user's location
           return true;
         case 'bestDeals':
           final price = (data['price'] ?? 0) as num;
           return price <= 50;
+        case 'popular':
+          // For popular products (user's favorites), show all products regardless of favoriteCount
+          // since we're showing the user's personal favorites
+          return true;
         default:
           return true;
       }
@@ -1721,28 +1945,32 @@ class _QuickActionModalState extends State<QuickActionModal> {
             // Product image
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: data['imageUrl'] != null && (data['imageUrl'] as String).isNotEmpty
-                  ? Image.network(
-                      _versionedImageUrl(data['imageUrl'], data['updatedAt']),
-                      key: ValueKey(_versionedImageUrl(data['imageUrl'], data['updatedAt'])),
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image),
-                    ),
+              child: (() {
+                final img = _resolveProductImageUrl(data);
+                if (img.isNotEmpty) {
+                  return Image.network(
+                    _versionedImageUrl(img, data['updatedAt']),
+                    key: ValueKey(_versionedImageUrl(img, data['updatedAt'])),
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported),
+                      );
+                    },
+                  );
+                }
+                return Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.image),
+                );
+              })(),
             ),
             const SizedBox(width: 12),
             // Product details
@@ -1831,7 +2059,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
         }
         break;
       case 'topRated':
-        final rating = (data['rating'] ?? 0.0) as num;
+        final rating = (data['averageRating'] ?? 0.0) as num;
         badgeText = '⭐ ${rating.toStringAsFixed(1)}';
         break;
       case 'nearMe':
@@ -1839,6 +2067,13 @@ class _QuickActionModalState extends State<QuickActionModal> {
         break;
       case 'bestDeals':
         badgeText = 'Best Deal';
+        break;
+      case 'popular':
+        final favoriteCount = (data['favoriteCount'] ?? 0) as num;
+        debugPrint('Popular Products Badge: Product ${data['name']} has favoriteCount: $favoriteCount');
+        // If favoriteCount is 0 but this product is in user's favorites, show 1
+        final displayCount = favoriteCount > 0 ? favoriteCount : 1;
+        badgeText = '❤️ $displayCount favorites';
         break;
     }
     return Container(
@@ -1859,48 +2094,4 @@ class _QuickActionModalState extends State<QuickActionModal> {
     );
   }
 
-  void _navigateToFullProductsPage() {
-    switch (widget.filterType) {
-      case 'cashOnPickup':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BuyerProductsPage(paymentMethodFilter: 'cashOnPickup'),
-          ),
-        );
-        break;
-      case 'freshToday':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BuyerProductsPage(isFreshTodayFilter: true),
-          ),
-        );
-        break;
-      case 'topRated':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BuyerProductsPage(ratingFilter: 4.5),
-          ),
-        );
-        break;
-      case 'nearMe':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BuyerProductsPage(locationFilter: 'nearMe'),
-          ),
-        );
-        break;
-      case 'bestDeals':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BuyerProductsPage(isBestDealFilter: true),
-          ),
-        );
-        break;
-    }
-  }
 }

@@ -17,11 +17,13 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 ## Key Features
 
 ### Multi-Role System
+
 - **Customer Dashboard** - For buyers and consumers
 - **Supplier Dashboard** - For sellers and vendors
 - **Admin Dashboard** - For system management
 
 ### Core Functionality
+
 - **Real-time Product Listings** - Live product updates with high-quality images
 - **Cash-on-Pickup System** - Pay upon personal collection
 - **Online Payment Integration** - PayMongo GCash, Maya and card payments
@@ -31,6 +33,7 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 - **Rating & Review System** - Quality assurance mechanism
 
 ### Location Features
+
 - **Farm Location Mapping** - Interactive maps of farming areas
 - **Supplier Location Management** - Manage multiple pickup locations
 - **Distance-based Filtering** - Find the nearest available options
@@ -39,11 +42,13 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 ## Tech Stack
 
 ### Frontend
+
 - **Flutter 3.9.0+** - Cross-platform mobile development
 - **Dart** - Programming language
 - **Google Fonts** - Modern typography (Quicksand, Inter)
 
 ### Backend & Services
+
 - **Firebase Suite:**
   - Firestore - Real-time database
   - Authentication - User management/EmailJS via Pin Verification
@@ -53,6 +58,7 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 - **Node.js** - Cloud Functions runtime
 
 ### Third-party Integrations
+
 - **Cloudinary** - Image storage and optimization
 - **PayMongo** - Payment processing (GCash, Maya, Cards)
 - **OpenStreetMap** - Mapping services (flutter_map)
@@ -63,27 +69,33 @@ VeggieConnect is a comprehensive agricultural application built for the farmers,
 ## Setup Instructions
 
 ### Prerequisites
+
 Ensure you have the following installed:
+
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.9.0 or higher)
 - [Android Studio](https://developer.android.com/studio) or [VS Code](https://code.visualstudio.com/)
 - [Node.js](https://nodejs.org/) (18.0 or higher) - for Firebase Functions
 - [Git](https://git-scm.com/)
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/yourusername/VeggieConnect.git
 cd VeggieConnect/veggieconnect
 ```
 
-### 2. Environment Configuration 
+### 2. Environment Configuration
+
 **IMPORTANT: Set up environment variables before running the app**
 
 #### Copy Environment Template
+
 ```bash
 cp .env.example .env
 ```
 
 #### Configure Your Credentials
+
 Open `.env` and replace placeholder values with your actual credentials:
 
 ```bash
@@ -105,6 +117,7 @@ PAYMONGO_PUBLIC_KEY=pk_test_your_public_key
 > **Security Warning**: Never commit `.env` files to version control. The `.gitignore` file is configured to prevent this.
 
 ### 3. Install Dependencies
+
 ```bash
 # Flutter dependencies
 flutter pub get
@@ -118,6 +131,7 @@ cd ..
 ### 4. Service Configuration
 
 #### Firebase Setup
+
 1. Create a new Firebase project in [Firebase Console](https://console.firebase.google.com)
 2. Enable the following services:
    - Authentication (Email/Password)
@@ -129,6 +143,7 @@ cd ..
 4. Update your `.env` file with Firebase configuration values
 
 #### Cloudinary Setup
+
 1. Sign up for [Cloudinary](https://cloudinary.com)
 2. Create upload presets:
    - `VeggieConnectAvatar` for profile images
@@ -136,12 +151,14 @@ cd ..
 3. Update `.env` with your Cloudinary credentials
 
 #### PayMongo Configuration
+
 1. Sign up for [PayMongo](https://paymongo.com)
 2. Get your test API keys from Developers > API Keys
 3. Set up webhook endpoints for payment notifications
 4. Update `.env` with PayMongo credentials
 
 ### 5. Verify Configuration
+
 ```bash
 # Check that .env is not tracked by git
 git status
@@ -154,6 +171,7 @@ flutter run --debug
 ```
 
 ### 6. Run the Application
+
 ```bash
 # Check available devices
 flutter devices
@@ -168,17 +186,20 @@ flutter build apk --release
 ## Security & Environment Management
 
 ### Environment Files
+
 - **`.env`** - Your actual credentials (NEVER commit this)
 - **`.env.example`** - Template for other developers (safe to commit)
 - **`SECURITY.md`** - Detailed security guidelines
 
 ### Security Best Practices
+
 - All sensitive data is stored in environment variables
 - Production and development use separate credentials
 - API keys are restricted to specific domains/IPs
 - Regular credential rotation schedule implemented
 
 ### For Team Members
+
 1. Copy `.env.example` to `.env`
 2. Request credentials from team lead
 3. Follow security guidelines in `SECURITY.md`
@@ -187,6 +208,7 @@ flutter build apk --release
 ## Application Usage
 
 ### For Customers
+
 1. **Register** - Create an account using Gmail with PIN verification through EmailJS
 2. **Browse Products** - View available vegetables and farm products
 3. **Add to Cart** - Add products to shopping cart
@@ -195,6 +217,7 @@ flutter build apk --release
 6. **Rate & Review** - Provide feedback after transaction
 
 ### For Suppliers
+
 1. **Setup Profile** - Complete business information
 2. **Add Products** - Upload products with photos and descriptions
 3. **Manage Inventory** - Update stock levels regularly
@@ -203,6 +226,7 @@ flutter build apk --release
 6. **Customer Communication** - Chat with customers directly
 
 ### For Admins
+
 1. **User Management** - Manage customer and supplier accounts
 2. **Product Verification** - Approve or reject product listings
 3. **Analytics Dashboard** - Monitor platform performance
@@ -235,6 +259,7 @@ SECURITY.md            # Security guidelines
 ```
 
 ### Coding Standards
+
 - **Naming Convention:** camelCase for variables, PascalCase for classes
 - **File Organization:** Group related files in appropriate folders
 - **Documentation:** Add comments for complex business logic
@@ -242,6 +267,7 @@ SECURITY.md            # Security guidelines
 - **Security:** Never hardcode credentials, always use environment variables
 
 ### Testing
+
 ```bash
 # Run unit tests
 flutter test
@@ -256,13 +282,16 @@ flutter run --dart-define=ENVIRONMENT=development
 ## Deployment
 
 ### Environment Setup
+
 Before deploying, ensure you have:
+
 - Production environment variables configured
 - Separate Firebase project for production
 - Production PayMongo account with live keys
 - Production Cloudinary account
 
 ### Android Release
+
 ```bash
 # Generate signed APK
 flutter build apk --release --dart-define=ENVIRONMENT=production
@@ -272,14 +301,39 @@ flutter build appbundle --release --dart-define=ENVIRONMENT=production
 ```
 
 ### Firebase Functions
+
 ```bash
 cd functions
 firebase use production  # Switch to production project
 firebase deploy --only functions
 ```
 
+## 🔒 Security Analysis
+
+For comprehensive security assessment and vulnerability analysis, see:
+
+- **[SECURITY_ANALYSIS.md](SECURITY_ANALYSIS.md)** - Detailed security vulnerabilities and solutions
+- **[SECURITY.md](SECURITY.md)** - Security guidelines and best practices
+
+### Key Security Findings
+
+- **10 Critical Security Vulnerabilities** identified and documented
+- **Risk-based prioritization** with immediate, short-term, and long-term solutions
+- **Industry-standard security practices** implementation roadmap
+- **Capstone defense ready** security analysis with talking points
+
+### Security Implementation Status
+
+- ✅ Security vulnerability assessment completed
+- ✅ Risk matrix and prioritization established  
+- ✅ Remediation roadmap documented
+- 🔄 Security fixes implementation (in progress)
+- 🔄 Security testing automation (planned)
+
 ### Environment Variables for Production
+
 Set up production environment variables:
+
 - Firebase production config
 - PayMongo live API keys
 - Cloudinary production credentials
@@ -287,6 +341,7 @@ Set up production environment variables:
 - EmailJS production API keys
 
 ### Deployment Checklist
+
 - [ ] Production `.env` file configured
 - [ ] All API keys are production-ready
 - [ ] Firebase security rules updated
@@ -309,6 +364,7 @@ Thank you for your interest in VeggieConnect! To contribute:
 8. Open a Pull Request
 
 ### Development Setup for Contributors
+
 1. Follow the setup instructions above
 2. Request access to development credentials
 3. Read `SECURITY.md` for security guidelines
@@ -328,12 +384,14 @@ Distributed under the MIT License. See `LICENSE` file for more information.
 **Facebook:** [VeggieConnect Bogo City, Cebu](N/A)
 
 ### For Technical Issues
+
 1. Check existing issues on GitHub
 2. Create a detailed bug report
 3. Include device information and error logs
 4. **Never include credentials in issue reports**
 
 ### For Business Inquiries
+
 - Partnership opportunities
 - Feature requests
 - Commercial licensing

@@ -1219,24 +1219,24 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
       child: InkWell(
         onTap: () => _showSupplierDetails(farm),
         child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
+          padding: EdgeInsets.all(screenWidth * 0.03),
           child: Row(
             children: [
               // Farm Icon
               Container(
-                width: screenWidth * 0.15,
-                height: screenWidth * 0.15,
+                width: screenWidth * 0.12,
+                height: screenWidth * 0.12,
                 decoration: BoxDecoration(
                   color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.075),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.06),
                 ),
                 child: Icon(
                   Icons.agriculture,
                   color: Colors.green,
-                  size: screenWidth * 0.08,
+                  size: screenWidth * 0.06,
                 ),
               ),
-              SizedBox(width: screenWidth * 0.04),
+              SizedBox(width: screenWidth * 0.03),
               // Farm Details
               Expanded(
                 child: Column(
@@ -1245,47 +1245,55 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                     Text(
                       farm.locationName,
                       style: TextStyle(
-                        fontSize: screenWidth * 0.045,
+                        fontSize: screenWidth * 0.04,
+                        fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: screenWidth * 0.01),
+                    SizedBox(height: screenWidth * 0.008),
                     Text(
                       farm.address,
                       style: TextStyle(
-                        fontSize: screenWidth * 0.035,
-                        color: Colors.grey,
+                        fontSize: screenWidth * 0.032,
+                        color: Colors.grey[600],
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: screenWidth * 0.01),
+                    SizedBox(height: screenWidth * 0.008),
                     Row(
                       children: [
                         Icon(
                           Icons.star,
-                          size: screenWidth * 0.04,
+                          size: screenWidth * 0.035,
                           color: Colors.orange,
                         ),
-                        SizedBox(width: screenWidth * 0.01),
+                        SizedBox(width: screenWidth * 0.008),
                         Text(
                           farm.rating.toString(),
                           style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.grey,
+                            fontSize: screenWidth * 0.032,
+                            color: Colors.grey[600],
                           ),
                         ),
-                        SizedBox(width: screenWidth * 0.03),
+                        SizedBox(width: screenWidth * 0.02),
                         Icon(
                           Icons.location_on,
-                          size: screenWidth * 0.04,
+                          size: screenWidth * 0.035,
                           color: Colors.green,
                         ),
-                        SizedBox(width: screenWidth * 0.01),
-                        Text(
-                          _userLocation != null 
-                            ? '${_mapService.calculateDistance(_userLocation!, LatLng(farm.latitude, farm.longitude)).toStringAsFixed(1)} km'
-                            : 'Distance unavailable',
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.green,
+                        SizedBox(width: screenWidth * 0.008),
+                        Flexible(
+                          child: Text(
+                            _userLocation != null 
+                              ? '${_mapService.calculateDistance(_userLocation!, LatLng(farm.latitude, farm.longitude)).toStringAsFixed(1)} km'
+                              : 'Distance unavailable',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.032,
+                              color: Colors.green,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -1293,20 +1301,20 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                   ],
                 ),
               ),
+              SizedBox(width: screenWidth * 0.02),
               // View Button
               ElevatedButton(
                 onPressed: () => _showSupplierDetails(farm),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.025, vertical: screenWidth * 0.015),
+                  minimumSize: Size.zero,
                 ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: screenWidth * 0.02),
-                  child: Text(
-                    'View',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: screenWidth * 0.035,
-                    ),
+                child: Text(
+                  'View',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.035,
                   ),
                 ),
               ),
@@ -1554,7 +1562,9 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
           children: [
             Icon(Icons.settings, color: Colors.red),
             SizedBox(width: 8),
-            Text('Permission Required'),
+            Text('Permission Required',
+            style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
         content: Column(

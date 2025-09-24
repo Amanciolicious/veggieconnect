@@ -391,18 +391,23 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
     if (user == null) return;
     
     try {
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(user!.uid);
-      final userData = await userDoc.get();
-      final favorites = List<String>.from(userData.data()?['favorites'] ?? []);
-      
-      if (favorites.contains(productId)) {
-        // Remove from favorites
-        favorites.remove(productId);
-        await userDoc.update({
-          'favorites': favorites,
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user!.uid);
+      final favoritesColl = userRef.collection('favorites');
+      final favoriteDocRef = favoritesColl.doc(productId);
+
+      final userDocSnap = await userRef.get();
+      final currentArray = List<String>.from((userDocSnap.data() ?? const {})['favorites'] ?? <String>[]);
+      final existingFavSnap = await favoriteDocRef.get();
+
+      if (existingFavSnap.exists) {
+        await favoriteDocRef.delete();
+        if (currentArray.contains(productId)) {
+          currentArray.remove(productId);
+        }
+        await userRef.set({
+          'favorites': currentArray,
           'updatedAt': FieldValue.serverTimestamp(),
-        });
-        await _updateProductFavoriteCount(productId, -1);
+        }, SetOptions(merge: true));
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -413,13 +418,17 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
           );
         }
       } else {
-        // Add to favorites
-        favorites.add(productId);
-        await userDoc.update({
-          'favorites': favorites,
-          'updatedAt': FieldValue.serverTimestamp(),
+        await favoriteDocRef.set({
+          'productId': productId,
+          'createdAt': FieldValue.serverTimestamp(),
         });
-        await _updateProductFavoriteCount(productId, 1);
+        if (!currentArray.contains(productId)) {
+          currentArray.add(productId);
+        }
+        await userRef.set({
+          'favorites': currentArray,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -442,37 +451,5 @@ class _CustomerFavoritePageState extends State<CustomerFavoritePage> {
     }
   }
 
-  Future<void> _updateProductFavoriteCount(String productId, int change) async {
-    try {
-      final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final productDoc = await transaction.get(productRef);
-        if (productDoc.exists) {
-          final currentCount = (productDoc.data()?['favoriteCount'] ?? 0) as num;
-          final nextValue = (currentCount + change).clamp(0, 1 << 31);
-          transaction.update(productRef, {
-            'favoriteCount': nextValue,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
-        }
-      });
-    } catch (e) {
-      debugPrint('Failed to update product favorite count: $e');
-      // If transaction fails, try a direct update as fallback
-      try {
-        final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
-        final productDoc = await productRef.get();
-        if (productDoc.exists) {
-          final currentCount = (productDoc.data()?['favoriteCount'] ?? 0) as num;
-          final nextValue = (currentCount + change).clamp(0, 1 << 31);
-          await productRef.update({
-            'favoriteCount': nextValue,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
-        }
-      } catch (fallbackError) {
-        debugPrint('Fallback favorite count update also failed: $fallbackError');
-      }
-    }
-  }
+  // favoriteCount is maintained by backend triggers; no direct client updates
 }

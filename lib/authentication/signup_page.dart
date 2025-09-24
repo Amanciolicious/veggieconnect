@@ -138,12 +138,12 @@ class _SignUpPageState extends State<SignUpPage> {
       backgroundColor: Color(0xFFF8FAF5),
       appBar: AppBar(
         backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
         title: Text(
-          'Create Account',
+          'Sign Up',
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
+            color: Colors.white
           ),
         ),
         elevation: 0,

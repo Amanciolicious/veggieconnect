@@ -584,7 +584,8 @@ class _AddProductPageState extends State<AddProductPage> {
           widget.product != null ? 'Edit Product' : 'Add Product',
           style: GoogleFonts.quicksand(
             color: Color(0xFF1A1A1A),
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w600,
+            fontSize: 18
           ),
         ),
         backgroundColor: Colors.white,
@@ -698,7 +699,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'Product Name *',
+                        labelText: 'Product Name',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -706,7 +707,6 @@ class _AddProductPageState extends State<AddProductPage> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: Color(0xFF6CA04A)),
                         ),
-                        prefixIcon: Icon(Icons.shopping_basket, color: Color(0xFF6CA04A)),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -730,7 +730,6 @@ class _AddProductPageState extends State<AddProductPage> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: Color(0xFF6CA04A)),
                         ),
-                        prefixIcon: Icon(Icons.description, color: Color(0xFF6CA04A)),
                       ),
                     ),
                     SizedBox(height: 16),
@@ -754,7 +753,6 @@ class _AddProductPageState extends State<AddProductPage> {
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(color: Color(0xFF6CA04A)),
                                   ),
-                                  prefixIcon: Icon(Icons.attach_money, color: Color(0xFF6CA04A)),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -876,7 +874,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                 controller: _quantityController,
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
-                                  labelText: 'Quantity *',
+                                  labelText: 'Quantity',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -884,7 +882,6 @@ class _AddProductPageState extends State<AddProductPage> {
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(color: Color(0xFF6CA04A)),
                                   ),
-                                  prefixIcon: Icon(Icons.build, color: Color(0xFF6CA04A)),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -939,7 +936,6 @@ class _AddProductPageState extends State<AddProductPage> {
                       ],
                     ),
                     SizedBox(height: 16),
-
                     // Category and Unit Row
                     Row(
                       children: [
@@ -955,7 +951,6 @@ class _AddProductPageState extends State<AddProductPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(color: Color(0xFF6CA04A)),
                               ),
-                              prefixIcon: Icon(Icons.category, color: Color(0xFF6CA04A)),
                             ),
                             items: _categories.map((category) {
                               return DropdownMenuItem(
@@ -989,7 +984,6 @@ class _AddProductPageState extends State<AddProductPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(color: Color(0xFF6CA04A)),
                               ),
-                              prefixIcon: Icon(Icons.straighten, color: Color(0xFF6CA04A)),
                             ),
                             items: _units.map((unit) {
                               return DropdownMenuItem(

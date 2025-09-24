@@ -686,7 +686,12 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent back button from closing the app on the login page
+        return false;
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -909,6 +914,6 @@ SizedBox(
           ),
         ),
       ),
-    );
+    ));
   }
 }

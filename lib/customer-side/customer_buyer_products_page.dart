@@ -19,6 +19,7 @@ class BuyerProductsPage extends StatefulWidget {
   final double? ratingFilter;
   final String? locationFilter;
   final bool? isBestDealFilter;
+  final String? sortBy; // New parameter for sorting (e.g., 'mostSold', 'popular')
   
   const BuyerProductsPage({
     super.key, 
@@ -31,6 +32,7 @@ class BuyerProductsPage extends StatefulWidget {
     this.ratingFilter,
     this.locationFilter,
     this.isBestDealFilter,
+    this.sortBy,
   });
 
   static Route routeForSupplier(String supplierId) =>
@@ -295,6 +297,52 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                 ),
               ),
             
+            // Show sorting indicator
+            if (widget.sortBy == 'mostSold' || widget.sortBy == 'popular')
+              Container(
+                margin: EdgeInsets.only(bottom: responsiveMargin),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 12 : 16, 
+                  vertical: isSmallScreen ? 10 : 12
+                ),
+                decoration: BoxDecoration(
+                  color: widget.sortBy == 'mostSold' 
+                      ? Color(0xFF9C27B0).withOpacity(0.1)
+                      : Color(0xFFE91E63).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
+                  border: Border.all(
+                    color: widget.sortBy == 'mostSold' 
+                        ? Color(0xFF9C27B0).withOpacity(0.3)
+                        : Color(0xFFE91E63).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      widget.sortBy == 'mostSold' ? Icons.trending_up : Icons.favorite,
+                      color: widget.sortBy == 'mostSold' ? Color(0xFF9C27B0) : Color(0xFFE91E63),
+                      size: isSmallScreen ? 18 : 20,
+                    ),
+                    SizedBox(width: isSmallScreen ? 10 : 12),
+                    Expanded(
+                      child: Text(
+                        widget.sortBy == 'mostSold' 
+                            ? 'Showing most sold products' 
+                            : 'Showing popular products',
+                        style: GoogleFonts.quicksand(
+                          color: widget.sortBy == 'mostSold' ? Color(0xFF9C27B0) : Color(0xFFE91E63),
+                          fontWeight: FontWeight.w400,
+                          fontSize: isSmallScreen ? screenWidth * 0.035 : 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
             // Category filter
             Container(
               height: isSmallScreen ? 45 : 50,
@@ -447,24 +495,45 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                         );
                       }
                       
-                      // Show all approved products (remove popularity filter)
+                      // Show all approved products
                       final products = productSnapshot.data ?? [];
                       
-                      // Sort by popularity
-                      products.sort((a, b) {
-                        final aPopularity = (a.data() as Map<String, dynamic>)['popularity'] ?? 0;
-                        final bPopularity = (b.data() as Map<String, dynamic>)['popularity'] ?? 0;
-                        return bPopularity.compareTo(aPopularity); // Descending order
-                      });
+                      // Products are already sorted by the query based on sortBy parameter
                       
                       if (products.isEmpty) {
                         return Center(
-                          child: Text(
-                            'No products found.', 
-                            style: GoogleFonts.quicksand(
-                              fontWeight: FontWeight.w400,
-                              fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
-                            )
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                widget.sortBy == 'popular' ? Icons.favorite_border : Icons.search_off,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                widget.sortBy == 'popular' 
+                                    ? 'No favorite products yet' 
+                                    : 'No products found.',
+                                style: GoogleFonts.quicksand(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: isSmallScreen ? screenWidth * 0.04 : 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              if (widget.sortBy == 'popular') ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap the heart icon on products to add them to your favorites',
+                                  style: GoogleFonts.quicksand(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: isSmallScreen ? screenWidth * 0.032 : 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
                           )
                         );
                       }
@@ -594,7 +663,7 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
                                                   : const SizedBox.shrink();
                                             },
                                           ),
-                                          if ((product['popularity'] ?? 0) > 5)
+                                          if (((product['favoriteCount'] ?? 0) as num) > 5)
                                             Container(
                                               padding: EdgeInsets.symmetric(
                                                 horizontal: isSmallScreen ? 6 : 8, 
@@ -680,12 +749,21 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
       return 'Supplier Products';
     } else if (widget.categoryFilter != null && _selectedCategory != 'All') {
       return '$_selectedCategory Products';
+    } else if (widget.sortBy == 'mostSold') {
+      return 'Most Sold Products';
+    } else if (widget.sortBy == 'popular') {
+      return 'Popular Products';
     } else {
       return 'Browse Products';
     }
   }
 
   Stream<QuerySnapshot> _buildProductQuery() {
+    // Handle popular products with customer-specific favorites
+    if (widget.sortBy == 'popular') {
+      return _buildPopularProductsQuery();
+    }
+    
     Query base = FirebaseFirestore.instance
         .collection('products')
         .where('isActive', isEqualTo: true)
@@ -731,7 +809,92 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
       base = base.where('isBestDeal', isEqualTo: true);
     }
     
+    // Apply sorting based on sortBy parameter
+    if (widget.sortBy == 'mostSold') {
+      // Sort by soldCount in descending order (most sold first)
+      base = base.orderBy('soldCount', descending: true);
+    } else {
+      // Default sorting by updatedAt
+      base = base.orderBy('updatedAt', descending: true);
+    }
+    
     return base.snapshots();
+  }
+
+  Stream<QuerySnapshot> _buildPopularProductsQuery() {
+    // Get current user's favorites and fetch those products
+    if (user == null) {
+      // Return empty stream if no user
+      return Stream<QuerySnapshot>.empty();
+    }
+    
+    // First get the user's favorite product IDs
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .collection('favorites')
+        .snapshots()
+        .asyncMap((favoritesSnapshot) async {
+          if (favoritesSnapshot.docs.isEmpty) {
+            // Return empty query result
+            return await FirebaseFirestore.instance
+                .collection('products')
+                .where('status', isEqualTo: 'nonexistent')
+                .limit(0)
+                .get();
+          }
+          
+          // Get product IDs from favorites
+          final productIds = favoritesSnapshot.docs.map((doc) => doc.id).toList();
+          
+          // Build base query with filters
+          Query base = FirebaseFirestore.instance
+              .collection('products')
+              .where('isActive', isEqualTo: true)
+              .where('status', isEqualTo: 'approved');
+          
+          // Apply category filter if specified
+          if (_selectedCategory != 'All') {
+            base = base.where('category', isEqualTo: _selectedCategory);
+          }
+          
+          // Apply other filters
+          if (widget.promoFilter == true) {
+            base = base.where('hasPromo', isEqualTo: true);
+          }
+          
+          if (widget.supplierId != null) {
+            base = base.where('sellerId', isEqualTo: widget.supplierId);
+          }
+          
+          if (widget.paymentMethodFilter != null) {
+            base = base.where('paymentMethods', arrayContains: widget.paymentMethodFilter);
+          }
+          
+          if (widget.isFreshTodayFilter == true) {
+            base = base.where('isFreshToday', isEqualTo: true);
+          }
+          
+          if (widget.ratingFilter != null) {
+            base = base.where('rating', isGreaterThanOrEqualTo: widget.ratingFilter);
+          }
+          
+          if (widget.locationFilter != null) {
+            base = base.where('location', isEqualTo: widget.locationFilter);
+          }
+          
+          if (widget.isBestDealFilter == true) {
+            base = base.where('isBestDeal', isEqualTo: true);
+          }
+          
+          // Fetch products that are in the user's favorites
+          final productsQuery = await base
+              .where(FieldPath.documentId, whereIn: productIds)
+              .orderBy('updatedAt', descending: true)
+              .get();
+          
+          return productsQuery;
+        });
   }
 
   Future<List<QueryDocumentSnapshot>> _filterProductsBySupplierStatus(List<QueryDocumentSnapshot> products) async {
@@ -770,28 +933,26 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
     try {
       debugPrint('Toggling favorite for product: $productId');
       
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(user!.uid);
-      final userData = await userDoc.get();
-      
-      if (!userData.exists) {
-        debugPrint('User document does not exist, creating...');
-        await userDoc.set({
-          'favorites': [],
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-      
-      final favorites = List<String>.from((userData.data())?['favorites'] ?? []);
-      
-      if (favorites.contains(productId)) {
-        // Remove from favorites
-        favorites.remove(productId);
-        await userDoc.update({
-          'favorites': favorites,
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user!.uid);
+      final favoritesColl = userRef.collection('favorites');
+      final favoriteDocRef = favoritesColl.doc(productId);
+
+      // Ensure base user doc exists and keep legacy array in sync for UI
+      final userDocSnap = await userRef.get();
+      final currentArray = List<String>.from((userDocSnap.data() ?? const {})['favorites'] ?? <String>[]);
+      final existingFavSnap = await favoriteDocRef.get();
+
+      if (existingFavSnap.exists) {
+        // Unfavorite
+        await favoriteDocRef.delete();
+        if (currentArray.contains(productId)) {
+          currentArray.remove(productId);
+        }
+        await userRef.set({
+          'favorites': currentArray,
           'updatedAt': FieldValue.serverTimestamp(),
-        });
-        await _updateProductPopularity(productId, -1);
-        
+        }, SetOptions(merge: true));
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -801,14 +962,19 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
           );
         }
       } else {
-        // Add to favorites
-        favorites.add(productId);
-        await userDoc.update({
-          'favorites': favorites,
-          'updatedAt': FieldValue.serverTimestamp(),
+        // Favorite
+        await favoriteDocRef.set({
+          'productId': productId,
+          'createdAt': FieldValue.serverTimestamp(),
         });
-        await _updateProductPopularity(productId, 1);
-        
+        if (!currentArray.contains(productId)) {
+          currentArray.add(productId);
+        }
+        await userRef.set({
+          'favorites': currentArray,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -831,37 +997,5 @@ class _BuyerProductsPageState extends State<BuyerProductsPage> with TickerProvid
     }
   }
 
-  Future<void> _updateProductPopularity(String productId, int change) async {
-    try {
-      final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final productDoc = await transaction.get(productRef);
-        if (productDoc.exists) {
-          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
-          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
-          transaction.update(productRef, {
-            'popularity': nextValue,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
-        }
-      });
-    } catch (e) {
-      debugPrint('Failed to update product popularity: $e');
-      // If transaction fails, try a direct update as fallback
-      try {
-        final productRef = FirebaseFirestore.instance.collection('products').doc(productId);
-        final productDoc = await productRef.get();
-        if (productDoc.exists) {
-          final currentPopularity = (productDoc.data()?['popularity'] ?? 0) as num;
-          final nextValue = (currentPopularity + change).clamp(0, 1 << 31);
-          await productRef.update({
-            'popularity': nextValue,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          });
-        }
-      } catch (fallbackError) {
-        debugPrint('Fallback popularity update also failed: $fallbackError');
-      }
-    }
-  }
+  // Popularity/favoriteCount are maintained by backend triggers; no direct client updates
 }

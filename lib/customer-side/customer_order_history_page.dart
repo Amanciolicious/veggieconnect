@@ -23,6 +23,9 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
   late TabController _tabController;
   final List<String> _tabs = ['All', 'Pending', 'Processing', 'Ready to Pick Up', 'Picked Up', 'Cancelled'];
   final AuthStateService _authService = AuthStateService();
+  // Local immediate UI state after actions, before Firestore stream reflects updates
+  final Set<String> _locallyRatedOrderIds = <String>{};
+  final Set<String> _locallyReportedOrderIds = <String>{};
 
   AuthUser? get user => _authService.currentUser;
 
@@ -269,8 +272,11 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                         );
                                       }
                                       
-                                      final hasRated = snapshot.data ?? false;
-                                      
+                                      final sharedOrderId = (order['orderId'] ?? orders[index].id).toString();
+                                      final hasRatedFlag = order['hasRating'] == true; // persisted on order doc
+                                      final hasRatedRemote = snapshot.data ?? false; // lookup in order_ratings
+                                      final hasRatedLocal = _locallyRatedOrderIds.contains(sharedOrderId);
+                                      final hasRated = hasRatedFlag || hasRatedRemote || hasRatedLocal;
                                       return hasRated
                                           ? Container(
                                               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -323,7 +329,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                 SizedBox(width: screenWidth * 0.03),
                                 // Report Button/Status
                                 Expanded(
-                                  child: order['hasReport'] == true
+                                  child: ((order['hasReport'] == true) || _locallyReportedOrderIds.contains((order['orderId'] ?? orders[index].id).toString()))
                                       ? Container(
                                           padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                                           decoration: BoxDecoration(
@@ -460,7 +466,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
     }
   }
 
-  void _showRatingDialog(BuildContext context, String documentId, Map<String, dynamic> order) {
+  Future<void> _showRatingDialog(BuildContext context, String documentId, Map<String, dynamic> order) async {
     // Use the actual orderId field from the order document, not the document ID
     final actualOrderId = order['orderId'] ?? documentId;
     
@@ -472,7 +478,7 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
         'quantity': order['quantity'] ?? 1,
       }
     ];
-    showDialog(
+    final rated = await showDialog<bool>(
       context: context,
       builder: (context) => RatingDialog(
         orderId: actualOrderId,
@@ -481,6 +487,12 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
         products: List<Map<String, dynamic>>.from(products),
       ),
     );
+    if (rated == true && mounted) {
+      setState(() {
+        // Mark locally as rated for instant UI feedback
+        _locallyRatedOrderIds.add(actualOrderId.toString());
+      });
+    }
   }
 
   void _showReportDialog(BuildContext context, String orderId, Map<String, dynamic> order) async {
@@ -580,6 +592,11 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                   await _checkAndApplyAutoBan(order['sellerId'] ?? '');
                   
                   if (!mounted) return;
+                  final sharedOrderId2 = (order['orderId'] ?? orderId).toString();
+                  setState(() {
+                    // Mark locally as reported for instant UI disable
+                    _locallyReportedOrderIds.add(sharedOrderId2);
+                  });
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Report submitted successfully')),

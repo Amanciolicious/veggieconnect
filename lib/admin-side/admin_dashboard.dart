@@ -321,7 +321,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         title: Text(
           'Admin Dashboard',
           style: GoogleFonts.quicksand(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF1A1A1A),
           ),

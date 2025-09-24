@@ -3,6 +3,41 @@ const admin = require('firebase-admin');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
+// Maintain product favoriteCount based on user favorites subcollection
+exports.onFavoriteCreated = functions.firestore
+  .document('users/{userId}/favorites/{productId}')
+  .onCreate(async (snap, context) => {
+    const productId = context.params.productId;
+    const productRef = admin.firestore().collection('products').doc(productId);
+    await admin.firestore().runTransaction(async (tx) => {
+      const doc = await tx.get(productRef);
+      if (!doc.exists) return;
+      const current = (doc.data().favoriteCount || 0);
+      tx.update(productRef, {
+        favoriteCount: current + 1,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    return null;
+  });
+
+exports.onFavoriteDeleted = functions.firestore
+  .document('users/{userId}/favorites/{productId}')
+  .onDelete(async (snap, context) => {
+    const productId = context.params.productId;
+    const productRef = admin.firestore().collection('products').doc(productId);
+    await admin.firestore().runTransaction(async (tx) => {
+      const doc = await tx.get(productRef);
+      if (!doc.exists) return;
+      const current = (doc.data().favoriteCount || 0);
+      const next = Math.max(0, current - 1);
+      tx.update(productRef, {
+        favoriteCount: next,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    return null;
+  });
 
 // Cloud Function to send FCM notifications using V1 API
 exports.sendNotification = functions.https.onCall(async (data, context) => {

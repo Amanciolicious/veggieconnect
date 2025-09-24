@@ -89,7 +89,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         _OnboardData(
           imagePath: 'assets/onboarding-img/mais.png',
           title: 'Track Your Orders',
-          desc: 'Stay updated with real-time order tracking and delivery notifications.',
+          desc: 'Stay updated with real-time order status and pickup reminders.',
         ),
         _OnboardData(
           imagePath: 'assets/onboarding-img/potato.png',

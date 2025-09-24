@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../services/navigation_manager.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../widgets/navigation_compass.dart';
 
 class NavigationScreen extends StatefulWidget {
   final String orderId;
@@ -765,6 +766,17 @@ class _NavigationScreenState extends State<NavigationScreen> with TickerProvider
                       size: 100,
                       showText: true,
                       loadingText: 'Loading route...'
+                    ),
+                  ),
+                // Compass widget
+                if (s?.customerLocation != null && s?.supplierLocation != null)
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: NavigationCompass(
+                      currentLocation: s!.customerLocation,
+                      destination: s.supplierLocation,
+                      size: 80,
                     ),
                   ),
               ],

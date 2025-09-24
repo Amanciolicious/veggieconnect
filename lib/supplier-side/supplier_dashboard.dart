@@ -376,7 +376,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         title: Text(
           'Supplier Dashboard',
           style: GoogleFonts.quicksand(
-            fontSize: 22,
+            fontSize: 20,
             color: Color(0xFF1A1A1A),
             fontWeight: FontWeight.w600,
           ),
