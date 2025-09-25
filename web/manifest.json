@@ -1,6 +1,6 @@
 {
-    "name": "veggieconnect",
-    "short_name": "veggieconnect",
+    "name": "VeggieConnect",
+    "short_name": "VeggieConnect",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

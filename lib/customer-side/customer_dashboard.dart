@@ -743,14 +743,6 @@ Card(
             childAspectRatio: isSmallScreen ? 1.1 : 1.25,
             children: [
               _buildQuickActionCard(
-                'Cash on Pickup',
-                Icons.handshake,
-                const Color(0xFF4CAF50),
-                () => _showQuickActionModal('Cash on Pickup', Icons.handshake, const Color(0xFF4CAF50), 'cashOnPickup'),
-                isSmallScreen,
-                _buildCashOnPickupBadge(),
-              ),
-              _buildQuickActionCard(
                 'Fresh Today',
                 Icons.schedule,
                 const Color(0xFF2196F3),
@@ -1199,28 +1191,8 @@ Card(
   }
 
   Widget _buildCashOnPickupBadge() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('products')
-          .where('status', isEqualTo: 'approved')
-          .where('isActive', isEqualTo: true)
-          .where('paymentMethods', arrayContains: 'cashOnPickup')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-        final count = snapshot.data!.docs.length;
-        return Text(
-          '$count+',
-          style: GoogleFonts.quicksand(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
-          ),
-        );
-      },
-    );
+    // Cash on Pickup quick action removed
+    return const SizedBox.shrink();
   }
 
   Widget _buildFreshTodayBadge() {
@@ -1932,9 +1904,6 @@ class _QuickActionModalState extends State<QuickActionModal> {
       final isActive = data['isActive'] ?? true;
       if (!isActive) return false;
       switch (widget.filterType) {
-        case 'cashOnPickup':
-          final paymentMethods = List<String>.from(data['paymentMethods'] ?? []);
-          return paymentMethods.contains('cashOnPickup');
         case 'freshToday':
           return data['isFreshToday'] ?? false;
         case 'topRated':
@@ -2069,9 +2038,6 @@ class _QuickActionModalState extends State<QuickActionModal> {
     String badgeText = '';
     Color badgeColor = widget.color;
     switch (widget.filterType) {
-      case 'cashOnPickup':
-        badgeText = 'Cash on Pickup';
-        break;
       case 'freshToday':
         final createdAt = data['createdAt'] as Timestamp?;
         if (createdAt != null) {
