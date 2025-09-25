@@ -7,11 +7,11 @@ class RevenueService {
 
   static AuthUser? get _currentUser => _authService.currentUser;
 
-  /// Get real-time stream of total revenue across all completed orders (Admin view)
+  /// Get real-time stream of total revenue across all picked up orders (Admin view)
   static Stream<double> getTotalRevenueStream() {
     return _firestore
         .collection('orders')
-        .where('status', isEqualTo: 'completed')
+        .where('status', isEqualTo: 'picked_up')
         .snapshots()
         .map((snapshot) {
       double totalRevenue = 0.0;
@@ -28,7 +28,7 @@ class RevenueService {
     return _firestore
         .collection('orders')
         .where('sellerId', isEqualTo: supplierId)
-        .where('status', isEqualTo: 'completed')
+        .where('status', isEqualTo: 'picked_up')
         .snapshots()
         .map((snapshot) {
       double supplierRevenue = 0.0;
@@ -53,7 +53,7 @@ class RevenueService {
   static Stream<Map<String, double>> getRevenueAnalyticsStream() {
     return _firestore
         .collection('orders')
-        .where('status', isEqualTo: 'completed')
+        .where('status', isEqualTo: 'picked_up')
         .snapshots()
         .map((snapshot) {
       final now = DateTime.now();
@@ -112,7 +112,7 @@ class RevenueService {
     return _firestore
         .collection('orders')
         .where('sellerId', isEqualTo: supplierId)
-        .where('status', isEqualTo: 'completed')
+        .where('status', isEqualTo: 'picked_up')
         .snapshots()
         .map((snapshot) {
       final now = DateTime.now();

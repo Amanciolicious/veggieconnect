@@ -1627,7 +1627,10 @@ class _QuickActionModalState extends State<QuickActionModal> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                      ),
                     );
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {

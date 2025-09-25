@@ -197,7 +197,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
     final date = createdAt?.toDate() ?? DateTime.now();
     final isSupplier = user['role']?.toLowerCase() == 'supplier';
     final isBanned = user['isBanned'] ?? false;
-    final isAdmin = user['role']?.toLowerCase() == 'admin';
+    final isAdmin = user['role']?.toLowerCase() == 'admin' || user['role']?.toLowerCase() == 'super_admin' || user['role']?.toLowerCase() == 'sub_admin';
     final isCurrentAdmin = user['email'] == 'current_admin@example.com'; // Replace with actual current admin check
     final isTemporaryBan = user['banType'] == 'temporary';
 
@@ -1326,7 +1326,9 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
                   stream: SupplierReportService.getSupplierReports(userId),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator(
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),));
                     }
                     final reports = List<SupplierReport>.from(snapshot.data!);
                     // Ensure newest first just in case index order shifts

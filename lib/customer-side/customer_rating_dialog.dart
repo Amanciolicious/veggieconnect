@@ -5,8 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_state_service.dart';
 import '../widgets/star_rating_widget.dart';
-import '../widgets/lottie_loading_widget.dart';
-
 class RatingDialog extends StatefulWidget {
   final String orderId;
   final String supplierId;
@@ -368,15 +366,14 @@ class _RatingDialogState extends State<RatingDialog> {
           onPressed: _isSubmitting ? null : _submitRating,
           child: _isSubmitting
               ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: LottieLoadingWidget(
-                    assetPath: 'assets/lottie-loading-json/loading.json',
-                    width: 24,
-                    height: 24,
-                    showText: false,
-                  ),
-                )
+  height: 24,
+  width: 24,
+  child: CircularProgressIndicator(
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)), // optional color
+  ),
+)
+
               : Text(
                   'Submit Rating',
                   style: GoogleFonts.quicksand(

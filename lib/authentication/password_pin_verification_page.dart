@@ -412,8 +412,8 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
                               ),
                             )
                           : Text(
@@ -447,8 +447,8 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                                 width: 12,
                                 height: 12,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
                                 ),
                               )
                             : Text(

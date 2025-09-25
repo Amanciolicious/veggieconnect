@@ -112,7 +112,8 @@ class ModernAnalyticsCard extends StatelessWidget {
     return Column(
       children: [
         const CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
         ),
         const SizedBox(height: 16),
         Text(
@@ -457,8 +458,8 @@ class _RealTimeMetricWidgetState extends State<RealTimeMetricWidget> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(widget.color),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
                   ),
                 )
               else

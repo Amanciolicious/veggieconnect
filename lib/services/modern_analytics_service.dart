@@ -12,7 +12,7 @@ class ModernAnalyticsService {
   // Real-time KPIs and Metrics
   static Stream<Map<String, dynamic>> getRealTimeKPIsStream() {
     return _firestore.collection('orders')
-        .where('status', isEqualTo: 'completed')
+        .where('status', isEqualTo: 'picked_up')
         .snapshots()
         .asyncMap((snapshot) async {
       
@@ -227,7 +227,7 @@ class ModernAnalyticsService {
         ordersByStatus[status] = (ordersByStatus[status] ?? 0) + 1;
 
         switch (status) {
-          case 'completed':
+          case 'picked_up':
             completedOrders++;
             totalRevenue += amount;
             break;
@@ -346,7 +346,7 @@ class ModernAnalyticsService {
         final ordersQuery = await _firestore
             .collection('orders')
             .where('productId', isEqualTo: productId)
-            .where('status', isEqualTo: 'completed')
+            .where('status', isEqualTo: 'picked_up')
             .get();
 
         double productRevenue = 0.0;

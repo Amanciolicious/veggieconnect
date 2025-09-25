@@ -21,6 +21,7 @@ import '../services/cloudinary_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 import 'admin_verify_listings_page.dart';
 import 'admin_manage_accounts_page.dart';
+import 'admin_manage_sub_admins_page.dart';
 import 'admin_verification_review_page.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -49,6 +50,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   final NotificationService _notificationService = NotificationService();
 
   AuthUser? get user => _authService.currentUser;
+  
+  bool get isSuperAdmin {
+    final data = _authService.currentUserData;
+    final role = data != null ? (data['role'] ?? '') : '';
+    return role == 'admin' || role == 'super_admin';
+  }
+  
+  bool get isSubAdmin {
+    final data = _authService.currentUserData;
+    final role = data != null ? (data['role'] ?? '') : '';
+    return role == 'sub_admin';
+  }
 
 
   @override
@@ -423,7 +436,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         : null,
       builder: (context, snapshot) {
         final userData = snapshot.data?.data() as Map<String, dynamic>?;
-        final displayName = userData?['name'] ?? _authService.currentUser?.displayName ?? 'Admin';
+        final displayName = userData?['name'] ?? 
+            (isSubAdmin ? (userData?['username'] ?? 'Sub Admin') : (_authService.currentUser?.displayName ?? 'Admin'));
         final email = _authService.currentUser?.email ?? 'admin@email.com';
         final profileImageUrl = userData?['profileImageUrl'] as String?;
         
@@ -441,7 +455,21 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           onHeaderTap: _showProfileImageOptions,
           items: [], // Empty since we're using sections
           sections: [
-            DrawerSection(
+            if (isSubAdmin) DrawerSection(
+              title: 'SUB ADMIN',
+              items: [
+                DrawerItem(
+                  icon: Icons.dashboard,
+                  title: 'Overview',
+                  index: 0,
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() { _selectedIndex = 0; });
+                  },
+                ),
+              ],
+            ),
+            if (!isSubAdmin) DrawerSection(
               title: 'MAIN NAVIGATION',
               items: [
                 DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
@@ -451,7 +479,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
               ],
             ),
-            DrawerSection(
+            if (!isSubAdmin) DrawerSection(
               title: 'ADMIN TOOLS',
               items: [
                 DrawerItem(
@@ -463,6 +491,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
+                    );
+                  },
+                ),
+                DrawerItem(
+                  icon: Icons.group_add,
+                  title: 'Manage Sub Admins',
+                  index: -1,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminManageSubAdminsPage()),
                     );
                   },
                 ),
@@ -1704,8 +1744,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             ),
             const SizedBox(height: 20),
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
-            ),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+    ),
             const SizedBox(height: 16),
             Text(
               loadingText,
@@ -1830,7 +1871,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                data['name'] ?? user.displayName ?? 'Admin User',
+                                data['name'] ?? 
+                                    (isSubAdmin ? (data['username'] ?? 'Sub Admin') : (user.displayName ?? 'Admin User')),
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.045,
                                   fontWeight: FontWeight.bold,
@@ -1852,7 +1894,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  'Role: ${data['role']?.toString().toUpperCase() ?? 'ADMIN'}',
+                                  'Role: ${(data['role']?.toString().toUpperCase() ?? (isSubAdmin ? 'SUB_ADMIN' : 'ADMIN'))}',
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.03,
                                     fontWeight: FontWeight.bold,

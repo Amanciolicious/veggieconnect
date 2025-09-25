@@ -315,7 +315,8 @@ class AnalyticsLoadingCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
             ),
             const SizedBox(height: 16),
             Text(

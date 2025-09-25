@@ -1942,8 +1942,8 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                                           width: 16,
                                           height: 16,
                                           child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
                                           ),
                                         )
                                       : Icon(

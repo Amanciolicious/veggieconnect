@@ -264,9 +264,8 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
                                               width: 20,
                                               height: 20,
                                               child: CircularProgressIndicator(
-                strokeWidth: 2,        // thinner spinner
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white), 
-              ),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),),
                                             ),
                                           ),
                                         );

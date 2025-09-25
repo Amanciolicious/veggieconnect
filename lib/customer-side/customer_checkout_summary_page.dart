@@ -896,8 +896,8 @@ class _CheckoutSummaryPageState extends State<CheckoutSummaryPage> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color?>(Colors.white),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
                     ),
                   )
                 : Text(

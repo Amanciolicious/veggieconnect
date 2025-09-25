@@ -185,8 +185,8 @@ class _AddProductPageState extends State<AddProductPage> {
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
                       ),
                     ),
                     SizedBox(width: 12),

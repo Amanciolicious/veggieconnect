@@ -50,21 +50,14 @@ class _LoginPageState extends State<LoginPage> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-      } on FirebaseAuthException catch (e) {
-        // If Firebase Auth fails, try Firestore password (for reset users)
-        if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-          firestoreAuthResult = await _tryFirestoreAuthentication(
-            _emailController.text.trim(),
-            _passwordController.text.trim(),
-          );
-          
-          if (firestoreAuthResult['success']) {
-            // Create a custom session for Firestore auth
-            useFirestoreAuth = true;
-            // We'll handle this user differently
-          } else {
-            rethrow; // Re-throw original Firebase error
-          }
+      } on FirebaseAuthException catch (_) {
+        // If Firebase Auth fails, try Firestore username/email + password
+        firestoreAuthResult = await _tryFirestoreAuthentication(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
+        if (firestoreAuthResult['success']) {
+          useFirestoreAuth = true;
         } else {
           rethrow;
         }
@@ -220,6 +213,11 @@ class _LoginPageState extends State<LoginPage> {
         
         // Show verification notification for unverified suppliers
         _showVerificationNotificationIfNeeded(userId, userData);
+      } else if (userRole == 'sub_admin') {
+        // Sub admins go to admin dashboard but with limited access
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        );
       } else {
         // Buyers follow normal flow
         final prefs = await SharedPreferences.getInstance();
@@ -263,18 +261,27 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// Try authentication using Firestore password (for password reset users)
+  /// Try authentication using Firestore password for sub_admins and password-reset users
   Future<Map<String, dynamic>> _tryFirestoreAuthentication(String email, String password) async {
     try {
       // Hash the entered password
       final hashedPassword = _hashPassword(password);
       
-      // Query Firestore for user with matching email and password
-      final userQuery = await FirebaseFirestore.instance
+      // Try by username first (for sub_admins), then fallback to email
+      QuerySnapshot<Map<String, dynamic>> userQuery = await FirebaseFirestore.instance
           .collection('users')
-          .where('email', isEqualTo: email.toLowerCase().trim())
+          .where('username', isEqualTo: email.toLowerCase().trim())
           .where('password', isEqualTo: hashedPassword)
+          .limit(1)
           .get();
+      if (userQuery.docs.isEmpty) {
+        userQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: email.toLowerCase().trim())
+            .where('password', isEqualTo: hashedPassword)
+            .limit(1)
+            .get();
+      }
       
       if (userQuery.docs.isNotEmpty) {
         final userDoc = userQuery.docs.first;
@@ -282,9 +289,10 @@ class _LoginPageState extends State<LoginPage> {
         
         // Check if this user has reset their password recently
         final authMethod = userData['authMethod'];
+        final isSubAdmin = userData['role'] == 'sub_admin';
         final oldAuthDisabled = userData['oldAuthDisabled'] ?? false;
         
-        if (authMethod == 'password_reset' || oldAuthDisabled) {
+        if (authMethod == 'password_reset' || oldAuthDisabled || isSubAdmin) {
           return {
             'success': true,
             'userId': userDoc.id,
@@ -846,8 +854,8 @@ SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
-                strokeWidth: 2,        // thinner spinner
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white), 
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
               ),
             )
           : Text(

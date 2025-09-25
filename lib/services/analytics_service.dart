@@ -48,7 +48,7 @@ class AnalyticsService {
         final ordersQuery = await _firestore
             .collection('orders')
             .where('supplierId', isEqualTo: supplierId)
-            .where('status', isEqualTo: 'completed')
+            .where('status', isEqualTo: 'picked_up')
             .get();
         
         double revenue = 0.0;
@@ -132,7 +132,7 @@ class AnalyticsService {
         final ordersQuery = await _firestore
             .collection('orders')
             .where('productId', isEqualTo: productId)
-            .where('status', isEqualTo: 'completed')
+            .where('status', isEqualTo: 'picked_up')
             .get();
         
         double productRevenue = 0.0;

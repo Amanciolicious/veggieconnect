@@ -69,7 +69,7 @@ class SeasonalAnalyticsService {
           final ordersQuery = await _firestore
               .collection('orders')
               .where('productId', isEqualTo: productId)
-              .where('status', isEqualTo: 'completed')
+              .where('status', isEqualTo: 'picked_up')
               .get();
           
           double productRevenue = 0.0;
