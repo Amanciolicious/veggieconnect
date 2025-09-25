@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, avoid_print
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'star_rating_widget.dart';
 import '../services/product_rating_service.dart';
 import '../services/auth_state_service.dart';
@@ -168,9 +169,9 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                   Expanded(
                     child: Text(
                       'Rate Product',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w400,
                         color: Colors.white,
                       ),
                     ),
@@ -204,15 +205,15 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                       children: [
                         Text(
                           widget.productName,
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w400,
                             color: Color(0xFF333333),
                           ),
                         ),
                         Text(
                           'by ${widget.supplierName}',
-                          style: TextStyle(
+                          style: GoogleFonts.quicksand(
                             fontSize: screenWidth * 0.035,
                             color: Colors.grey[600],
                           ),
@@ -234,9 +235,9 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                 children: [
                   Text(
                     'How would you rate this product?',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.04,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w400,
                       color: Color(0xFF333333),
                     ),
                   ),
@@ -257,9 +258,9 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                   // Feedback Section
                   Text(
                     'Share your experience (optional)',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.04,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w400,
                       color: Color(0xFF333333),
                     ),
                   ),
@@ -269,7 +270,7 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                     maxLines: 4,
                     decoration: InputDecoration(
                       hintText: 'Tell others about your experience with this product...',
-                      hintStyle: TextStyle(
+                      hintStyle: GoogleFonts.quicksand(
                         color: Colors.grey[500],
                       ),
                       border: OutlineInputBorder(
@@ -282,7 +283,7 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                       ),
                       contentPadding: EdgeInsets.all(screenWidth * 0.04),
                     ),
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: screenWidth * 0.035,
                     ),
                   ),
@@ -307,9 +308,9 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: TextStyle(
+                        style: GoogleFonts.quicksand(
                           fontSize: screenWidth * 0.04,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w400,
                           color: Colors.grey[600],
                         ),
                       ),
@@ -339,9 +340,9 @@ class _ProductRatingDialogState extends State<ProductRatingDialog> {
                             )
                           : Text(
                               'Submit Rating',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: screenWidth * 0.04,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w400,
                                 color: Colors.white,
                               ),
                             ),

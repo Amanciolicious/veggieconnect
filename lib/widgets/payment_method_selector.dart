@@ -49,7 +49,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           'cash_on_pickup',
           'Cash on Pickup',
           'Pay when you collect your order',
-          Icons.money,
+          Icons.text_fields, // Will be replaced with ₱ symbol
           Colors.green,
           screenWidth,
           isSmallScreen,
@@ -69,6 +69,21 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         ),
       ],
     );
+  }
+
+  Widget _buildPesoIcon(IconData icon, Color color, double size) {
+    // Check if this is a money-related icon that should be replaced with ₱
+    if (icon == Icons.text_fields) { // Our placeholder for money icons
+      return Text(
+        '₱',
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+    return Icon(icon, color: color, size: size);
   }
 
   Widget _buildPaymentOption(
@@ -115,10 +130,10 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
+              child: _buildPesoIcon(
                 icon,
-                color: color,
-                size: isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.06,
+                color,
+                isSmallScreen ? screenWidth * 0.05 : screenWidth * 0.06,
               ),
             ),
             SizedBox(width: screenWidth * 0.03),

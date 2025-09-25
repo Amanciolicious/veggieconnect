@@ -514,7 +514,7 @@ class _PickupLocationFinderState extends State<PickupLocationFinder> {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.payments, color: Color(0xFF4CAF50), size: 16),
+                  Text('₱', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 16, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Text(
                     'Cash on Pickup Available',

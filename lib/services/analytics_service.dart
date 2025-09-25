@@ -54,7 +54,7 @@ class AnalyticsService {
         double revenue = 0.0;
         for (var order in ordersQuery.docs) {
           final orderData = order.data();
-          revenue += (orderData['totalPrice'] ?? 0).toDouble();
+          revenue += (orderData['totalAmount'] ?? 0).toDouble();
         }
 
         // Calculate average rating
@@ -115,7 +115,7 @@ class AnalyticsService {
 
       Map<String, int> categoryCount = {};
       Map<String, double> categoryRevenue = {};
-      double totalPrice = 0.0;
+      double totalAmount = 0.0;
       int organicCount = 0;
 
       for (var doc in snapshot.docs) {
@@ -138,16 +138,16 @@ class AnalyticsService {
         double productRevenue = 0.0;
         for (var order in ordersQuery.docs) {
           final orderData = order.data();
-          productRevenue += (orderData['totalPrice'] ?? 0).toDouble();
+          productRevenue += (orderData['totalAmount'] ?? 0).toDouble();
         }
         categoryRevenue[category] = (categoryRevenue[category] ?? 0) + productRevenue;
 
-        totalPrice += price;
+        totalAmount += price;
         if (isOrganic) organicCount++;
       }
 
       analytics['categoryBreakdown'] = categoryCount;
-      analytics['averagePrice'] = snapshot.docs.isNotEmpty ? totalPrice / snapshot.docs.length : 0.0;
+      analytics['averagePrice'] = snapshot.docs.isNotEmpty ? totalAmount / snapshot.docs.length : 0.0;
       analytics['organicPercentage'] = snapshot.docs.isNotEmpty ? (organicCount / snapshot.docs.length * 100) : 0.0;
 
       // Create top categories list
@@ -204,7 +204,7 @@ class AnalyticsService {
 
         for (var order in ordersQuery.docs) {
           final orderData = order.data();
-          customerRevenue += (orderData['totalPrice'] ?? 0).toDouble();
+          customerRevenue += (orderData['totalAmount'] ?? 0).toDouble();
         }
 
         if (orderCount > 0) {

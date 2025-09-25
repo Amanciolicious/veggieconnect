@@ -467,7 +467,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                 title: 'MAIN NAVIGATION',
                 items: [
                   DrawerItem(icon: Icons.dashboard, title: 'Overview', index: 0),
-                  DrawerItem(icon: Icons.build, title: 'Manage Products', index: 1),
+                  DrawerItem(icon: Icons.spa, title: 'Manage Products', index: 1),
                   DrawerItem(icon: Icons.inventory_2, title: 'Stock Management', index: 2),
                   DrawerItem(icon: Icons.person, title: 'Profile', index: 4),
                 ],
@@ -560,7 +560,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         animationDuration: const Duration(milliseconds: 300),
         items: const [
           Icon(Icons.home, size: 30, color: Colors.green,),
-          Icon(Icons.build, size: 30, color: Colors.green,),
+          Icon(Icons.spa, size: 30, color: Colors.green,),
           Icon(Icons.inventory_2, size: 30, color: Colors.green,),
           Icon(Icons.shopping_cart, size: 30, color: Colors.green,),
           Icon(Icons.person, size: 30, color: Colors.green,),
@@ -605,7 +605,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                     .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return _buildStatCard(cardRadius, 'Total Products', '$count', Icons.build, Colors.blue);
+                  return _buildStatCard(cardRadius, 'Total Products', '$count', Icons.grass, Colors.blue);
                 },
               ),
               // Active Orders
@@ -625,6 +625,8 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                   return _buildStatCard(cardRadius, 'Active Orders', '$activeOrders', Icons.shopping_cart, Colors.green);
                 },
               ),
+
+              
               // Revenue
               StreamBuilder<double>(
                 stream: RevenueService.getCurrentUserRevenueStream(),
@@ -634,7 +636,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                     cardRadius, 
                     'Revenue', 
                     RevenueService.formatCurrency(revenue), 
-                    Icons.attach_money, 
+                    Icons.text_fields, // Will be replaced with ₱ symbol 
                     Colors.green
                   );
                 },
@@ -911,7 +913,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: color, size: iconSize.clamp(16, 24)),
+                    child: _buildPesoIcon(icon, color, iconSize.clamp(16, 24)),
                   ),
                   const Spacer(),
                   Icon(
@@ -985,7 +987,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
               children: [
                 Row(
                   children: [
-                    Icon(icon, color: color, size: iconSize),
+                    _buildPesoIcon(icon, color, iconSize),
                     const Spacer(),
                     Icon(Icons.trending_up, color: color, size: trendSize),
                   ],
@@ -1565,7 +1567,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
             _buildStatCardWidget(
               title: 'Total Value',
               value: '₱${totalValue.toStringAsFixed(2)}',
-              icon: Icons.attach_money,
+              icon: Icons.text_fields, // Will be replaced with ₱ symbol
               color: const Color(0xFF6CA04A),
             ),
           ],
@@ -1574,6 +1576,21 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
       },
     );
     
+  }
+
+  Widget _buildPesoIcon(IconData icon, Color color, double size) {
+    // Check if this is a money-related icon that should be replaced with ₱
+    if (icon == Icons.text_fields) { // Our placeholder for money icons
+      return Text(
+        '₱',
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+    return Icon(icon, color: color, size: size);
   }
 
   Widget _buildStockList() {

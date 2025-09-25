@@ -100,20 +100,26 @@ class GroceryLoadingWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        LottieLoadingWidget(
-          assetPath: VeggieConnectLoadingAnimations.groceryShopping,
-          width: size,
-          height: size,
-          backgroundColor: backgroundColor,
-          showText: showText,
+        Center(
+          child: LottieLoadingWidget(
+            assetPath: VeggieConnectLoadingAnimations.groceryShopping,
+            width: size,
+            height: size,
+            backgroundColor: backgroundColor,
+            showText: showText,
+          ),
         ),
         if (showText) ...[
           const SizedBox(height: 16),
-          Text(
-            loadingText!,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey[600],
+          Center(
+            child: Text(
+              loadingText!,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -146,23 +152,28 @@ class FullScreenLoadingOverlay extends StatelessWidget {
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            LottieLoadingWidget(
-              assetPath: assetPath,
-              networkUrl: networkUrl,
-              width: animationSize,
-              height: animationSize,
-              showText: false,
+            Center(
+              child: LottieLoadingWidget(
+                assetPath: assetPath,
+                networkUrl: networkUrl,
+                width: animationSize,
+                height: animationSize,
+                showText: false,
+              ),
             ),
             if (loadingText != null) ...[
               const SizedBox(height: 24),
-              Text(
-                loadingText!,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w500,
+              Center(
+                child: Text(
+                  loadingText!,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
           ],

@@ -53,7 +53,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
     return Scaffold(
       backgroundColor: Color(0xFFF8FAF5),
       appBar: RolePageHeader(
-        title: 'Supplier Verification Review',
+        title: 'Verification Review',
         trailing: PopupMenuButton<String>(
           onSelected: (value) {
             setState(() { _filterStatus = value; });
@@ -232,7 +232,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
                           Text(
                             verification.supplierEmail,
                             style: GoogleFonts.quicksand(
-                              fontSize: 14,
+                              fontSize: 11,
                               color: Color(0xFF666666),
                             ),
                           ),
@@ -534,7 +534,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
     }
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
@@ -542,12 +542,12 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: textColor),
+          Icon(icon, size: 14, color: textColor),
           SizedBox(width: 4),
           Text(
             status.toUpperCase(),
             style: GoogleFonts.quicksand(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),

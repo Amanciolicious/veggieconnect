@@ -860,7 +860,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       backgroundColor: Colors.white,
       builder: (context) {
@@ -917,7 +917,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  Icon(Icons.payments, color: Color(0xFF6CA04A), size: 20),
+                  Text('₱', style: TextStyle(color: Color(0xFF6CA04A), fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(width: 8),
                   const Text('Cash on Pick Up', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 16),
@@ -978,7 +978,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       backgroundColor: Colors.white,
       builder: (context) {
@@ -1035,7 +1035,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  Icon(Icons.payments, color: Color(0xFF6CA04A), size: 20),
+                  Text('₱', style: TextStyle(color: Color(0xFF6CA04A), fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(width: 8),
                   const Text('Cash on Pick Up', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 16),

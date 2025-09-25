@@ -41,7 +41,7 @@ class ModernAnalyticsService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-        final amount = (data['totalPrice'] ?? 0).toDouble();
+        final amount = (data['totalAmount'] ?? 0).toDouble();
         final buyerId = data['buyerId']?.toString();
 
         if (createdAt != null && buyerId != null) {
@@ -133,8 +133,8 @@ class ModernAnalyticsService {
         final role = data['role']?.toString() ?? 'unknown';
         final userId = doc.id;
 
-        // Skip admin users - only count suppliers and buyers
-        if (role.toLowerCase() == 'admin') {
+        // Skip admin and sub_admin users - only count suppliers and buyers
+        if (role.toLowerCase() == 'admin' || role.toLowerCase() == 'sub_admin') {
           continue;
         }
 
@@ -218,7 +218,7 @@ class ModernAnalyticsService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final status = data['status']?.toString() ?? 'pending';
-        final amount = (data['totalPrice'] ?? 0).toDouble();
+        final amount = (data['totalAmount'] ?? 0).toDouble();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
 
         totalOrders++;
@@ -353,7 +353,7 @@ class ModernAnalyticsService {
         int orderCount = 0;
         for (var order in ordersQuery.docs) {
           final orderData = order.data();
-          productRevenue += (orderData['totalPrice'] ?? 0).toDouble();
+          productRevenue += (orderData['totalAmount'] ?? 0).toDouble();
           orderCount++;
         }
 
@@ -419,7 +419,7 @@ class ModernAnalyticsService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-        final amount = (data['totalPrice'] ?? 0).toDouble();
+        final amount = (data['totalAmount'] ?? 0).toDouble();
         final productId = data['productId']?.toString();
 
         if (createdAt != null) {

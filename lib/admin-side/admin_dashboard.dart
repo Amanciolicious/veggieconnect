@@ -614,7 +614,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             mainAxisSpacing: 8,
             childAspectRatio: 1.35,
             children: [
-              // Total Users (suppliers and buyers only, exclude admins)
+              // Total Users (suppliers and buyers only, exclude admins and sub_admins)
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('users')
@@ -676,7 +676,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   return _buildStatCard(
                     title: 'Total Revenue',
                     value: RevenueService.formatCurrency(revenue),
-                    icon: Icons.attach_money,
+                    icon: Icons.text_fields, // Will be replaced with ₱ symbol
                     color: const Color(0xFF4CAF50),
                   );
                 },
@@ -2228,7 +2228,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           children: [
             Row(
               children: [
-                Icon(icon, color: color, size: 20),
+                _buildPesoIcon(icon, color, 20),
                 const Spacer(),
                 Icon(Icons.trending_up, color: color, size: 14),
               ],
@@ -2254,6 +2254,21 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         ),
       ),
     );
+  }
+
+  Widget _buildPesoIcon(IconData icon, Color color, double size) {
+    // Check if this is a money-related icon that should be replaced with ₱
+    if (icon == Icons.text_fields) { // Our placeholder for money icons
+      return Text(
+        '₱',
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+    return Icon(icon, color: color, size: size);
   }
 
   Widget _buildModernCard({required Widget child}) {

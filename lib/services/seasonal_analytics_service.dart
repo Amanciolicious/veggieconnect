@@ -78,7 +78,7 @@ class SeasonalAnalyticsService {
           for (var order in ordersQuery.docs) {
             final orderData = order.data();
             final orderDate = (orderData['createdAt'] as Timestamp?)?.toDate();
-            final orderAmount = (orderData['totalPrice'] ?? 0).toDouble();
+            final orderAmount = (orderData['totalAmount'] ?? 0).toDouble();
             productRevenue += orderAmount;
             
             if (orderDate != null) {
@@ -160,7 +160,7 @@ class SeasonalAnalyticsService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-        final amount = (data['totalPrice'] ?? 0).toDouble();
+        final amount = (data['totalAmount'] ?? 0).toDouble();
         
         if (createdAt != null) {
           final month = createdAt.month;

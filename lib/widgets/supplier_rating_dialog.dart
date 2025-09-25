@@ -298,7 +298,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                   style: GoogleFonts.quicksand(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF4CAF50),
+                      color: const Color(0xFF6CA04A),
                   ),
                 ),
               ],
@@ -368,7 +368,7 @@ class _SupplierRatingDialogState extends State<SupplierRatingDialog>
                       child: ElevatedButton(
                         onPressed: _rating > 0 && !_isSubmitting ? _submitRating : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
+                          backgroundColor: const Color(0xFF6CA04A),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shadowColor: Colors.transparent,

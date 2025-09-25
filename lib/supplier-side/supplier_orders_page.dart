@@ -507,7 +507,7 @@ class _SupplierOrdersPageState extends State<SupplierOrdersPage>
       final orderData = orderDoc.data() as Map<String, dynamic>;
       final buyerId = orderData['buyerId'] as String?;
       final supplierId = orderData['sellerId'] as String?;
-      final supplierName = orderData['sellerName'] as String? ?? 'Store';
+      final supplierName = orderData['supplierName'] as String? ?? 'Store';
       final productId = orderData['productId'] as String?;
       final quantity = orderData['quantity'] as int? ?? 1;
       

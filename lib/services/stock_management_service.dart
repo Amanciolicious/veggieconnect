@@ -38,6 +38,7 @@ class StockManagementService {
           'quantity': FieldValue.increment(-orderQuantity), // Decrease stock
           'lastSoldAt': FieldValue.serverTimestamp(),
           'lastStockUpdate': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(), // Update this field to trigger real-time refresh
         });
         
         print('✅ Stock updated for product $productId: -$orderQuantity units, soldCount: +$orderQuantity');
@@ -53,6 +54,7 @@ class StockManagementService {
           'soldCount': FieldValue.increment(orderQuantity),
           'lastSoldAt': FieldValue.serverTimestamp(),
           'stockDiscrepancy': FieldValue.serverTimestamp(), // Flag for admin review
+          'updatedAt': FieldValue.serverTimestamp(), // Update this field to trigger real-time refresh
         });
         
         return false; // Return false to indicate stock issue
@@ -82,6 +84,7 @@ class StockManagementService {
           'soldCount': FieldValue.increment(-orderQuantity), // Decrease sold count
           'lastStockUpdate': FieldValue.serverTimestamp(),
           'lastCancellation': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(), // Update this field to trigger real-time refresh
         });
         
         print('✅ Stock restored for product $productId: +$orderQuantity units (order $orderId cancelled)');

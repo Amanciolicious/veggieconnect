@@ -215,67 +215,93 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
           },
         ),
         body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: EdgeInsets.all(screenWidth * 0.06),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         MediaQuery.of(context).padding.bottom - 
+                         kToolbarHeight - // App bar height
+                         60 - // Bottom navigation bar height
+                         (screenWidth * 0.12), // Padding
+            ),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
               if (_isLoading) ...[
-                const GroceryLoadingWidget(
-                  size: 100,
-                  showText: true,
-                  loadingText: 'Loading your order...'
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Loading your order...',
-                  style: GoogleFonts.quicksand(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                // Center the loading animation and text properly
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const GroceryLoadingWidget(
+                        size: 100,
+                        showText: false, // Remove duplicate text
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Loading your order...',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ] else if (_errorMessage.isNotEmpty) ...[
-                Icon(
-                  Icons.error_outline,
-                  size: 80,
-                  color: Colors.red[400],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Error',
-                  style: GoogleFonts.quicksand(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red[600],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _errorMessage,
-                  style: GoogleFonts.quicksand(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const CustomerHomePage()),
-                      (route) => false,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6CA04A),
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  ),
-                  child: Text(
-                    'Go to Dashboard',
-                    style: GoogleFonts.quicksand(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                // Center the error state properly
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 80,
+                        color: Colors.red[400],
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Error',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red[600],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _errorMessage,
+                        style: GoogleFonts.quicksand(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 30),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const CustomerHomePage()),
+                            (route) => false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6CA04A),
+                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        ),
+                        child: Text(
+                          'Go to Dashboard',
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ] else ...[
@@ -298,8 +324,8 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                     children: [
                       // Success Icon
                       Container(
-                        width: 100,
-                        height: 100,
+                        width: 80,
+                        height: 80,
                         decoration: const BoxDecoration(
                           color: Color(0xFF6CA04A),
                           shape: BoxShape.circle,
@@ -307,23 +333,23 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                         child: const Icon(
                           Icons.check,
                           color: Colors.white,
-                          size: 50,
+                          size: 40,
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       
                       // Success Message
                       Center(
                         child: Text(
                           'Payment Successful!',
                           style: GoogleFonts.quicksand(
-                            fontSize: 26,
+                            fontSize: 22,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF6CA04A),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 10),
                       
                       Text(
                         'Your order has been placed successfully.',
@@ -333,7 +359,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 20),
                       
                      // Order Info
                       if (_orderData != null) ...[
@@ -407,7 +433,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 20),
                       ],
 
                       
@@ -433,7 +459,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
@@ -466,6 +492,8 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
               ],
             ],
           ),
+        ),
+        ),
         ),
       ),
     ));

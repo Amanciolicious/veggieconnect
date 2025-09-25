@@ -17,7 +17,7 @@ class RevenueService {
       double totalRevenue = 0.0;
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        totalRevenue += (data['totalPrice'] ?? 0).toDouble();
+        totalRevenue += (data['totalAmount'] ?? 0).toDouble();
       }
       return totalRevenue;
     });
@@ -34,7 +34,7 @@ class RevenueService {
       double supplierRevenue = 0.0;
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        supplierRevenue += (data['totalPrice'] ?? 0).toDouble();
+        supplierRevenue += (data['totalAmount'] ?? 0).toDouble();
       }
       return supplierRevenue;
     });
@@ -71,7 +71,7 @@ class RevenueService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-        final amount = (data['totalPrice'] ?? 0).toDouble();
+        final amount = (data['totalAmount'] ?? 0).toDouble();
         
         totalRevenue += amount;
         
@@ -128,7 +128,7 @@ class RevenueService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-        final amount = (data['totalPrice'] ?? 0).toDouble();
+        final amount = (data['totalAmount'] ?? 0).toDouble();
         
         totalRevenue += amount;
         

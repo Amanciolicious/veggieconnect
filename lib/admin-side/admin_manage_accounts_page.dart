@@ -1394,7 +1394,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
           padding: EdgeInsets.all(24),
           child: Column(

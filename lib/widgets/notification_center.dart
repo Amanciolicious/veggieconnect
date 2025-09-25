@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 // Removed AppLoader to avoid using Lottie in notifications loading state
 import '../services/notification_service.dart';
 import '../customer-side/customer_navigation_screen.dart';
@@ -98,11 +99,11 @@ class _NotificationCenterState extends State<NotificationCenter> {
     final hasNotifications = snapshot.hasData && snapshot.data!.isNotEmpty;
     return TooltipTheme(
       data: const TooltipThemeData(
-        textStyle: TextStyle(fontSize: 10), // ✅ font size 12
+        textStyle: TextStyle(fontSize: 12), // ✅ font size 12
       ),
      child: TooltipTheme(
   data: const TooltipThemeData(
-    textStyle: TextStyle(fontSize: 10), // ✅ font size 12
+    textStyle: TextStyle(fontSize: 12), // ✅ font size 12
   ),
   child: IconButton(
     onPressed: hasNotifications ? _clearAllNotifications : null,
@@ -222,12 +223,17 @@ class _NotificationCenterState extends State<NotificationCenter> {
               Positioned(
                 bottom: 20,
                 right: 20,
-                child: FloatingActionButton(
-                  onPressed: _clearAllNotifications,
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  tooltip: 'Clear all notifications',
-                  child: const Icon(Icons.clear_all),
+                child: TooltipTheme(
+                  data: const TooltipThemeData(
+                    textStyle: TextStyle(fontSize: 12), // ✅ font size 12
+                  ),
+                  child: FloatingActionButton(
+                    onPressed: _clearAllNotifications,
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    tooltip: 'Clear all notifications',
+                    child: const Icon(Icons.clear_all),
+                  ),
                 ),
               ),
             ],
@@ -370,7 +376,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
         iconColor = Colors.blue;
         break;
       case 'payment':
-        iconData = Icons.payment;
+        iconData = Icons.text_fields; // Will be replaced with ₱ symbol
         iconColor = Colors.green;
         break;
       case 'product_approval':
@@ -453,12 +459,27 @@ class _NotificationCenterState extends State<NotificationCenter> {
         borderRadius: BorderRadius.circular(8),
         border: isRead ? null : Border.all(color: iconColor.withOpacity(0.3), width: 1),
       ),
-      child: Icon(
+      child: _buildPesoIcon(
         iconData,
-        color: isRead ? iconColor.withOpacity(0.7) : iconColor,
-        size: screenWidth * 0.05,
+        isRead ? iconColor.withOpacity(0.7) : iconColor,
+        screenWidth * 0.05,
       ),
     );
+  }
+
+  Widget _buildPesoIcon(IconData icon, Color color, double size) {
+    // Check if this is a money-related icon that should be replaced with ₱
+    if (icon == Icons.text_fields) { // Our placeholder for money icons
+      return Text(
+        '₱',
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+    return Icon(icon, color: color, size: size);
   }
 
   String _formatTimestamp(DateTime timestamp) {
@@ -577,15 +598,22 @@ class _NotificationCenterState extends State<NotificationCenter> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
           children: [
             Icon(Icons.warning, color: Colors.red),
             SizedBox(width: 8),
-            Text('Clear All Notifications'),
+            Expanded(
+              child: Text(
+                'Clear All Notifications',
+                style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w400),
+              ),
+            ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to clear all notifications? This action cannot be undone.',
+          style: GoogleFonts.quicksand(fontSize: 14, fontWeight: FontWeight.w400),
         ),
         actions: [
           TextButton(
@@ -630,14 +658,16 @@ class _NotificationCenterState extends State<NotificationCenter> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
           children: [
             Icon(Icons.delete, color: Colors.red),
             SizedBox(width: 8),
-            Text('Delete Notification'),
+            Text('Delete Notification', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
           ],
         ),
-        content: Text('Are you sure you want to delete "${notification.title}"?'),
+        content: Text('Are you sure you want to delete "${notification.title}"?', 
+          style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -697,15 +727,17 @@ class _NotificationCenterState extends State<NotificationCenter> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
           children: [
             Icon(Icons.delete, color: Colors.red),
             SizedBox(width: 8),
-            Text('Delete Selected Notifications'),
+            Text('Delete Selected Notifications', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
           ],
         ),
         content: Text(
           'Are you sure you want to delete ${_selectedNotifications.length} notification${_selectedNotifications.length > 1 ? 's' : ''}? This action cannot be undone.',
+          style: GoogleFonts.quicksand(fontWeight: FontWeight.w400),
         ),
         actions: [
           TextButton(

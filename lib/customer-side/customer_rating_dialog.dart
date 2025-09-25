@@ -225,7 +225,7 @@ class _RatingDialogState extends State<RatingDialog> {
         style: GoogleFonts.quicksand(
           fontSize: screenWidth * 0.05,
           fontWeight: FontWeight.w400,
-          color: Color(0xFF2E2E2E),
+          color: Color(0xFF333333),
         ),
         textAlign: TextAlign.center,
       ),
