@@ -1190,10 +1190,6 @@ Card(
     );
   }
 
-  Widget _buildCashOnPickupBadge() {
-    // Cash on Pickup quick action removed
-    return const SizedBox.shrink();
-  }
 
   Widget _buildFreshTodayBadge() {
     return StreamBuilder<QuerySnapshot>(
