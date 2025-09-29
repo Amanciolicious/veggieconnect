@@ -663,7 +663,7 @@ class _NotificationCenterState extends State<NotificationCenter> {
           children: [
             Icon(Icons.delete, color: Colors.red),
             SizedBox(width: 8),
-            Text('Delete Notification', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400)),
+            Text('Delete Notification', style: GoogleFonts.quicksand(fontWeight: FontWeight.w400, fontSize: 14)),
           ],
         ),
         content: Text('Are you sure you want to delete "${notification.title}"?', 

@@ -98,79 +98,104 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   Widget _buildRelatedProductsSection() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('products')
-          .where('category', isEqualTo: widget.product['category'])
-          .where('productId', isNotEqualTo: widget.productId)
-          .limit(5)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        
-        final products = snapshot.data!.docs;
-        
-        return SizedBox(
-          height: screenWidth * 0.35,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index].data() as Map<String, dynamic>;
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetailsPage(
-                        product: product,
-                        productId: products[index].id,
+  final screenWidth = MediaQuery.of(context).size.width;
+  
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('products')
+        .where('category', isEqualTo: widget.product['category'])
+        .where('status', isEqualTo: 'approved')
+        .where('isActive', isEqualTo: true)
+        .orderBy('soldCount', descending: true)
+        .limit(20)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return const SizedBox.shrink();
+      
+      // Exclude the current product by document ID
+      final docs = snapshot.data!.docs.where((d) => d.id != widget.productId).toList();
+      if (docs.isEmpty) return const SizedBox.shrink();
+      
+      return SizedBox(
+        height: screenWidth * 0.35, // Fixed height to prevent overflow
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final doc = docs[index];
+            final data = doc.data() as Map<String, dynamic>;
+            
+            final name = (data['name'] ?? 'Unknown Product').toString();
+            final unit = (data['unit'] ?? 'unit').toString();
+            final num? priceNum = data['price'] is num 
+                ? data['price'] as num 
+                : num.tryParse('${data['price']}');
+            final price = priceNum != null ? priceNum.toStringAsFixed(2) : '0.00';
+            
+            return GestureDetector(
+             onTap: () {
+                  Navigator.pop(context); // Close current product details page
+                  Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductDetailsPage(
+                      product: data,
+                      productId: doc.id,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                margin: EdgeInsets.only(right: screenWidth * 0.04),
+                width: screenWidth * 0.25,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProductImageWidget(
+                      imagePath: (data['imageUrl'] ?? '').toString(),
+                      width: screenWidth * 0.25,
+                      height: screenWidth * 0.25,
+                      placeholder: Icon(
+                        Icons.shopping_basket,
+                        size: screenWidth * 0.1,
+                        color: const Color(0xFF6CA04A),
                       ),
                     ),
-                  );
-                },
-                child: Container(
-                  margin: EdgeInsets.only(right: screenWidth * 0.04),
-                  width: screenWidth * 0.25,
-                  child: Column(
-                    children: [
-                      ProductImageWidget(
-                        imagePath: product['imageUrl'] ?? '',
-                        width: screenWidth * 0.25,
-                        height: screenWidth * 0.25,
-                        placeholder: Icon(Icons.shopping_basket, size: screenWidth * 0.1, color: Color(0xFF6CA04A)),
-                      ),
-                      SizedBox(height: screenWidth * 0.02),
-                      Text(
-                        product['name'] ?? 'Unknown Product',
+                    SizedBox(height: screenWidth * 0.015),
+                    Flexible(
+                      child: Text(
+                        name,
                         style: GoogleFonts.quicksand(
-                          fontSize: screenWidth * 0.035,
+                          fontSize: screenWidth * 0.032,
                           fontWeight: FontWeight.w400,
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: screenWidth * 0.01),
-                      Text(
-                        '\u20b1${product['price']?.toStringAsFixed(2) ?? '0.00'}/${product['unit'] ?? 'unit'}',
-                        style: GoogleFonts.quicksand(
-                          fontSize: screenWidth * 0.035,
-                          color: Color(0xFF6CA04A),
-                          fontWeight: FontWeight.w400,
-                        ),
+                    ),
+                    SizedBox(height: screenWidth * 0.005),
+                    Text(
+                      '\u20b1$price/$unit',
+                      style: GoogleFonts.quicksand(
+                        fontSize: screenWidth * 0.032,
+                        color: const Color(0xFF6CA04A),
+                        fontWeight: FontWeight.w400,
                       ),
-                    ],
-                  ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {

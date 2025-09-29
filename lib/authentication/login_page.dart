@@ -88,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
         final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
         userData = doc.data();
         
-        if (userData == null || userData['verified'] != true) {
+        if (userData?['verified'] != true) {
           await FirebaseAuth.instance.signOut();
           setState(() {
             _isLoading = false;
@@ -97,8 +97,8 @@ class _LoginPageState extends State<LoginPage> {
         }
         
         // Check for password reset flags
-        final forceReauth = userData['forceReauth'] ?? false;
-        final oldAuthDisabled = userData['oldAuthDisabled'] ?? false;
+        final forceReauth = userData?['forceReauth'] ?? false;
+        final oldAuthDisabled = userData?['oldAuthDisabled'] ?? false;
         
         if (forceReauth || oldAuthDisabled) {
           // User needs to use new password, sign them out
@@ -114,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
         print(' Login: Setting Firebase auth user in AuthStateService - ID: $userId');
         
         // Set the user in our custom auth state service for Firebase users too
-        await AuthStateService().setFirestoreAuthUser(userId, userData);
+        await AuthStateService().setFirestoreAuthUser(userId, userData!);
         
         print(' Login: AuthStateService state after setting Firebase user:');
         print('  - isAuthenticated: ${AuthStateService().isAuthenticated}');

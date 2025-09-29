@@ -456,19 +456,42 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           items: [], // Empty since we're using sections
           sections: [
             if (isSubAdmin) DrawerSection(
-              title: 'SUB ADMIN',
-              items: [
-                DrawerItem(
-                  icon: Icons.dashboard,
-                  title: 'Overview',
-                  index: 0,
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() { _selectedIndex = 0; });
-                  },
-                ),
-              ],
-            ),
+  title: 'SUB ADMIN',
+  items: [
+    DrawerItem(
+      icon: Icons.analytics,
+      title: 'Analytics',
+      index: 0,
+    ),
+    DrawerItem(
+      icon: Icons.verified_user,
+      title: 'Supplier Verification',
+      index: -1,
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminVerificationReviewPage()),
+        );
+      },
+    ),
+    DrawerItem(
+      icon: Icons.verified,
+      title: 'Verify Listings',
+      index: 3,
+    ),
+    DrawerItem(
+      icon: Icons.location_on,
+      title: 'Farm Locations',
+      index: 2,
+    ),
+    DrawerItem(
+      icon: Icons.person,
+      title: 'Profile',
+      index: 4,
+    ),
+  ],
+),
             if (!isSubAdmin) DrawerSection(
               title: 'MAIN NAVIGATION',
               items: [
@@ -540,6 +563,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 ),
               ],
             ),
+            
           ],
         );
       },
@@ -563,16 +587,22 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
           const SizedBox(height: 20),
           _buildActionCard(
-            title: 'Manage Accounts',
-            subtitle: 'View and manage user accounts',
-            icon: Icons.manage_accounts,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
-              );
-            },
-          ),
+  title: isSubAdmin ? 'View Analytics' : 'Manage Accounts',
+  subtitle: isSubAdmin ? 'View system analytics and reports' : 'View and manage user accounts',
+  icon: isSubAdmin ? Icons.analytics : Icons.manage_accounts,
+  onTap: () {
+    if (isSubAdmin) {
+      setState(() {
+        _selectedIndex = 1; // Stay on analytics overview
+      });
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminManageAccountsPage()),
+      );
+    }
+  },
+),
           _buildActionCard(
             title: 'Supplier Verification',
             subtitle: 'Review supplier ID verification requests',
@@ -771,7 +801,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 0.88,
+              childAspectRatio: 1.05,
               children: [
                 _buildKPICard(
                   title: 'Today\'s Revenue',
@@ -1434,7 +1464,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         Text(
                           change,
                           style: GoogleFonts.quicksand(
-                            fontSize: 11,
+                            fontSize: 9,
                             fontWeight: FontWeight.w600,
                             color: isPositive ? Colors.green : Colors.red,
                           ),
@@ -1450,7 +1480,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.quicksand(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1A1A1A),
               ),
@@ -1461,7 +1491,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.quicksand(
-                fontSize: 12,
+                fontSize: 10,
                 color: const Color(0xFF757575),
                 fontWeight: FontWeight.w500,
               ),
@@ -1473,7 +1503,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.quicksand(
-                  fontSize: 11,
+                  fontSize: 9,
                   color: const Color(0xFF757575),
                 ),
               ),
@@ -2237,7 +2267,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             Text(
               value,
               style: GoogleFonts.quicksand(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1A1A1A),
               ),
@@ -2246,7 +2276,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             Text(
               title,
               style: GoogleFonts.quicksand(
-                fontSize: 12,
+                fontSize: 10,
                 color: const Color(0xFF757575),
               ),
             ),

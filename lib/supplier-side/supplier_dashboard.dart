@@ -894,8 +894,8 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
         // Scale sizes based on available width to avoid overflow on small screens
         final double iconSize = w * 0.16; // smaller icons to prevent overflow
         final double trendSize = w * 0.12;
-        final double titleSize = w * 0.10;
-        final double valueSize = w * 0.16;  // reduce value font a bit
+        final double titleSize = w * 0.08;  // Reduced from 0.10
+        final double valueSize = w * 0.12;  // Reduced from 0.16
         final double gapLarge = w * 0.06;   // tighter spacing
         final double gapSmall = w * 0.02;
 
@@ -929,7 +929,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.quicksand(
-                  fontSize: titleSize.clamp(9, 12),
+                  fontSize: titleSize.clamp(8, 10),
                   color: const Color(0xFF757575),
                   fontWeight: FontWeight.w500,
                 ),
@@ -941,7 +941,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                 child: Text(
                   value,
                   style: GoogleFonts.quicksand(
-                    fontSize: valueSize.clamp(12, 18),
+                    fontSize: valueSize.clamp(10, 14),
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1A1A1A),
                   ),
@@ -2393,25 +2393,6 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                           builder: (context, snapshot) {
                             final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
                             return _buildProfileStat('Orders', '$count');
-                          },
-                        ),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('supplier_ratings')
-                              .where('sellerId', isEqualTo: user.uid)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            double avg = 0;
-                            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                              double sum = 0;
-                              for (var doc in snapshot.data!.docs) {
-                                sum += (doc['rating'] ?? 0) is int
-                                  ? (doc['rating'] ?? 0).toDouble()
-                                  : (doc['rating'] ?? 0);
-                              }
-                              avg = sum / snapshot.data!.docs.length;
-                            }
-                            return _buildProfileStat('Rating', avg > 0 ? avg.toStringAsFixed(1) : 'N/A');
                           },
                         ),
                       ],

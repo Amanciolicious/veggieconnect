@@ -145,7 +145,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 _showRouteDirectionsSupplier(nearestSupplier, 'foot-walking');
               },
               icon: Icon(Icons.directions_walk),
-              label: Text('Walking Directions', style: TextStyle(fontSize: 12)),
+              label: Text('Walking Directions', style: TextStyle(fontSize: 14)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -159,7 +159,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
               icon: Icon(Icons.directions_car),
              label: Text(
                 'Driving Directions',
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 14),
                 ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
@@ -459,7 +459,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 color: Colors.blue,
               ),
               const SizedBox(width: 8),
-              Text('${profile == 'foot-walking' ? 'Walking' : 'Driving'} Directions'),
+              Text('${profile == 'foot-walking' ? 'Walking' : 'Driving'} Directions', style: TextStyle(fontSize: 15)),
             ],
           ),
           content: FutureBuilder(
@@ -1067,6 +1067,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                 style: TextStyle(fontSize: screenWidth * 0.04, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
+              
             ],
           ),
         ),
@@ -1284,7 +1285,7 @@ class _FarmLocationsPageState extends State<FarmLocationsPage> {
                           color: Colors.green,
                         ),
                         SizedBox(width: screenWidth * 0.008),
-                        Flexible(
+                        Expanded(
                           child: Text(
                             _userLocation != null 
                               ? '${_mapService.calculateDistance(_userLocation!, LatLng(farm.latitude, farm.longitude)).toStringAsFixed(1)} km'

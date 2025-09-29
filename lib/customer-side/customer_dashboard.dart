@@ -1222,8 +1222,7 @@ Card(
           .collection('products')
           .where('status', isEqualTo: 'approved')
           .where('isActive', isEqualTo: true)
-          .where('totalRatings', isGreaterThan: 0)
-          .where('averageRating', isGreaterThanOrEqualTo: 4.5)
+          .where('rating', isGreaterThanOrEqualTo: 4.5)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -1840,7 +1839,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
           .limit(20)
           .snapshots()
           .asyncMap((snapshot) async {
-            debugPrint('Top Rated: Found ${snapshot.docs.length} products with ratings >= 3.5');
+            debugPrint('Top Rated: Found ${snapshot.docs.length} products with ratings >= 4.0');
             
             // If no products found with strict criteria, try more relaxed criteria
             if (snapshot.docs.isEmpty) {
@@ -1906,7 +1905,7 @@ class _QuickActionModalState extends State<QuickActionModal> {
           final avg = (data['averageRating'] ?? 0.0) as num;
           final totalRatings = (data['totalRatings'] ?? 0) as num;
           // Show products that have ratings and are well-rated (3.5+ stars)
-          return totalRatings > 0 && avg >= 3.5;
+          return totalRatings > 0 && avg >= 4.0;
         case 'nearMe':
           // For now, return all products. Location filtering would need user's location
           return true;

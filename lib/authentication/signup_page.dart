@@ -360,10 +360,10 @@ class _SignUpPageState extends State<SignUpPage> {
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: GroceryLoadingWidget(
-                            size: 24,
-                            showText: false,
-                          ),
+                          child: CircularProgressIndicator(
+    strokeWidth: 2.5, // adjust thickness
+    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+              ),
                         )
                       : Text(
                           'Sign Up',
