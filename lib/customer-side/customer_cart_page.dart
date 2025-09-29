@@ -51,9 +51,13 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Future<void> _updateQuantity(String docId, int newQty) async {
-    if (newQty > 0) {
-      await _cartRef.doc(docId).update({'quantity': newQty});
+  Future<void> _updateQuantity(String docId, int newQty, {int? maxQty}) async {
+    int clampedQty = newQty;
+    if (maxQty != null) {
+      clampedQty = newQty.clamp(1, maxQty);
+    }
+    if (clampedQty > 0) {
+      await _cartRef.doc(docId).update({'quantity': clampedQty});
     } else {
       await _cartRef.doc(docId).delete();
     }
@@ -370,48 +374,74 @@ class _CartPageState extends State<CartPage> {
                                         SizedBox(height: screenWidth * 0.02),
                                         Row(
                                           children: [
-                                            // Quantity Controls
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: Color(0xFF6CA04A).withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  GestureDetector(
-                                                    onTap: () => _updateQuantity(doc.id, (data['quantity'] ?? 1) - 1),
-                                                    child: Container(
-                                                      padding: EdgeInsets.all(8),
-                                                      child: Icon(
-                                                        Icons.remove,
-                                                        size: 16,
-                                                        color: Color(0xFF6CA04A),
-                                                      ),
-                                                    ),
+                                            // Quantity Controls (stock-aware)
+                                            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                                              stream: FirebaseFirestore.instance
+                                                  .collection('products')
+                                                  .doc((data['productId'] ?? '').toString())
+                                                  .snapshots(),
+                                              builder: (context, productSnap) {
+                                                final int currentQty = (data['quantity'] ?? 1) is int
+                                                    ? data['quantity'] as int
+                                                    : int.tryParse('${data['quantity']}') ?? 1;
+                                                final int availableStock = productSnap.hasData && productSnap.data?.data() != null
+                                                    ? (((productSnap.data!.data()!['quantity']) ?? 0) as num).toInt()
+                                                    : 0;
+                                                final bool canDecrease = currentQty > 1;
+                                                final bool canIncrease = currentQty < availableStock;
+
+                                                final Color enabledColor = Color(0xFF6CA04A);
+                                                final Color disabledColor = Colors.grey;
+
+                                                return Container(
+                                                  decoration: BoxDecoration(
+                                                    color: (canIncrease || canDecrease)
+                                                        ? Color(0xFF6CA04A).withOpacity(0.1)
+                                                        : Colors.grey.withOpacity(0.1),
+                                                    borderRadius: BorderRadius.circular(8),
                                                   ),
-                                                  Container(
-                                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                    child: Text(
-                                                      '${data['quantity'] ?? 1}',
-                                                      style: GoogleFonts.quicksand(
-                                                        fontWeight: FontWeight.w400,
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      GestureDetector(
+                                                        onTap: canDecrease
+                                                            ? () => _updateQuantity(doc.id, currentQty - 1, maxQty: availableStock)
+                                                            : null,
+                                                        child: Container(
+                                                          padding: EdgeInsets.all(8),
+                                                          child: Icon(
+                                                            Icons.remove,
+                                                            size: 16,
+                                                            color: canDecrease ? enabledColor : disabledColor,
+                                                          ),
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap: () => _updateQuantity(doc.id, (data['quantity'] ?? 1) + 1),
-                                                    child: Container(
-                                                      padding: EdgeInsets.all(8),
-                                                      child: Icon(
-                                                        Icons.add,
-                                                        size: 16,
-                                                        color: Color(0xFF6CA04A),
+                                                      Container(
+                                                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                        child: Text(
+                                                          '$currentQty',
+                                                          style: GoogleFonts.quicksand(
+                                                            fontWeight: FontWeight.w400,
+                                                          ),
+                                                        ),
                                                       ),
-                                                    ),
+                                                      GestureDetector(
+                                                        onTap: canIncrease
+                                                            ? () => _updateQuantity(doc.id, currentQty + 1, maxQty: availableStock)
+                                                            : null,
+                                                        child: Container(
+                                                          padding: EdgeInsets.all(8),
+                                                          child: Icon(
+                                                            Icons.add,
+                                                            size: 16,
+                                                            color: canIncrease ? enabledColor : disabledColor,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ],
-                                              ),
+                                                );
+                                              },
                                             ),
                                             Spacer(),
                                             // Remove Button

@@ -841,32 +841,66 @@ class _BuyerOrderHistoryPageState extends State<BuyerOrderHistoryPage> with Sing
       }
 
       final productData = productDoc.data() as Map<String, dynamic>;
-      final currentStock = productData['stock'] as int? ?? 0;
-      final requestedQuantity = order['quantity'] as int? ?? 1;
+      final currentStock = (productData['quantity'] ?? 0) is num
+          ? (productData['quantity'] as num).toInt()
+          : int.tryParse('${productData['quantity']}') ?? 0;
+      final requestedQuantity = (order['quantity'] ?? 1) is num
+          ? (order['quantity'] as num).toInt()
+          : int.tryParse('${order['quantity']}') ?? 1;
 
-      if (currentStock < requestedQuantity) {
+      if (currentStock <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Insufficient stock. Available: $currentStock, Requested: $requestedQuantity'),
+          const SnackBar(
+            content: Text('This product is currently out of stock'),
             backgroundColor: Colors.orange,
           ),
         );
         return;
       }
 
-      // Add to cart
-      await FirebaseFirestore.instance.collection('cart').add({
-        'userId': user?.uid,
-        'productId': productId,
-        'quantity': requestedQuantity,
-        'addedAt': FieldValue.serverTimestamp(),
-        'productName': order['productName'],
-        'price': order['price'],
-        'sellerId': order['sellerId'],
-        'sellerName': order['sellerName'],
-        'imageUrl': order['imageUrl'],
-        'unit': productData['unit'] ?? 'kg',
-      });
+      // Use per-user cart path and merge with existing item if present
+      final cartRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .collection('cart');
+
+      final existingQuery = await cartRef
+          .where('productId', isEqualTo: productId)
+          .limit(1)
+          .get();
+
+      if (existingQuery.docs.isNotEmpty) {
+        final existingDoc = existingQuery.docs.first;
+        final existingQty = (existingDoc['quantity'] ?? 1) is num
+            ? (existingDoc['quantity'] as num).toInt()
+            : int.tryParse('${existingDoc['quantity']}') ?? 1;
+        final targetQty = existingQty + requestedQuantity;
+        final clampedQty = targetQty > currentStock ? currentStock : targetQty;
+
+        if (clampedQty == existingQty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot add more. Only $currentStock in stock.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+
+        await existingDoc.reference.update({'quantity': clampedQty});
+      } else {
+        final addQty = requestedQuantity > currentStock ? currentStock : requestedQuantity;
+        await cartRef.add({
+          'productId': productId,
+          'sellerId': order['sellerId'],
+          'name': order['productName'],
+          'imageUrl': order['imageUrl'],
+          'quantity': addQty,
+          'unit': productData['unit'] ?? 'unit',
+          'price': order['price'],
+          'supplierName': order['supplierName'] ?? order['sellerName'] ?? 'Supplier',
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

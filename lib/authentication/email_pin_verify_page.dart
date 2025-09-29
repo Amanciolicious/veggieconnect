@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:veggieconnect/authentication/login_page.dart';
+import 'package:veggieconnect/customer-side/customer_dashboard.dart';
 import 'package:veggieconnect/admin-side/admin_dashboard.dart';
 import 'package:veggieconnect/supplier-side/supplier_dashboard.dart';
 import 'package:veggieconnect/customer-side/customer_onboarding_page.dart';
@@ -101,9 +101,9 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
             (route) => false,
           );
         } else {
-          // Go to login page for existing users
+          // Already verified/registered buyers go straight into the app
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => LoginPage()),
+            MaterialPageRoute(builder: (_) => const CustomerHomePage()),
             (route) => false,
           );
         }
