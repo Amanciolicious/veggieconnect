@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:veggieconnect/services/promo_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../widgets/lottie_loading_widget.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key, this.onLoginTap});
