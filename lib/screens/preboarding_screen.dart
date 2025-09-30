@@ -129,14 +129,14 @@ class _PreboardingScreenState extends State<PreboardingScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
-                        fontSize: 26,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF2E7D32),
                       ),
                     ),
                   ),
                   TextButton(
-                    onPressed: _skipToEnd,
+                    onPressed: _completePreboarding,
                     child: Text(
                       "Skip",
                       style: GoogleFonts.poppins(

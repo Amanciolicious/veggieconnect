@@ -3,6 +3,114 @@ const admin = require('firebase-admin');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
+// Helper: send supplier notifications (FCM + in-app) for new order
+async function notifySuppliersOfNewOrder(orderId, cartItems) {
+  if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) return;
+  try {
+    const now = admin.firestore.Timestamp.now();
+    const notifiedSupplierIds = new Set();
+
+    for (const item of cartItems) {
+      const supplierId = item.sellerId || item.supplierId;
+      if (!supplierId || notifiedSupplierIds.has(supplierId)) continue;
+      notifiedSupplierIds.add(supplierId);
+
+      // Fetch supplier user to get fcmToken
+      const supplierDoc = await admin.firestore().collection('users').doc(supplierId).get();
+      const supplierData = supplierDoc.exists ? supplierDoc.data() : null;
+      const singleToken = supplierData && supplierData.fcmToken;
+      const multiTokens = (supplierData && Array.isArray(supplierData.fcmTokens)) ? supplierData.fcmTokens.filter(Boolean) : [];
+
+      const title = 'New Order Received!';
+      const body = `You have a new order #${String(orderId).substring(0, 8)} from a customer.`;
+
+      // Send FCM push
+      const tokensToSend = multiTokens.length > 0 ? multiTokens : (singleToken ? [singleToken] : []);
+      if (tokensToSend.length > 0) {
+        if (tokensToSend.length === 1) {
+          const message = {
+            token: tokensToSend[0],
+            notification: { title, body },
+            data: {
+              type: 'order_update',
+              orderId: String(orderId),
+              status: 'pending',
+              action: 'new_order',
+              screen: 'supplier_orders',
+              recipientId: supplierId,
+            },
+            android: {
+              notification: { channelId: 'orders', priority: 'high', sound: 'default' },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: { title, body },
+                  sound: 'default',
+                  badge: 1,
+                },
+              },
+            },
+          };
+          await admin.messaging().send(message);
+        } else {
+          const multicast = {
+            tokens: tokensToSend,
+            notification: { title, body },
+            data: {
+              type: 'order_update',
+              orderId: String(orderId),
+              status: 'pending',
+              action: 'new_order',
+              screen: 'supplier_orders',
+              recipientId: supplierId,
+            },
+            android: {
+              notification: { channelId: 'orders', priority: 'high', sound: 'default' },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: { title, body },
+                  sound: 'default',
+                  badge: 1,
+                },
+              },
+            },
+          };
+          await admin.messaging().sendMulticast(multicast);
+        }
+      } else {
+        console.warn(`No FCM token(s) found for supplier ${supplierId} while notifying for order ${orderId}`);
+      }
+
+      // Create in-app notification in user's notification center
+      await admin.firestore()
+        .collection('users')
+        .doc(supplierId)
+        .collection('notifications')
+        .add({
+          title,
+          body,
+          type: 'order_update',
+          data: {
+            orderId: String(orderId),
+            status: 'pending',
+            action: 'new_order',
+            screen: 'supplier_orders',
+            recipientId: supplierId,
+          },
+          isRead: false,
+          showBadge: true,
+          priority: 'high',
+          timestamp: now,
+          createdAt: now,
+        });
+    }
+  } catch (e) {
+    console.error('Error notifying suppliers of new order:', e);
+  }
+}
 // Maintain product favoriteCount based on user favorites subcollection
 exports.onFavoriteCreated = functions.firestore
   .document('users/{userId}/favorites/{productId}')
@@ -260,6 +368,14 @@ exports.completeOrder = functions.https.onRequest(async (req, res) => {
 
     console.log(`Temporary order ${orderId} cleaned up`);
 
+    // Notify suppliers of this new order (FCM + Notification Center)
+    try {
+      await notifySuppliersOfNewOrder(orderId, tempOrderData.cartItems);
+      console.log('Supplier notifications dispatched for', orderId);
+    } catch (e) {
+      console.error('Failed to notify suppliers:', e);
+    }
+
     // Send notification to buyer
     try {
       const userDoc = await admin.firestore()
@@ -411,6 +527,90 @@ exports.paymongoWebhook = functions.https.onRequest(async (req, res) => {
             .delete();
 
           console.log(`Order ${orderId} completed via webhook`);
+
+          // Notify customer (buyer) of successful order confirmation
+          try {
+            const buyerDoc = await admin.firestore()
+              .collection('users')
+              .doc(orderData.buyerId)
+              .get();
+
+            if (buyerDoc.exists) {
+              const buyerData = buyerDoc.data();
+              const singleToken = buyerData && buyerData.fcmToken;
+              const multiTokens = (buyerData && Array.isArray(buyerData.fcmTokens)) ? buyerData.fcmTokens.filter(Boolean) : [];
+
+              const title = 'Order Confirmed!';
+              const body = `Your order #${String(orderId).substring(0, 8)} has been confirmed.`;
+
+              const tokensToSend = multiTokens.length > 0 ? multiTokens : (singleToken ? [singleToken] : []);
+              if (tokensToSend.length === 1) {
+                const message = {
+                  token: tokensToSend[0],
+                  notification: { title, body },
+                  data: {
+                    type: 'order_update',
+                    orderId: String(orderId),
+                    status: 'success',
+                    screen: 'order_details',
+                  },
+                  android: {
+                    notification: { channelId: 'orders', priority: 'high', sound: 'default' },
+                  },
+                };
+                await admin.messaging().send(message);
+              } else if (tokensToSend.length > 1) {
+                const multicast = {
+                  tokens: tokensToSend,
+                  notification: { title, body },
+                  data: {
+                    type: 'order_update',
+                    orderId: String(orderId),
+                    status: 'success',
+                    screen: 'order_details',
+                  },
+                  android: {
+                    notification: { channelId: 'orders', priority: 'high', sound: 'default' },
+                  },
+                };
+                await admin.messaging().sendMulticast(multicast);
+              } else {
+                console.warn(`No FCM token(s) found for buyer ${orderData.buyerId} for order ${orderId}`);
+              }
+
+              // Create in-app notification entry for buyer
+              const nowTs = admin.firestore.Timestamp.now();
+              await admin.firestore()
+                .collection('users')
+                .doc(orderData.buyerId)
+                .collection('notifications')
+                .add({
+                  title,
+                  body,
+                  type: 'order_update',
+                  data: {
+                    orderId: String(orderId),
+                    status: 'success',
+                    screen: 'order_details',
+                  },
+                  isRead: false,
+                  showBadge: true,
+                  priority: 'high',
+                  timestamp: nowTs,
+                  createdAt: nowTs,
+                });
+            }
+          } catch (e) {
+            console.error('Failed to notify customer (webhook):', e);
+          }
+
+          // Notify suppliers of this new order triggered by webhook completion
+          try {
+            await notifySuppliersOfNewOrder(orderId, orderData.cartItems);
+            console.log('Supplier notifications dispatched via webhook for', orderId);
+          } catch (e) {
+            console.error('Failed to notify suppliers (webhook):', e);
+          }
         }
       }
     }
