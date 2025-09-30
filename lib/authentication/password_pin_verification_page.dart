@@ -327,10 +327,9 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                          MediaQuery.of(context).padding.top - 
                          kToolbarHeight - 48, // Account for SafeArea and padding
             ),
-            child: IntrinsicHeight(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
                   SizedBox(height: 20),
                   
                   // Header Icon
@@ -499,7 +498,6 @@ class _PinVerificationPageState extends State<PinVerificationPage> {
                   ),
                 ],
               ),
-            ),
           ),
         ),
       ),

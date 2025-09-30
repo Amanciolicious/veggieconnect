@@ -6,10 +6,20 @@ import 'package:google_fonts/google_fonts.dart';
 class RolePageHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onBackTap;
+  final VoidCallback? onMenuTap;
   final Widget? trailing;
   final bool showBackButton;
+  final bool showMenuButton;
 
-  const RolePageHeader({super.key, required this.title, this.onBackTap, this.trailing, this.showBackButton = true});
+  const RolePageHeader({
+    super.key, 
+    required this.title, 
+    this.onBackTap, 
+    this.onMenuTap,
+    this.trailing, 
+    this.showBackButton = true,
+    this.showMenuButton = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +44,23 @@ class RolePageHeader extends StatelessWidget implements PreferredSizeWidget {
                       Icons.arrow_back_ios_new,
                       color: Color(0xFF4CAF50),
                       size: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ] else if (showMenuButton && onMenuTap != null) ...[
+                GestureDetector(
+                  onTap: onMenuTap,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.menu,
+                      color: Color(0xFF4CAF50),
+                      size: 24,
                     ),
                   ),
                 ),

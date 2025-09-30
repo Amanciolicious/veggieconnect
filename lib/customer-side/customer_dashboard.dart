@@ -319,7 +319,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     print('🔧 Dashboard: Building dashboard - user: ${user?.uid}');
     print('🔧 Dashboard: AuthService authenticated: ${_authService.isAuthenticated}');
     
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent the app from closing when back button is pressed
+        // Keep the dashboard open
+        return false;
+      },
+      child: Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: _buildModernDrawer(),
@@ -421,6 +427,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           const Icon(Icons.person, size: 30, color: Colors.green),
         ],
       ),
+    ),
     );
   }
 
@@ -490,7 +497,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const FarmLocationsPage()),
+                      MaterialPageRoute(builder: (_) => const CustomerLocationPage()),
                     );
                   },
                 ),

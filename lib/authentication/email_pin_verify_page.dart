@@ -9,7 +9,8 @@ import 'package:veggieconnect/customer-side/customer_dashboard.dart';
 import 'package:veggieconnect/admin-side/admin_dashboard.dart';
 import 'package:veggieconnect/supplier-side/supplier_dashboard.dart';
 import 'package:veggieconnect/customer-side/customer_onboarding_page.dart';
-import '../widgets/lottie_loading_widget.dart';
+import '../services/auth_state_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PinVerifyPage extends StatefulWidget {
   final String userId;
@@ -75,12 +76,19 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
       }
       await FirebaseFirestore.instance.collection('users').doc(widget.userId).update({'verified': true});
       if (!mounted) return;
-      // Check user role and route accordingly
+      
+      // Get updated user data after verification
       final updatedDoc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
       final updatedData = updatedDoc.data();
       final userRole = updatedData != null ? updatedData['role'] ?? 'buyer' : 'buyer';
       final isNewlyRegistered = updatedData != null ? updatedData['isNewlyRegistered'] ?? false : false;
       final onboardingCompleted = updatedData != null ? updatedData['onboardingCompleted'] ?? false : false;
+      
+      // Authenticate the user in AuthStateService before navigation
+      if (updatedData != null) {
+        await AuthStateService().setFirestoreAuthUser(widget.userId, updatedData);
+        print('PIN Verification: User authenticated in AuthStateService - ID: ${widget.userId}');
+      }
       
       if (userRole == 'admin') {
         Navigator.of(context).pushAndRemoveUntil(
@@ -183,105 +191,111 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAF5),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.grey[700],
+            size: 20,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
           'Verify PIN',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.quicksand(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[800],
           ),
         ),
-        elevation: 0,
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.security,
-                      size: 80,
-                      color: Color(0xFF6CA04A),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Enter Your PIN',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF222222),
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         kToolbarHeight - 48,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  SizedBox(height: 20),
+                  
+                  // Header Icon
+                  Center(
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF4CAF50).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.security,
+                        size: 35,
+                        color: Color(0xFF4CAF50),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Please enter your 5-digit PIN to continue',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+                  ),
+                  
+                  SizedBox(height: 24),
+                  
+                  // Title
+                  Center(
+                    child: Text(
+                      'Enter Verification PIN',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey[800],
                       ),
+                    ),
+                  ),
+                  
+                  SizedBox(height: 10),
+                  
+                  // Subtitle
+                  Center(
+                    child: Text(
+                      'Please enter the 5-digit PIN sent to your email address.',
                       textAlign: TextAlign.center,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // PIN Input
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // PIN Display
-                    Row(
+                  ),
+                  
+                  SizedBox(height: 32),
+                  // PIN Display
+                  Center(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: List.generate(5, (index) {
                         return Container(
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Color(0xFFF8FAF5),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: _pinController.text.length > index ? Color(0xFF6CA04A) : Colors.grey[300]!,
+                              color: _pinController.text.length > index ? Color(0xFF4CAF50) : Colors.grey[300]!,
                               width: 2,
                             ),
                           ),
                           child: Center(
                             child: Text(
                               _pinController.text.length > index ? '●' : '',
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 fontSize: 24,
-                                color: Color(0xFF6CA04A),
+                                color: Color(0xFF4CAF50),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -289,102 +303,112 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
                         );
                       }),
                     ),
-                    const SizedBox(height: 20),
-                    // Number Pad
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 20,
-                        mainAxisSpacing: 20,
-                        childAspectRatio: 1.2,
-                      ),
-                      itemCount: 12,
-                      itemBuilder: (context, index) {
-                        if (index == 9) {
-                          return Container(); // Empty space
-                        } else if (index == 10) {
-                          return _buildNumberButton('0');
-                        } else if (index == 11) {
-                          return _buildBackspaceButton();
-                        } else {
-                          return _buildNumberButton('${index + 1}');
-                        }
-                      },
+                  ),
+                  
+                  SizedBox(height: 32),
+                  
+                  // Number Pad
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1.2,
                     ),
-                    const SizedBox(height: 20),
-                    // Verify Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _pinController.text.length == 5 ? _verifyPin : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF6CA04A),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          disabledBackgroundColor: Colors.grey[300],
+                    itemCount: 12,
+                    itemBuilder: (context, index) {
+                      if (index == 9) {
+                        return Container(); // Empty space
+                      } else if (index == 10) {
+                        return _buildNumberButton('0');
+                      } else if (index == 11) {
+                        return _buildBackspaceButton();
+                      } else {
+                        return _buildNumberButton('${index + 1}');
+                      }
+                    },
+                  ),
+                  
+                  SizedBox(height: 28),
+                  // Verify Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _pinController.text.length == 5 ? _verifyPin : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF4CAF50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: GroceryLoadingWidget(
-                                    size: 24,
-                                    showText: false,
-                                  ),
-                                )
-                              : Text(
-                                  'Verify PIN',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
+                        elevation: 0,
                       ),
+                      child: _isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Verify PIN',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Resend PIN Info
+                  Center(
+                    child: Text(
                       'Resend PIN in ${_formatTime(_secondsLeft)}',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 13,
                         color: Colors.grey[600],
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
+                  ),
+                  
+                  SizedBox(height: 16),
+                  
+                  // Resend Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
                       onPressed: _resendPin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF6CA04A),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
+                        backgroundColor: Colors.grey[100],
+                        foregroundColor: Color(0xFF4CAF50),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 0,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          'Resend PIN',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                      child: Text(
+                        'Resend PIN',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4CAF50),
                         ),
                       ),
                     ),
+                  ),
+                  
+                  SizedBox(height: 20),
                   ],
                 ),
-              ),
-            ],
           ),
         ),
       ),
@@ -400,20 +424,20 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Color(0xFF6CA04A).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(15),
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Color(0xFF6CA04A).withOpacity(0.3),
+            color: Colors.grey[300]!,
             width: 1,
           ),
         ),
         child: Center(
           child: Text(
             number,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF6CA04A),
+              color: Color(0xFF4CAF50),
             ),
           ),
         ),
@@ -432,17 +456,17 @@ class _PinVerifyPageState extends State<PinVerifyPage> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(15),
+          color: Colors.red[50],
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.red.withOpacity(0.3),
+            color: Colors.red[200]!,
             width: 1,
           ),
         ),
         child: Center(
           child: Icon(
             Icons.backspace_outlined,
-            color: Colors.red,
+            color: Colors.red[600],
             size: 24,
           ),
         ),

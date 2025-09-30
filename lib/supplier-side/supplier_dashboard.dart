@@ -369,7 +369,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
   @override
   Widget build(BuildContext context) {
     final cardRadius = BorderRadius.circular(20);
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent the app from closing when back button is pressed
+        // Keep the dashboard open
+        return false;
+      },
+      child: Scaffold(
       key: _scaffoldKey,
       backgroundColor: Color(0xFFF8FAF5),
       appBar: _selectedIndex == 0 ? ModernAppBar(
@@ -565,6 +571,7 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
           Icon(Icons.shopping_cart, size: 30, color: Colors.green,),
           Icon(Icons.person, size: 30, color: Colors.green,),
         ],
+      ),
       ),
     );
   }
@@ -2617,7 +2624,7 @@ class _VerificationDialogState extends State<VerificationDialog> {
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             // Fixed Header
             Container(

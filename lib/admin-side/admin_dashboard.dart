@@ -327,7 +327,13 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent the app from closing when back button is pressed
+        // Keep the dashboard open
+        return false;
+      },
+      child: Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       appBar: _selectedIndex == 0 ? ModernAppBar(
@@ -423,6 +429,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           Icon(Icons.verified, size: 30, color: Colors.green),
           Icon(Icons.person, size: 30, color: Colors.green),
         ],
+      ),
       ),
     );
   }

@@ -11,14 +11,14 @@ import '../services/supplier_location_service.dart';
 import '../services/map_service.dart';
 import '../widgets/lottie_loading_widget.dart';
 
-class FarmLocationsPage extends StatefulWidget {
-  const FarmLocationsPage({super.key});
+class CustomerLocationPage extends StatefulWidget {
+  const CustomerLocationPage({super.key});
 
   @override
-  State<FarmLocationsPage> createState() => _FarmLocationsPageState();
+  State<CustomerLocationPage> createState() => _CustomerLocationPage();
 }
 
-class _FarmLocationsPageState extends State<FarmLocationsPage> {
+class _CustomerLocationPage extends State<CustomerLocationPage> {
   final MapController _mapController = MapController();
   final SupplierLocationService _supplierLocationService = SupplierLocationService();
   final MapService _mapService = MapService();

@@ -126,8 +126,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
         destination = const CustomerHomePage();
       }
       
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => destination),
+        (route) => false,
       );
     } catch (e) {
       // If Firestore update fails, still proceed with SharedPreferences
@@ -145,8 +146,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
         destination = const CustomerHomePage();
       }
       
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => destination),
+        (route) => false,
       );
     }
   }

@@ -11,6 +11,7 @@ import '../services/supplier_report_service.dart';
 import '../models/supplier_report_model.dart';
 import '../services/ban_service.dart';
 import '../widgets/lottie_loading_widget.dart';
+import '../services/auth_state_service.dart';
 
 class AdminManageAccountsPage extends StatefulWidget {
   const AdminManageAccountsPage({super.key});
@@ -23,6 +24,7 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
   final TextEditingController _searchController = TextEditingController();
   late final Ticker _ticker;
   final ValueNotifier<DateTime> _nowNotifier = ValueNotifier<DateTime>(DateTime.now());
+  final AuthStateService _authService = AuthStateService();
 
   @override
   void dispose() {
@@ -198,11 +200,11 @@ class _AdminManageAccountsPageState extends State<AdminManageAccountsPage> {
     final isSupplier = user['role']?.toLowerCase() == 'supplier';
     final isBanned = user['isBanned'] ?? false;
     final isAdmin = user['role']?.toLowerCase() == 'admin' || user['role']?.toLowerCase() == 'super_admin' || user['role']?.toLowerCase() == 'sub_admin';
-    final isCurrentAdmin = user['email'] == 'current_admin@example.com'; // Replace with actual current admin check
+    final isCurrentUser = _authService.currentUser?.uid == userId;
     final isTemporaryBan = user['banType'] == 'temporary';
 
-    // Hide admin accounts and current admin from the list
-    if (isAdmin || isCurrentAdmin) {
+    // Hide admin accounts, sub-admin accounts, and current user from the list
+    if (isAdmin || isCurrentUser) {
       return SizedBox.shrink();
     }
 

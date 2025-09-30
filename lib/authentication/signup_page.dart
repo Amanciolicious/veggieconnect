@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:veggieconnect/services/promo_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key, this.onLoginTap});
@@ -134,90 +135,158 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAF5),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Color(0xFF6CA04A),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.grey[700],
+            size: 20,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
           'Sign Up',
-          style: TextStyle(
-            fontSize: 20,
+          style: GoogleFonts.quicksand(
+            fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.white
+            color: Colors.grey[800],
           ),
         ),
-        elevation: 0,
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         kToolbarHeight - 48,
+            ),
+            child: IntrinsicHeight(
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 20),
                 
-                // Welcome Text
-                Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF222222),
-                  ),
+                    // Header Icon
+                    Center(
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          color: Color(0xFF4CAF50).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.person_add,
+                          size: 35,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: 24),
+                    
+                    // Title
+                    Center(
+                      child: Text(
+                        'Create Your Account',
+                        style: GoogleFonts.quicksand(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: 10),
+                    
+                    // Subtitle
+                    Center(
+                      child: Text(
+                        'Join VeggieConnect and start your fresh produce journey today.',
                   textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Join VeggieConnect today',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 30),
+                        style: GoogleFonts.quicksand(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: 32),
 
                 // Role Selection
+                    Text(
+                      'Account Type',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 8),
+                    
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                        color: Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                        border: Border.all(color: Colors.grey[300]!),
                   ),
                   child: Column(
                     children: [
                       RadioListTile<String>(
                         title: Text(
                           'Buyer',
-                          style: TextStyle(),
+                              style: GoogleFonts.quicksand(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[800],
+                              ),
                         ),
                         subtitle: Text(
                           'Purchase fresh produce',
-                          style: TextStyle( fontSize: 12),
+                              style: GoogleFonts.quicksand(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                         ),
                         value: 'buyer',
                         groupValue: _selectedRole,
-                        activeColor: Color(0xFF6CA04A),
+                            activeColor: Color(0xFF4CAF50),
                         onChanged: (value) {
                           setState(() {
                             _selectedRole = value!;
                           });
                         },
                       ),
-                      Divider(height: 1),
+                          Divider(height: 1, color: Colors.grey[300]),
                       RadioListTile<String>(
                         title: Text(
                           'Supplier',
-                          style: TextStyle(),
+                              style: GoogleFonts.quicksand(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[800],
+                              ),
                         ),
                         subtitle: Text(
                           'Sell your fresh produce',
-                          style: TextStyle( fontSize: 12),
+                              style: GoogleFonts.quicksand(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                         ),
                         value: 'supplier',
                         groupValue: _selectedRole,
-                        activeColor: Color(0xFF6CA04A),
+                            activeColor: Color(0xFF4CAF50),
                         onChanged: (value) {
                           setState(() {
                             _selectedRole = value!;
@@ -227,45 +296,119 @@ class _SignUpPageState extends State<SignUpPage> {
                     ],
                   ),
                 ),
+                    
                 SizedBox(height: 20),
 
-                // Name Field
+                    // Username Field
+                    Text(
+                      'Username',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 8),
+                    
                 TextFormField(
                   controller: _nameController,
+                      enabled: !_isLoading,
                   decoration: InputDecoration(
-                    labelText: 'Username',
+                        hintText: 'Enter your username',
+                        hintStyle: GoogleFonts.quicksand(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                        prefixIcon: Icon(
+                          Icons.person_outline,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF6CA04A)),
-                    ),
-                    prefixIcon: Icon(Icons.person, color: Color(0xFF6CA04A)),
+                          borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 1),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        color: Colors.grey[800],
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                          return 'Please enter your username';
                     }
                     return null;
                   },
                 ),
-                SizedBox(height: 16),
+                    
+                    SizedBox(height: 20),
 
                 // Email Field
+                    Text(
+                      'Email Address',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 8),
+                    
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                      enabled: !_isLoading,
                   decoration: InputDecoration(
-                    labelText: 'Email',
+                        hintText: 'Enter your email address',
+                        hintStyle: GoogleFonts.quicksand(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF6CA04A)),
-                    ),
-                    prefixIcon: Icon(Icons.email, color: Color(0xFF6CA04A)),
+                          borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 1),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        color: Colors.grey[800],
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -277,26 +420,41 @@ class _SignUpPageState extends State<SignUpPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 16),
+                    
+                    SizedBox(height: 20),
 
                 // Password Field
+                    Text(
+                      'Password',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 8),
+                    
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                      enabled: !_isLoading,
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF6CA04A)),
-                    ),
-                    prefixIcon: Icon(Icons.lock, color: Color(0xFF6CA04A)),
+                        hintText: 'Enter your password',
+                        hintStyle: GoogleFonts.quicksand(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                        color: Color(0xFF6CA04A),
+                            color: Colors.grey[400],
+                            size: 20,
                       ),
                       onPressed: () {
                         setState(() {
@@ -304,6 +462,29 @@ class _SignUpPageState extends State<SignUpPage> {
                         });
                       },
                     ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 1),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        color: Colors.grey[800],
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -315,25 +496,66 @@ class _SignUpPageState extends State<SignUpPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 16),
+                    
+                    SizedBox(height: 20),
 
                 // Birthday Field
+                    Text(
+                      'Birthday',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    
+                    SizedBox(height: 8),
+                    
                 TextFormField(
                   controller: _birthdayController,
                   readOnly: true,
+                      enabled: !_isLoading,
+                      onTap: _selectBirthday,
                   decoration: InputDecoration(
-                    labelText: 'Birthday',
+                        hintText: 'Select your birthday',
+                        hintStyle: GoogleFonts.quicksand(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                        prefixIcon: Icon(
+                          Icons.cake_outlined,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
+                        suffixIcon: Icon(
+                          Icons.calendar_today,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF6CA04A)),
-                    ),
-                    prefixIcon: Icon(Icons.cake, color: Color(0xFF6CA04A)),
-                    suffixIcon: Icon(Icons.calendar_today, color: Color(0xFF6CA04A)),
-                  ),
-                  onTap: _selectBirthday,
+                          borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.red, width: 1),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      style: GoogleFonts.quicksand(
+                        fontSize: 14,
+                        color: Colors.grey[800],
+                      ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please select your birthday';
@@ -341,62 +563,74 @@ class _SignUpPageState extends State<SignUpPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 30),
+                    
+                    SizedBox(height: 28),
 
                 // Sign Up Button
-                ElevatedButton(
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
                   onPressed: _isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF6CA04A),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Color(0xFF4CAF50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
+                          elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
                           child: CircularProgressIndicator(
-    strokeWidth: 2.5, // adjust thickness
-    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
                         )
                       : Text(
-                          'Sign Up',
-                          style: TextStyle(
+                                'Create Account',
+                                style: GoogleFonts.quicksand(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                           ),
                         ),
                 ),
+                    
                 SizedBox(height: 20),
 
                 // Login Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                    Center(
+                      child: TextButton(
+                        onPressed: _isLoading ? null : widget.onLoginTap,
+                        child: RichText(
+                          text: TextSpan(
+                            text: 'Already have an account? ',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
                   children: [
-                    Text(
-                      'Already have an account? ',
-                      style: TextStyle(
-                        color: Colors.grey,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: widget.onLoginTap,
-                      child: Text(
-                        'Login',
-                        style: TextStyle(
-                          color: Color(0xFF6CA04A),
-                          fontWeight: FontWeight.bold,
-                        ),
+                              TextSpan(
+                                text: 'Sign In',
+                                style: GoogleFonts.quicksand(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF4CAF50),
                       ),
                     ),
                   ],
                 ),
+                        ),
+                      ),
+                    ),
+                    
+                    Expanded(child: SizedBox(height: 20)),
               ],
+                ),
+              ),
             ),
           ),
         ),

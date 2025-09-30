@@ -6,7 +6,6 @@ import 'package:veggieconnect/widgets/star_rating_widget.dart';
 import '../widgets/product_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'customer_chat_page.dart';
-import 'customer_dashboard.dart';
 import '../widgets/role_page_header.dart';
 import '../services/auth_state_service.dart';
 
@@ -135,8 +134,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             
             return GestureDetector(
              onTap: () {
-                  Navigator.pop(context); // Close current product details page
-                  Navigator.pushReplacement(
+                  Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => ProductDetailsPage(
@@ -208,9 +206,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       appBar: RolePageHeader(
         title: 'Product Details',
         onBackTap: () {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const CustomerHomePage()),
-          );
+          Navigator.of(context).pop();
         },
       ),
       body: Stack(
