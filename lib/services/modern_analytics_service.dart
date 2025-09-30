@@ -133,8 +133,9 @@ class ModernAnalyticsService {
         final role = data['role']?.toString() ?? 'unknown';
         final userId = doc.id;
 
-        // Skip admin and sub_admin users - only count suppliers and buyers
-        if (role.toLowerCase() == 'admin' || role.toLowerCase() == 'sub_admin') {
+        // Skip admin, super_admin and sub_admin users - only count suppliers and buyers
+        final roleLower = role.toLowerCase();
+        if (roleLower == 'admin' || roleLower == 'super_admin' || roleLower == 'sub_admin') {
           continue;
         }
 

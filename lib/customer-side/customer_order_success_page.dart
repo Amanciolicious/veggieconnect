@@ -226,9 +226,10 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
                          60 - // Bottom navigation bar height
                          (screenWidth * 0.12), // Padding
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
               if (_isLoading) ...[
                 // Center the loading animation and text properly
                 Center(
@@ -491,6 +492,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
               ],
             ],
           ),
+        ),
         ),
         ),
       ),

@@ -242,82 +242,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
                     _buildStatusChip(verification.status),
                   ],
                 ),
-                // Live countdown timer in upper right corner
-                if (verification.status == 'pending')
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: ValueListenableBuilder<DateTime>(
-                      valueListenable: _nowNotifier,
-                      builder: (_, now, _) {
-                        final DateTime target = (verification.autoApprovalScheduledAt ?? verification.submittedAt.add(Duration(hours: 24)));
-                        final timeLeft = target.difference(now);
-                        
-                        if (timeLeft.isNegative) {
-                          return Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red, width: 1),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.warning, size: 16, color: Colors.red),
-                                SizedBox(width: 4),
-                                Text(
-                                  'OVERDUE',
-                                  style: GoogleFonts.quicksand(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        
-                        final hours = timeLeft.inHours;
-                        final minutes = timeLeft.inMinutes % 60;
-                        final seconds = timeLeft.inSeconds % 60;
-                        
-                        final isUrgent = timeLeft.inHours < 1;
-                        
-                        return Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isUrgent ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isUrgent ? Colors.red : Colors.orange,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.timer,
-                                size: 16,
-                                color: isUrgent ? Colors.red : Colors.orange,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m ${seconds}s',
-                                style: GoogleFonts.quicksand(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: isUrgent ? Colors.red : Colors.orange,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                // Removed small countdown timer badge near status
               ],
             ),
             SizedBox(height: 16),
@@ -762,8 +687,8 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
               title: Stack(
                 children: [
                   Text('Approve Verification'),
-                  // Live countdown timer in upper right corner
-                  Positioned(
+                  // Removed countdown timer in dialog title per request
+                  /*Positioned(
                     top: 0,
                     right: 0,
                     child: ValueListenableBuilder<DateTime>(
@@ -843,7 +768,7 @@ class _AdminVerificationReviewPageState extends State<AdminVerificationReviewPag
                         );
                       },
                     ),
-                  ),
+                  ),*/
                 ],
               ),
               content: Column(

@@ -1301,7 +1301,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
               children: [
                 Icon(Icons.directions_walk, color: Colors.green),
                 SizedBox(width: 8),
-                Text('Walking Directions'),
+                Text('Walking Directions', style: TextStyle(fontSize: 14))
               ],
             ),
             content: Column(
@@ -1371,7 +1371,7 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
               children: [
                 Icon(Icons.directions_car, color: Colors.blue),
                 SizedBox(width: 8),
-                Text('Driving Directions'),
+                Text('Walking Directions', style: TextStyle(fontSize: 14))
               ],
             ),
             content: Column(
@@ -1764,6 +1764,30 @@ class _SupplierLocationPageState extends State<SupplierLocationPage> {
                         ),
                       ),
                     ],
+                  ),
+                // Pending farm requests for this supplier (show where they placed it)
+                if (_pendingRequests.isNotEmpty)
+                  MarkerLayer(
+                    markers: _pendingRequests.map((req) => Marker(
+                      point: LatLng(req.latitude, req.longitude),
+                      width: 44,
+                      height: 44,
+                      child: Tooltip(
+                        message: 'Pending: ${req.farmName}',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.orangeAccent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.pending_actions,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    )).toList(),
                   ),
                 // Canvassed farms (admin-added)
                 if (_canvassedFarms.isNotEmpty)

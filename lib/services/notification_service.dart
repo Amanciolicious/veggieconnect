@@ -575,14 +575,14 @@ class NotificationService {
   }
 
   // Send order update notification
-  void sendOrderUpdateNotification({
+  Future<void> sendOrderUpdateNotification({
     required String orderId,
     required String status,
     String? message,
     String? recipientId,
     String? recipientName,
     String? recipientRole,
-  }) {
+  }) async {
     String title = 'Order Update';
     String body = message ?? 'Your order #$orderId status has been updated to $status';
     
@@ -607,7 +607,8 @@ class NotificationService {
         break;
     }
 
-    sendInAppNotification(
+    // Send in-app notification so it shows in Notification Center
+    await sendInAppNotification(
       title: title,
       body: body,
       type: 'order_update',
@@ -618,9 +619,31 @@ class NotificationService {
         'status': status,
         'recipientId': recipientId,
         'recipientName': recipientName,
-        'screen': 'order_details',
+        'screen': 'supplier_orders',
       },
     );
+
+    // Also send FCM push to supplier so they get a device notification
+    if (recipientId != null && recipientId.isNotEmpty) {
+      try {
+        await sendFCMNotification(
+          recipientId: recipientId,
+          title: title,
+          body: body,
+          type: 'order_update',
+          data: {
+            'orderId': orderId,
+            'status': status,
+            'recipientId': recipientId,
+            'recipientName': recipientName,
+            'screen': 'supplier_orders',
+            'action': status.toLowerCase() == 'pending' ? 'new_order' : 'order_update',
+          },
+        );
+      } catch (e) {
+        debugPrint('Failed to send FCM order update: $e');
+      }
+    }
   }
 
   // Send chat message notification

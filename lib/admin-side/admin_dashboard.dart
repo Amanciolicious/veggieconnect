@@ -466,9 +466,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   title: 'SUB ADMIN',
   items: [
     DrawerItem(
+      icon: Icons.home,
+      title: 'Overview',
+      index: 0,
+    ),
+    DrawerItem(
       icon: Icons.analytics,
       title: 'Analytics',
-      index: 0,
+      index: 1,
     ),
     DrawerItem(
       icon: Icons.verified_user,
@@ -600,7 +605,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   onTap: () {
     if (isSubAdmin) {
       setState(() {
-        _selectedIndex = 1; // Stay on analytics overview
+        _selectedIndex = 1; // Navigate to Analytics tab
       });
     } else {
       Navigator.push(

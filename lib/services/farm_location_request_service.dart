@@ -126,10 +126,8 @@ class FarmLocationRequestService {
     String? reviewNotes,
   }) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
+      // Allow approval to proceed even if no FirebaseAuth user is present (e.g., admin tools)
+      final approverId = _auth.currentUser?.uid ?? 'admin_manual';
 
       // Get the request
       final requestDoc = await _firestore.collection('farm_location_requests').doc(requestId).get();
@@ -144,7 +142,7 @@ class FarmLocationRequestService {
       await _firestore.collection('farm_location_requests').doc(requestId).update({
         'status': 'approved',
         'reviewedAt': FieldValue.serverTimestamp(),
-        'reviewedBy': user.uid,
+        'reviewedBy': approverId,
         'reviewNotes': reviewNotes,
       });
 
@@ -161,12 +159,34 @@ class FarmLocationRequestService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-              // Send in-app notification to supplier about approval
-        _notificationService.sendInAppNotification(
+      // Notify supplier (both FCM and in-app) about approval
+      try {
+        await _notificationService.sendFCMNotification(
+          recipientId: request.requesterId,
           title: 'Farm Location Approved!',
           body: 'Your farm location request "${request.farmName}" has been approved by admin.',
           type: 'farm_location_approved',
+          data: {
+            'requestId': request.id,
+            'supplierId': request.requesterId,
+            'screen': 'my_location',
+          },
         );
+        await _notificationService.sendInAppNotification(
+          title: 'Farm Location Approved!',
+          body: 'Your farm location request "${request.farmName}" has been approved by admin.',
+          type: 'farm_location_approved',
+          targetUserId: request.requesterId,
+          targetUserRole: 'supplier',
+          data: {
+            'requestId': request.id,
+            'supplierId': request.requesterId,
+            'screen': 'my_location',
+          },
+        );
+      } catch (e) {
+        debugPrint('Failed to send approval notifications: $e');
+      }
     } catch (e) {
       throw Exception('Failed to approve request: $e');
     }

@@ -47,6 +47,18 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
 
   AuthUser? get user => _authService.currentUser;
 
+  String _formatAutoApprovalCountdown(Timestamp ts, DateTime now) {
+    final target = ts.toDate();
+    final diff = target.difference(now);
+    if (diff.isNegative) return 'Auto-approval overdue';
+    final hours = diff.inHours;
+    final minutes = diff.inMinutes % 60;
+    final seconds = diff.inSeconds % 60;
+    if (hours > 0) return 'Auto-approval in ${hours}h ${minutes}m ${seconds}s';
+    if (minutes > 0) return 'Auto-approval in ${minutes}m ${seconds.toString().padLeft(2, '0')}s';
+    return 'Auto-approval in ${seconds}s';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1236,6 +1248,40 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                                   StockIndicator(quantity: product['quantity'] ?? 0),
                                 ],
                               ),
+                              const SizedBox(height: 6),
+                              if ((product['status'] ?? 'pending') == 'pending' && product['autoApprovalScheduledAt'] != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.06),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.orange.withOpacity(0.25)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.schedule, size: 16, color: Colors.orange),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: ValueListenableBuilder<DateTime>(
+                                          valueListenable: _nowNotifier,
+                                          builder: (_, now, _) {
+                                            final ts = product['autoApprovalScheduledAt'] as Timestamp;
+                                            return Text(
+                                              _formatAutoApprovalCountdown(ts, now),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.quicksand(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.orange.shade800,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -2402,6 +2448,13 @@ class _SupplierDashboardState extends State<SupplierDashboard> with TickerProvid
                             return _buildProfileStat('Orders', '$count');
                           },
                         ),
+            StreamBuilder<double>(
+              stream: RevenueService.getCurrentUserRevenueStream(),
+              builder: (context, snapshot) {
+                final revenue = snapshot.data ?? 0.0;
+                return _buildProfileStat('Revenue', RevenueService.formatCurrency(revenue));
+              },
+            ),
                       ],
                     ),
                   ],

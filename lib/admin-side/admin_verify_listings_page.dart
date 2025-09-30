@@ -725,7 +725,7 @@ class _AdminVerifyListingsPageState extends State<AdminVerifyListingsPage> {
                               ? (isAutoApproved ? 'Product Auto-Approved - Now Visible to Buyers' : 'Product Approved - Now Visible to Buyers')
                               : 'Product Rejected',
                           style: TextStyle(
-                            fontSize: screenWidth * 0.035,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: product['status'] == 'approved' ? Colors.green : Colors.red,
                           ),
