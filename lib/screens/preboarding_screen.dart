@@ -92,13 +92,7 @@ class _PreboardingScreenState extends State<PreboardingScreen>
     }
   }
 
-  void _skipToEnd() {
-    _pageController.animateToPage(
-      _preboardingData.length - 1,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
-  }
+  // Removed unused _skipToEnd (Skip now completes pre-boarding directly)
 
   Future<void> _completePreboarding() async {
     await PreboardingService.markPreboardingAsSeen();
